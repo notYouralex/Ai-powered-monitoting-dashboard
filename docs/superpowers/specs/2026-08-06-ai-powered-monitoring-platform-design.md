@@ -33,7 +33,6 @@ Excluded:
 
 ## 3. Constraints
 
-- Internship: 350 hours from 2026-07-21, 8 hours/day, 5 days/week; nearly all hours are project time
 - Development VM: Ubuntu, 4 CPU cores, about 10 GB RAM, no GPU
 - Expected scale: 100–200 devices/assets
 - Primary VM: Wazuh all-in-one, Grafana, FastAPI, PostgreSQL, local AI, Freshservice connector
