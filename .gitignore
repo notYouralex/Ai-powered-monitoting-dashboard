@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.deps/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Local configuration and runtime state
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+
+# Tool/editor files
+.idea/
+.vscode/
+.DS_Store
