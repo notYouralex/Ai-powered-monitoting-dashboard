@@ -1,0 +1,110 @@
+from datetime import datetime, timedelta, timezone
+
+import pytest
+from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+
+def test_usernames_are_unique_and_account_flags_have_safe_defaults() -> None:
+    from app.db.base import Base
+    from app.db.models import User
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        db.add(User(username="alice", password_hash="hash-1"))
+        db.commit()
+
+        user = db.query(User).filter_by(username="alice").one()
+        assert user.is_active is True
+        assert user.is_admin is False
+
+        db.add(User(username="alice", password_hash="hash-2"))
+        with pytest.raises(IntegrityError):
+            db.commit()
+
+
+def test_auth_session_stores_only_token_digest_and_expiry_metadata() -> None:
+    from app.db.base import Base
+    from app.db.models import AuthSession, User
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime.now(timezone.utc)
+
+    with Session(engine) as db:
+        user = User(username="admin", password_hash="hash", is_admin=True)
+        db.add(user)
+        db.flush()
+
+        auth_session = AuthSession(
+            user_id=user.id,
+            token_digest="a" * 64,
+            created_at=now,
+            last_seen_at=now,
+            idle_expires_at=now + timedelta(minutes=30),
+            absolute_expires_at=now + timedelta(hours=12),
+        )
+        db.add(auth_session)
+        db.commit()
+
+        assert auth_session.token_digest == "a" * 64
+        assert not hasattr(auth_session, "token")
+        assert auth_session.revoked_at is None
+
+    columns = {column["name"]: column for column in inspect(engine).get_columns("auth_sessions")}
+    assert "token_digest" in columns
+    assert "token" not in columns
+    assert "last_seen_at" in columns
+    assert "idle_expires_at" in columns
+    assert "absolute_expires_at" in columns
+
+
+def test_auth_audit_and_login_attempt_records_persist() -> None:
+    from app.db.base import Base
+    from app.db.models import AuthAuditEvent, LoginAttempt
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        db.add(
+            AuthAuditEvent(
+                event_type="login",
+                username="alice",
+                success=False,
+                reason="invalid_credentials",
+            )
+        )
+        db.add(LoginAttempt(username="alice", success=False))
+        db.commit()
+
+        audit = db.query(AuthAuditEvent).one()
+        attempt = db.query(LoginAttempt).one()
+
+        assert audit.event_type == "login"
+        assert audit.success is False
+        assert audit.reason == "invalid_credentials"
+        assert attempt.username == "alice"
+        assert attempt.success is False
+
+
+def test_initial_migration_creates_login_attempt_primary_key(tmp_path) -> None:
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import create_engine, inspect
+
+    database_path = tmp_path / "migration.db"
+    config = Config("alembic.ini")
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{database_path}")
+
+    command.upgrade(config, "head")
+
+    engine = create_engine(f"sqlite:///{database_path}")
+    primary_key = inspect(engine).get_pk_constraint("login_attempts")
+    assert primary_key["constrained_columns"] == ["id"]
