@@ -145,6 +145,7 @@ class FreshserviceClient:
         params: dict[str, str | int] = {
             "page": page,
             "per_page": FRESHSERVICE_TICKET_PAGE_SIZE,
+            "include": "stats",
         }
         if updated_since is not None:
             params["updated_since"] = updated_since.astimezone(timezone.utc).strftime(

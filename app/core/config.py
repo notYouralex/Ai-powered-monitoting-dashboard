@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     freshservice_verify_tls: bool = True
     freshservice_ca_bundle: Path | None = None
     freshservice_timeout_seconds: int = Field(default=10, ge=1, le=60)
+    freshservice_sync_interval_seconds: int = Field(default=600, ge=300, le=900)
 
     @field_validator(
         "wazuh_base_url",

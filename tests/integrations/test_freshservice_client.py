@@ -95,6 +95,7 @@ def test_list_tickets_uses_api_key_basic_auth_and_normalizes_ticket() -> None:
         assert request.headers["Accept"] == "application/json"
         assert request.url.params["page"] == "1"
         assert request.url.params["per_page"] == "100"
+        assert request.url.params["include"] == "stats"
         assert request.url.params["updated_since"] == "2026-08-01T00:00:00Z"
 
         assert len(tickets) == 1

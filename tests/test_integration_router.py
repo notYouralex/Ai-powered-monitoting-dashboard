@@ -16,11 +16,10 @@ def test_all_source_routers_exist_and_are_mountable() -> None:
     assert isinstance(freshservice_router, APIRouter)
 
 
-def test_shared_router_contains_no_functional_routes_yet() -> None:
-    from app.integrations.router import router
-
-    paths = {route.path for route in router.routes if hasattr(route, "path")}
-    assert paths == set()
+def test_shared_router_contains_freshservice_dashboard_route() -> None:
+    app = create_app()
+    paths = set(app.openapi()["paths"])
+    assert "/api/dashboard/freshservice" in paths
 
 
 def test_application_starts_without_any_source_credentials() -> None:
@@ -33,12 +32,12 @@ def test_application_starts_without_any_source_credentials() -> None:
     assert "X-Request-ID" in response.headers
 
 
-def test_router_scaffold_adds_no_source_endpoints_yet() -> None:
+def test_application_exposes_only_implemented_source_endpoints() -> None:
     app = create_app()
     paths = {route.path for route in app.routes if hasattr(route, "path")}
 
     assert "/api/dashboard/wazuh" not in paths
     assert "/api/dashboard/zabbix" not in paths
     assert "/api/dashboard/snipe-it" not in paths
-    assert "/api/dashboard/freshservice" not in paths
+    assert "/api/dashboard/freshservice" in set(app.openapi()["paths"])
     assert "/api/integrations/health" not in paths
