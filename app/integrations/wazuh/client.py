@@ -56,7 +56,7 @@ class WazuhClient:
         username = settings.wazuh_username
         password = settings.wazuh_password
         if (
-            settings.integration_config_state("wazuh") != "configured"
+            settings.wazuh_server_config_state() != "configured"
             or base_url is None
             or username is None
             or password is None
