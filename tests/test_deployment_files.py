@@ -25,6 +25,37 @@ def test_compose_requires_secrets_and_binds_api_to_loopback() -> None:
     assert "replace-me" not in compose
 
 
+def test_compose_passes_optional_integration_settings_to_api() -> None:
+    compose = read("compose.yaml")
+
+    expected_settings = (
+        "WAZUH_BASE_URL",
+        "WAZUH_USERNAME",
+        "WAZUH_PASSWORD",
+        "WAZUH_VERIFY_TLS",
+        "WAZUH_CA_BUNDLE",
+        "WAZUH_TIMEOUT_SECONDS",
+        "ZABBIX_BASE_URL",
+        "ZABBIX_API_TOKEN",
+        "ZABBIX_VERIFY_TLS",
+        "ZABBIX_CA_BUNDLE",
+        "ZABBIX_TIMEOUT_SECONDS",
+        "SNIPE_IT_BASE_URL",
+        "SNIPE_IT_API_TOKEN",
+        "SNIPE_IT_VERIFY_TLS",
+        "SNIPE_IT_CA_BUNDLE",
+        "SNIPE_IT_TIMEOUT_SECONDS",
+        "FRESHSERVICE_BASE_URL",
+        "FRESHSERVICE_API_KEY",
+        "FRESHSERVICE_VERIFY_TLS",
+        "FRESHSERVICE_CA_BUNDLE",
+        "FRESHSERVICE_TIMEOUT_SECONDS",
+    )
+
+    for setting in expected_settings:
+        assert f"{setting}: ${{{setting}" in compose
+
+
 def test_postgresql_has_healthcheck_and_persistent_volume() -> None:
     compose = read("compose.yaml")
 
