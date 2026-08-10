@@ -193,7 +193,7 @@ class FreshserviceClient:
 
         return FreshserviceTicket(
             ticket_id=_required_positive_int(value.get("id")),
-            subject=_required_string(value.get("subject")),
+            subject=_optional_string(value.get("subject")),
             status_code=status_code,
             status=cast(FreshserviceTicketStatus, _STATUS_NAMES.get(status_code, "unknown")),
             priority_code=priority_code,

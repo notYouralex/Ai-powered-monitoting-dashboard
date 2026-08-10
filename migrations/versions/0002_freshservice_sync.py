@@ -19,7 +19,7 @@ def upgrade() -> None:
         "tickets",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("source_ticket_id", sa.BigInteger(), nullable=False),
-        sa.Column("subject", sa.String(length=1024), nullable=False),
+        sa.Column("subject", sa.String(length=1024), nullable=True),
         sa.Column("status_code", sa.Integer(), nullable=False),
         sa.Column("status", sa.String(length=32), nullable=False),
         sa.Column("priority_code", sa.Integer(), nullable=False),

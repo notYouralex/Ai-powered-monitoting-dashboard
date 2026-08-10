@@ -351,9 +351,28 @@ def test_malformed_ticket_payload_maps_to_bad_response_without_raw_body() -> Non
     asyncio.run(run())
 
 
+def test_blank_or_null_ticket_subject_normalizes_to_none() -> None:
+    async def run() -> None:
+        payloads = [ticket_payload(subject=None), ticket_payload(subject="   ")]
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"tickets": payloads})
+
+        client = FreshserviceClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        tickets = await client.list_tickets()
+
+        assert [ticket.subject for ticket in tickets] == [None, None]
+
+    asyncio.run(run())
+
+
 def test_invalid_ticket_record_maps_to_bad_response() -> None:
     async def run() -> None:
-        bad_ticket = ticket_payload(subject=None)
+        bad_ticket = ticket_payload(status=None)
 
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, json={"tickets": [bad_ticket]})

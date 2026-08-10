@@ -16,7 +16,7 @@ class FreshserviceTicket(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ticket_id: int = Field(gt=0)
-    subject: str = Field(min_length=1, max_length=1024)
+    subject: str | None = Field(default=None, max_length=1024)
     status_code: int = Field(gt=0)
     status: FreshserviceTicketStatus
     priority_code: int = Field(gt=0)

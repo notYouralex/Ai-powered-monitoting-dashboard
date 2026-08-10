@@ -77,7 +77,7 @@ class Ticket(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     source_ticket_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
-    subject: Mapped[str] = mapped_column(String(1024), nullable=False)
+    subject: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     status_code: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     priority_code: Mapped[int] = mapped_column(Integer, nullable=False)
