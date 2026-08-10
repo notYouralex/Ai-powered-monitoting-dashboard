@@ -298,6 +298,36 @@ def test_connection_failure_maps_to_source_unavailable(monkeypatch) -> None:
     asyncio.run(run())
 
 
+def test_read_timeout_maps_to_source_unavailable_with_bounded_retries(monkeypatch) -> None:
+    async def run() -> None:
+        attempts = 0
+        delays: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            raise httpx.ReadTimeout("read timed out", request=request)
+
+        monkeypatch.setattr("app.integrations.freshservice.client.asyncio.sleep", fake_sleep)
+        client = FreshserviceClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_tickets()
+
+        assert attempts == 3
+        assert delays == [0.25, 0.5]
+        assert exc_info.value.code == "SOURCE_UNAVAILABLE"
+        assert exc_info.value.retryable is True
+
+    asyncio.run(run())
+
+
 def test_malformed_ticket_payload_maps_to_bad_response_without_raw_body() -> None:
     async def run() -> None:
         marker = "raw-freshservice-marker-must-not-leak"

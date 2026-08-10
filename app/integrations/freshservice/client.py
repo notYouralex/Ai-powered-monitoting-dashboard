@@ -160,7 +160,7 @@ class FreshserviceClient:
                     headers={"Accept": "application/json"},
                     params=params,
                 )
-            except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            except httpx.RequestError as exc:
                 if attempt + 1 >= FRESHSERVICE_MAX_REQUEST_ATTEMPTS:
                     raise self._source_error("SOURCE_UNAVAILABLE", retryable=True) from exc
                 await asyncio.sleep(RETRY_DELAYS[attempt])
