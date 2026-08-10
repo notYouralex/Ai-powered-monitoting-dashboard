@@ -39,7 +39,7 @@ Do not force-push shared branches or bundle unrelated integrations in one featur
 
 Before review: update from `main`, resolve conflicts on the feature branch, run focused tests, run the full available suite, review the diff, verify no credentials are present, and confirm unrelated components were not modified.
 
-Changes to another intern's owned domain require that owner's review. Shared architectural changes require review from both interns before merge.
+Do not modify another intern's owned integration directly as the normal workflow. Request the needed behavior from the owning intern or agree on a shared contract change first. If both interns explicitly agree that an exceptional cross-domain edit is necessary, the owning intern must review it before merge. Shared architectural changes require review from both interns before merge.
 
 ## Shared-Change Protocol
 

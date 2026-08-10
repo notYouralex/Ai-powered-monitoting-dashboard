@@ -27,3 +27,4 @@ def test_human_collaboration_rules_define_shared_change_protocol() -> None:
     assert "FRESHSERVICE_" in text
     assert "ZABBIX_" in text
     assert "SNIPE_IT_" in text
+    assert "Do not modify another intern's owned integration directly" in text
