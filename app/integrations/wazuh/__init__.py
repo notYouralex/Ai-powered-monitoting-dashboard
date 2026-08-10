@@ -1,0 +1,1 @@
+"""Wazuh integration package."""
