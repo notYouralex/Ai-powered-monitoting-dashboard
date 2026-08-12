@@ -2,9 +2,9 @@
 
 Centralized internal monitoring platform for Wazuh, Zabbix, Snipe-IT, Freshservice, Grafana, and a fully local AI assistant.
 
-## Current foundation
+## Current implementation
 
-The repository currently provides the shared platform and integration foundation:
+The repository currently provides the shared platform foundation plus a functional read-only Freshservice ticket pipeline:
 
 - FastAPI application and health endpoint
 - PostgreSQL persistence with Alembic migrations
@@ -12,12 +12,15 @@ The repository currently provides the shared platform and integration foundation
 - Server-side opaque sessions; only SHA-256 token digests are stored
 - Login throttling and authentication audit records
 - Administrator-only user creation and bootstrap-admin CLI
-- Docker/Compose development scaffold
+- Docker/Compose development scaffold with separate API and background-worker processes
 - Source-prefixed optional configuration for Wazuh, Zabbix, Snipe-IT, and Freshservice
 - Request IDs, controlled source errors, and bounded shared HTTP transport
-- Empty source-owned integration router/package boundaries for parallel development
+- Read-only Freshservice API v2 ticket client with pagination and bounded retry/rate-limit handling
+- Incremental Freshservice synchronization into PostgreSQL with sync-run history and last-valid-data preservation
+- Authenticated Freshservice dashboard API built only from synchronized PostgreSQL records
+- Source-owned integration package boundaries for Wazuh, Zabbix, and Snipe-IT parallel development
 
-Source-specific API clients, authentication flows, functional integration endpoints, Grafana dashboards, synchronization workers, correlation, and local-AI features are not implemented yet. All source integrations remain read-only by design.
+Wazuh, Zabbix, and Snipe-IT source clients and functional endpoints are not implemented yet. Grafana provisioning/dashboards, Executive aggregation, cross-source correlation, and local-AI features also remain planned work. All source integrations remain read-only by design.
 
 ## Requirements
 
@@ -65,14 +68,14 @@ Validate the resolved Compose configuration before starting services:
 docker compose config
 ```
 
-Build and start the foundation services:
+Build and start the application services:
 
 ```bash
 docker compose build
-docker compose up -d postgresql fastapi-api
+docker compose up -d postgresql fastapi-api background-worker
 ```
 
-The API is intentionally bound to `127.0.0.1:8000` by default, not every host interface. The container entrypoint runs `alembic upgrade head` before Uvicorn starts.
+The API is intentionally bound to `127.0.0.1:8000` by default, not every host interface. The API container entrypoint runs `alembic upgrade head` before Uvicorn starts. The background worker does not run migrations and periodically synchronizes Freshservice when that integration is configured.
 
 Create the first administrator interactively after the database is available:
 
@@ -82,6 +85,12 @@ docker compose exec fastapi-api python -m app.cli create-admin --username admin
 
 The password is requested with a hidden prompt. There is deliberately no `--password` command-line option.
 
+## Freshservice integration
+
+When `FRESHSERVICE_BASE_URL` and `FRESHSERVICE_API_KEY` are configured, the background worker retrieves Freshservice API v2 tickets through a read-only client and stores normalized ticket records in PostgreSQL. Synchronization is incremental after the first successful run, uses a short overlap window to reduce missed updates, and records synchronization status without deleting the last valid ticket data after a source failure.
+
+The dashboard endpoint reads synchronized PostgreSQL data rather than calling Freshservice during the request. It reports integration health/staleness, ticket totals, status and priority distributions, top categories, a recent resolution trend, overdue/escalated counts, and recent tickets.
+
 ## Current API
 
 - `GET /health` — process health
@@ -89,6 +98,7 @@ The password is requested with a hidden prompt. There is deliberately no `--pass
 - `POST /api/auth/logout` — revoke current server-side session
 - `GET /api/auth/me` — current account information
 - `POST /api/admin/users` — create a local account; administrator required
+- `GET /api/dashboard/freshservice` — authenticated Freshservice dashboard data from synchronized PostgreSQL records
 
 ## Security boundary
 
