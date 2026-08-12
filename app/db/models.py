@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UTCDateTime
@@ -69,4 +69,63 @@ class LoginAttempt(Base):
 
     __table_args__ = (
         Index("ix_login_attempts_username_created", "username", "created_at"),
+    )
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_ticket_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    subject: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    priority_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    priority: Mapped[str] = mapped_column(String(32), nullable=False)
+    ticket_type: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    sub_category: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    item_category: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    requester_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    requested_for_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    responder_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    group_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    department_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    workspace_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    source_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    due_by: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    first_response_due_by: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    is_escalated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    first_response_escalated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source_created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    source_updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    first_responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    synced_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_tickets_status", "status"),
+        Index("ix_tickets_priority", "priority"),
+        Index("ix_tickets_source_updated_at", "source_updated_at"),
+        Index("ix_tickets_due_by", "due_by"),
+    )
+
+
+class SyncRun(Base):
+    __tablename__ = "sync_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    sync_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    records_received: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    records_upserted: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (
+        Index("ix_sync_runs_source_started", "source", "started_at"),
+        Index("ix_sync_runs_source_status_completed", "source", "status", "completed_at"),
     )

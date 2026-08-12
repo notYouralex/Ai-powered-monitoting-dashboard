@@ -53,8 +53,43 @@ services:
       FRESHSERVICE_VERIFY_TLS: ${FRESHSERVICE_VERIFY_TLS:-true}
       FRESHSERVICE_CA_BUNDLE: ${FRESHSERVICE_CA_BUNDLE:-}
       FRESHSERVICE_TIMEOUT_SECONDS: ${FRESHSERVICE_TIMEOUT_SECONDS:-10}
+      FRESHSERVICE_SYNC_INTERVAL_SECONDS: ${FRESHSERVICE_SYNC_INTERVAL_SECONDS:-600}
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  background-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      fastapi-api:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?set APP_SECRET_KEY in .env}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-monitoring}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgresql:5432/${POSTGRES_DB:-monitoring}
+      RUN_MIGRATIONS: "false"
+      FRESHSERVICE_BASE_URL: ${FRESHSERVICE_BASE_URL:-}
+      FRESHSERVICE_API_KEY: ${FRESHSERVICE_API_KEY:-}
+      FRESHSERVICE_VERIFY_TLS: ${FRESHSERVICE_VERIFY_TLS:-true}
+      FRESHSERVICE_CA_BUNDLE: ${FRESHSERVICE_CA_BUNDLE:-}
+      FRESHSERVICE_TIMEOUT_SECONDS: ${FRESHSERVICE_TIMEOUT_SECONDS:-10}
+      FRESHSERVICE_SYNC_INTERVAL_SECONDS: ${FRESHSERVICE_SYNC_INTERVAL_SECONDS:-600}
+    command: ["python", "-m", "app.worker"]
     read_only: true
     tmpfs:
       - /tmp
