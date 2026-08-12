@@ -79,8 +79,9 @@ def test_sync_inserts_then_incrementally_updates_without_duplicates() -> None:
         assert len(tickets) == 1
         assert tickets[0].source_ticket_id == 101
         assert tickets[0].subject == "VPN restored"
-        assert client.updated_since_calls[0] is None
+        assert client.updated_since_calls[0] == datetime(1970, 1, 1, tzinfo=timezone.utc)
         assert client.updated_since_calls[1] == T1 - timedelta(seconds=60)
+        assert [run.sync_type for run in runs] == ["full", "incremental"]
         assert [run.records_upserted for run in runs] == [1, 1]
         db.close()
 

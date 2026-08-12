@@ -11,6 +11,7 @@ from app.integrations.freshservice.client import FreshserviceClient
 from app.integrations.freshservice.models import FreshserviceTicket
 
 
+FRESHSERVICE_INITIAL_SYNC_SINCE = datetime(1970, 1, 1, tzinfo=timezone.utc)
 FRESHSERVICE_INCREMENTAL_OVERLAP = timedelta(seconds=60)
 
 
@@ -37,13 +38,16 @@ class FreshserviceSyncService:
             .order_by(SyncRun.completed_at.desc(), SyncRun.id.desc())
             .limit(1)
         )
-        updated_since = None
-        if last_success is not None:
-            updated_since = last_success.started_at - FRESHSERVICE_INCREMENTAL_OVERLAP
+        is_initial_sync = last_success is None
+        updated_since = (
+            FRESHSERVICE_INITIAL_SYNC_SINCE
+            if is_initial_sync
+            else last_success.started_at - FRESHSERVICE_INCREMENTAL_OVERLAP
+        )
 
         run = SyncRun(
             source="freshservice",
-            sync_type="incremental" if updated_since is not None else "full",
+            sync_type="full" if is_initial_sync else "incremental",
             status="running",
             started_at=self._clock(),
             records_received=0,
