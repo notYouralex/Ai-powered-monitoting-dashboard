@@ -208,7 +208,7 @@ def test_api_key_auth_failure_maps_without_leaking_key() -> None:
     asyncio.run(run())
 
 
-def test_rate_limit_fails_fast_for_worker_rescheduling(monkeypatch) -> None:
+def test_rate_limit_waits_for_retry_after_and_resumes_same_page(monkeypatch) -> None:
     async def run() -> None:
         attempts = 0
         delays: list[float] = []
@@ -219,7 +219,79 @@ def test_rate_limit_fails_fast_for_worker_rescheduling(monkeypatch) -> None:
         async def handler(request: httpx.Request) -> httpx.Response:
             nonlocal attempts
             attempts += 1
-            return httpx.Response(429, headers={"Retry-After": "60"}, json={"error": "limited"})
+            if attempts == 1:
+                return httpx.Response(
+                    429,
+                    headers={"Retry-After": "2"},
+                    json={"error": "limited"},
+                )
+            return httpx.Response(200, json={"tickets": [ticket_payload()]})
+
+        monkeypatch.setattr("app.integrations.freshservice.client.asyncio.sleep", fake_sleep)
+        client = FreshserviceClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        tickets = await client.list_tickets()
+
+        assert attempts == 2
+        assert delays == [2]
+        assert [ticket.ticket_id for ticket in tickets] == [101]
+
+    asyncio.run(run())
+
+
+def test_rate_limit_retry_is_bounded(monkeypatch) -> None:
+    async def run() -> None:
+        attempts = 0
+        delays: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "2"},
+                json={"error": "limited"},
+            )
+
+        monkeypatch.setattr("app.integrations.freshservice.client.asyncio.sleep", fake_sleep)
+        client = FreshserviceClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_tickets()
+
+        assert attempts == 4
+        assert delays == [2, 2, 2]
+        assert exc_info.value.code == "SOURCE_RATE_LIMITED"
+        assert exc_info.value.retryable is True
+
+    asyncio.run(run())
+
+
+def test_rate_limit_rejects_unsafe_retry_after_without_waiting(monkeypatch) -> None:
+    async def run() -> None:
+        attempts = 0
+        delays: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "3600"},
+                json={"error": "limited"},
+            )
 
         monkeypatch.setattr("app.integrations.freshservice.client.asyncio.sleep", fake_sleep)
         client = FreshserviceClient.from_settings(

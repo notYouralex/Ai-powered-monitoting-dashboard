@@ -21,6 +21,8 @@ from app.integrations.freshservice.models import (
 FRESHSERVICE_TICKET_PAGE_SIZE = 100
 FRESHSERVICE_MAX_TICKET_PAGES = 100
 FRESHSERVICE_MAX_REQUEST_ATTEMPTS = 3
+FRESHSERVICE_MAX_RATE_LIMIT_RETRIES = 3
+FRESHSERVICE_MAX_RETRY_AFTER_SECONDS = 120
 _FRESHSERVICE_RETRYABLE_STATUS_CODES = frozenset({502, 503, 504})
 
 _STATUS_NAMES: dict[int, FreshserviceTicketStatus] = {
@@ -152,7 +154,9 @@ class FreshserviceClient:
                 "%Y-%m-%dT%H:%M:%SZ"
             )
 
-        for attempt in range(FRESHSERVICE_MAX_REQUEST_ATTEMPTS):
+        transient_attempts = 0
+        rate_limit_retries = 0
+        while True:
             try:
                 response = await client.get(
                     f"{self._base_url}/api/v2/tickets",
@@ -161,24 +165,31 @@ class FreshserviceClient:
                     params=params,
                 )
             except httpx.RequestError as exc:
-                if attempt + 1 >= FRESHSERVICE_MAX_REQUEST_ATTEMPTS:
+                transient_attempts += 1
+                if transient_attempts >= FRESHSERVICE_MAX_REQUEST_ATTEMPTS:
                     raise self._source_error("SOURCE_UNAVAILABLE", retryable=True) from exc
-                await asyncio.sleep(RETRY_DELAYS[attempt])
+                await asyncio.sleep(RETRY_DELAYS[transient_attempts - 1])
                 continue
 
             if response.status_code == 429:
-                raise self._source_error("SOURCE_RATE_LIMITED", retryable=True)
-            if (
-                response.status_code in _FRESHSERVICE_RETRYABLE_STATUS_CODES
-                and attempt + 1 < FRESHSERVICE_MAX_REQUEST_ATTEMPTS
-            ):
-                await asyncio.sleep(RETRY_DELAYS[attempt])
+                retry_after = _retry_after_seconds(response)
+                if (
+                    retry_after is None
+                    or rate_limit_retries >= FRESHSERVICE_MAX_RATE_LIMIT_RETRIES
+                ):
+                    raise self._source_error("SOURCE_RATE_LIMITED", retryable=True)
+                rate_limit_retries += 1
+                await asyncio.sleep(retry_after)
                 continue
+
+            if response.status_code in _FRESHSERVICE_RETRYABLE_STATUS_CODES:
+                transient_attempts += 1
+                if transient_attempts < FRESHSERVICE_MAX_REQUEST_ATTEMPTS:
+                    await asyncio.sleep(RETRY_DELAYS[transient_attempts - 1])
+                    continue
 
             self._raise_for_status(response)
             return response
-
-        raise self._source_error("SOURCE_UNAVAILABLE", retryable=True)
 
     @staticmethod
     def _normalize_ticket(value: Any) -> FreshserviceTicket:
@@ -253,6 +264,19 @@ class FreshserviceClient:
             code=code,
             retryable=retryable,
         )
+
+
+def _retry_after_seconds(response: httpx.Response) -> int | None:
+    value = response.headers.get("Retry-After")
+    if value is None:
+        return None
+    try:
+        seconds = int(value.strip())
+    except ValueError:
+        return None
+    if not 1 <= seconds <= FRESHSERVICE_MAX_RETRY_AFTER_SECONDS:
+        return None
+    return seconds
 
 
 def _required_string(value: Any) -> str:
