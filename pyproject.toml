@@ -15,11 +15,11 @@ dependencies = [
   "psycopg[binary]>=3.2,<4.0",
   "pydantic-settings>=2.7,<3.0",
   "argon2-cffi>=23.1,<26.0",
+  "httpx>=0.28,<1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "httpx>=0.28,<1.0",
   "pytest>=8.3,<10.0",
 ]
 

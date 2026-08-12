@@ -108,3 +108,58 @@ def test_initial_migration_creates_login_attempt_primary_key(tmp_path) -> None:
     engine = create_engine(f"sqlite:///{database_path}")
     primary_key = inspect(engine).get_pk_constraint("login_attempts")
     assert primary_key["constrained_columns"] == ["id"]
+
+
+def test_freshservice_persistence_schema_has_stable_ticket_and_sync_keys() -> None:
+    from app.db.base import Base
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    inspector = inspect(engine)
+
+    ticket_columns = {column["name"] for column in inspector.get_columns("tickets")}
+    assert {
+        "source_ticket_id",
+        "subject",
+        "status",
+        "priority",
+        "source_created_at",
+        "source_updated_at",
+        "synced_at",
+    }.issubset(ticket_columns)
+
+    unique_constraints = inspector.get_unique_constraints("tickets")
+    assert any(
+        constraint["column_names"] == ["source_ticket_id"]
+        for constraint in unique_constraints
+    )
+
+    sync_columns = {column["name"] for column in inspector.get_columns("sync_runs")}
+    assert {
+        "source",
+        "sync_type",
+        "status",
+        "started_at",
+        "completed_at",
+        "records_received",
+        "records_upserted",
+        "error_code",
+    }.issubset(sync_columns)
+
+
+def test_alembic_head_creates_freshservice_sync_tables(tmp_path) -> None:
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import create_engine, inspect
+
+    database_path = tmp_path / "freshservice-migration.db"
+    config = Config("alembic.ini")
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{database_path}")
+
+    command.upgrade(config, "head")
+
+    engine = create_engine(f"sqlite:///{database_path}")
+    tables = set(inspect(engine).get_table_names())
+    assert "tickets" in tables
+    assert "sync_runs" in tables
