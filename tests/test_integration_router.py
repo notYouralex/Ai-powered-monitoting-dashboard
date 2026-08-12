@@ -22,6 +22,13 @@ def test_shared_router_contains_freshservice_dashboard_route() -> None:
     assert "/api/dashboard/freshservice" in paths
 
 
+def test_wazuh_router_is_mounted_through_shared_router() -> None:
+    app = create_app()
+    paths = set(app.openapi()["paths"])
+
+    assert "/api/dashboard/wazuh" in paths
+
+
 def test_application_starts_without_any_source_credentials() -> None:
     client = TestClient(create_app())
 
@@ -34,9 +41,9 @@ def test_application_starts_without_any_source_credentials() -> None:
 
 def test_application_exposes_only_implemented_source_endpoints() -> None:
     app = create_app()
-    paths = {route.path for route in app.routes if hasattr(route, "path")}
+    paths = set(app.openapi()["paths"])
 
-    assert "/api/dashboard/wazuh" not in paths
+    assert "/api/dashboard/wazuh" in paths
     assert "/api/dashboard/zabbix" not in paths
     assert "/api/dashboard/snipe-it" not in paths
     assert "/api/dashboard/freshservice" in set(app.openapi()["paths"])

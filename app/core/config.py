@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     wazuh_ca_bundle: Path | None = None
     wazuh_timeout_seconds: int = Field(default=10, ge=1, le=60)
 
+    wazuh_indexer_base_url: AnyHttpUrl | None = None
+    wazuh_indexer_username: str | None = None
+    wazuh_indexer_password: SecretStr | None = None
+    wazuh_indexer_verify_tls: bool = True
+    wazuh_indexer_ca_bundle: Path | None = None
+    wazuh_indexer_timeout_seconds: int = Field(default=10, ge=1, le=60)
+
     zabbix_base_url: AnyHttpUrl | None = None
     zabbix_api_token: SecretStr | None = None
     zabbix_verify_tls: bool = True
@@ -62,6 +69,10 @@ class Settings(BaseSettings):
         "wazuh_username",
         "wazuh_password",
         "wazuh_ca_bundle",
+        "wazuh_indexer_base_url",
+        "wazuh_indexer_username",
+        "wazuh_indexer_password",
+        "wazuh_indexer_ca_bundle",
         "zabbix_base_url",
         "zabbix_api_token",
         "zabbix_ca_bundle",
@@ -81,6 +92,7 @@ class Settings(BaseSettings):
 
     @field_validator(
         "wazuh_base_url",
+        "wazuh_indexer_base_url",
         "zabbix_base_url",
         "snipe_it_base_url",
         "freshservice_base_url",
@@ -91,9 +103,28 @@ class Settings(BaseSettings):
             raise ValueError("integration base URL must not contain userinfo")
         return value
 
+    def wazuh_server_config_state(self) -> IntegrationConfigState:
+        required = (self.wazuh_base_url, self.wazuh_username, self.wazuh_password)
+        return "configured" if all(value is not None for value in required) else "not_configured"
+
+    def wazuh_indexer_config_state(self) -> IntegrationConfigState:
+        required = (
+            self.wazuh_indexer_base_url,
+            self.wazuh_indexer_username,
+            self.wazuh_indexer_password,
+        )
+        return "configured" if all(value is not None for value in required) else "not_configured"
+
     def integration_config_state(self, source: IntegrationSource) -> IntegrationConfigState:
+        if source == "wazuh":
+            return (
+                "configured"
+                if self.wazuh_server_config_state() == "configured"
+                and self.wazuh_indexer_config_state() == "configured"
+                else "not_configured"
+            )
+
         required = {
-            "wazuh": (self.wazuh_base_url, self.wazuh_username, self.wazuh_password),
             "zabbix": (self.zabbix_base_url, self.zabbix_api_token),
             "snipe_it": (self.snipe_it_base_url, self.snipe_it_api_token),
             "freshservice": (self.freshservice_base_url, self.freshservice_api_key),
@@ -110,8 +141,21 @@ class Settings(BaseSettings):
             )
 
         if self.app_env == "production":
+            wazuh_tls_checks = (
+                (self.wazuh_server_config_state(), self.wazuh_verify_tls, "WAZUH_VERIFY_TLS"),
+                (
+                    self.wazuh_indexer_config_state(),
+                    self.wazuh_indexer_verify_tls,
+                    "WAZUH_INDEXER_VERIFY_TLS",
+                ),
+            )
+            for config_state, verify_tls, env_name in wazuh_tls_checks:
+                if config_state == "configured" and not verify_tls:
+                    raise ValueError(
+                        f"{env_name} must be true for configured production integrations"
+                    )
+
             tls_checks = {
-                "wazuh": (self.wazuh_verify_tls, "WAZUH_VERIFY_TLS"),
                 "zabbix": (self.zabbix_verify_tls, "ZABBIX_VERIFY_TLS"),
                 "snipe_it": (self.snipe_it_verify_tls, "SNIPE_IT_VERIFY_TLS"),
                 "freshservice": (self.freshservice_verify_tls, "FRESHSERVICE_VERIFY_TLS"),
