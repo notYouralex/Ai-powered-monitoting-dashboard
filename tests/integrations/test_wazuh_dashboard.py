@@ -91,6 +91,31 @@ def test_dashboard_service_combines_agents_alerts_and_health() -> None:
     asyncio.run(run())
 
 
+def test_dashboard_service_builds_bounded_executive_summary() -> None:
+    async def run() -> None:
+        service = WazuhDashboardService(
+            agent_client=FakeAgentClient(),
+            indexer_client=FakeIndexerClient(),
+        )
+        response = await service.get_executive_summary(START, END)
+
+        assert response.source == "wazuh"
+        assert response.health.source == "wazuh"
+        assert response.health.status == "healthy"
+        assert response.is_stale is False
+        assert response.warnings == []
+        assert response.metrics == {
+            "agents_total": 5,
+            "agents_active": 1,
+            "agents_disconnected": 1,
+            "alerts_total": 15,
+            "alerts_high": 6,
+            "alerts_critical": 3,
+        }
+
+    asyncio.run(run())
+
+
 def test_trend_interval_is_bounded_by_requested_range() -> None:
     assert trend_interval_for_range(timedelta(hours=2)) == "15m"
     assert trend_interval_for_range(timedelta(hours=24)) == "1h"
