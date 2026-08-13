@@ -1,10 +1,11 @@
 from collections import Counter
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.contracts import IntegrationHealthSummary
+from app.contracts import ExecutiveSourceSummary, IntegrationHealthSummary
 from app.core.config import Settings
 from app.db.models import SyncRun, Ticket
 from app.integrations.freshservice.models import (
@@ -16,8 +17,27 @@ from app.integrations.freshservice.models import (
 )
 
 
-OPEN_TICKET_STATES = ("open", "pending")
+OPEN_STATUS_CODES = (2,)
+PENDING_STATUS_CODES = (3, 6)
+RESOLVED_STATUS_CODES = (4,)
+CLOSED_STATUS_CODES = (5,)
+ACTIVE_STATUS_CODES = OPEN_STATUS_CODES + PENDING_STATUS_CODES
+TERMINAL_STATUS_CODES = RESOLVED_STATUS_CODES + CLOSED_STATUS_CODES
+KNOWN_SUMMARY_STATUS_CODES = (
+    OPEN_STATUS_CODES + PENDING_STATUS_CODES + RESOLVED_STATUS_CODES + CLOSED_STATUS_CODES
+)
 HIGH_PRIORITIES = ("high", "urgent")
+FRESHSERVICE_DASHBOARD_TIMEZONE = ZoneInfo("Asia/Manila")
+FRESHSERVICE_STATUS_LABELS = {
+    2: "Open",
+    3: "Pending",
+    4: "Resolved",
+    5: "Closed",
+    6: "Pending Customer",
+    7: "Pending External Resolver",
+    8: "Work In Progress",
+    9: "N/A",
+}
 
 
 def utc_now() -> datetime:
@@ -34,9 +54,13 @@ class FreshserviceDashboardService:
     def get_dashboard(self) -> FreshserviceDashboardResponse:
         now = utc_now()
         total = self._count()
-        status_counts = self._distribution(Ticket.status)
+        unresolved = Ticket.status_code.notin_(TERMINAL_STATUS_CODES)
+        status_counts = self._status_distribution()
         priority_counts = self._distribution(Ticket.priority)
+        unresolved_status_counts = self._status_distribution(unresolved)
+        unresolved_priority_counts = self._distribution(Ticket.priority, unresolved)
         category_counts = self._category_distribution()
+        day_start, next_day_start = _dashboard_day_bounds(now)
         latest_run = self._latest_run()
         last_success = self._latest_success()
         health_status, is_stale, warnings = self._health_state(
@@ -60,22 +84,28 @@ class FreshserviceDashboardService:
 
         summary = FreshserviceDashboardSummary(
             tickets_total=total,
-            tickets_open=status_counts.get("open", 0),
-            tickets_pending=status_counts.get("pending", 0),
-            tickets_resolved=status_counts.get("resolved", 0),
-            tickets_closed=status_counts.get("closed", 0),
-            tickets_unknown=status_counts.get("unknown", 0),
+            tickets_open=self._count(Ticket.status_code.in_(OPEN_STATUS_CODES)),
+            tickets_pending=self._count(Ticket.status_code.in_(PENDING_STATUS_CODES)),
+            tickets_resolved=self._count(Ticket.status_code.in_(RESOLVED_STATUS_CODES)),
+            tickets_closed=self._count(Ticket.status_code.in_(CLOSED_STATUS_CODES)),
+            tickets_unknown=self._count(Ticket.status_code.notin_(KNOWN_SUMMARY_STATUS_CODES)),
             high_priority_open=self._count(
-                Ticket.status.in_(OPEN_TICKET_STATES),
+                Ticket.status_code.in_(ACTIVE_STATUS_CODES),
                 Ticket.priority.in_(HIGH_PRIORITIES),
             ),
-            overdue_open=self._count(
-                Ticket.status.in_(OPEN_TICKET_STATES),
+            due_today=self._count(
+                Ticket.status_code.in_(OPEN_STATUS_CODES),
                 Ticket.due_by.is_not(None),
-                Ticket.due_by < now,
+                Ticket.due_by >= day_start,
+                Ticket.due_by < next_day_start,
+            ),
+            overdue_open=self._count(
+                Ticket.status_code.in_(OPEN_STATUS_CODES),
+                Ticket.due_by.is_not(None),
+                Ticket.due_by < day_start,
             ),
             escalated_open=self._count(
-                Ticket.status.in_(OPEN_TICKET_STATES),
+                Ticket.status_code.in_(ACTIVE_STATUS_CODES),
                 or_(Ticket.is_escalated.is_(True), Ticket.first_response_escalated.is_(True)),
             ),
         )
@@ -95,6 +125,8 @@ class FreshserviceDashboardService:
             summary=summary,
             status_distribution=_named_counts(status_counts),
             priority_distribution=_named_counts(priority_counts),
+            unresolved_status_distribution=_named_counts(unresolved_status_counts),
+            unresolved_priority_distribution=_named_counts(unresolved_priority_counts),
             category_distribution=category_counts,
             resolution_trend=[
                 FreshserviceTrendPoint(date=day, count=count)
@@ -104,20 +136,53 @@ class FreshserviceDashboardService:
             warnings=warnings,
         )
 
+    def get_executive_summary(self) -> ExecutiveSourceSummary:
+        dashboard = self.get_dashboard()
+        summary = dashboard.summary
+
+        return ExecutiveSourceSummary(
+            source="freshservice",
+            observed_at=dashboard.observed_at,
+            is_stale=dashboard.is_stale,
+            health=dashboard.health,
+            metrics={
+                "tickets_total": summary.tickets_total,
+                "tickets_open": summary.tickets_open,
+                "tickets_pending": summary.tickets_pending,
+                "high_priority_open": summary.high_priority_open,
+                "due_today": summary.due_today,
+                "overdue_open": summary.overdue_open,
+                "escalated_open": summary.escalated_open,
+            },
+            warnings=dashboard.warnings,
+        )
+
     def _count(self, *criteria) -> int:
         statement = select(func.count()).select_from(Ticket)
         if criteria:
             statement = statement.where(*criteria)
         return int(self._db.scalar(statement) or 0)
 
-    def _distribution(self, column) -> dict[str, int]:
+    def _distribution(self, column, *criteria) -> dict[str, int]:
+        statement = select(column, func.count()).select_from(Ticket)
+        if criteria:
+            statement = statement.where(*criteria)
         rows = self._db.execute(
-            select(column, func.count())
-            .select_from(Ticket)
-            .group_by(column)
-            .order_by(func.count().desc(), column)
+            statement.group_by(column).order_by(func.count().desc(), column)
         ).all()
         return {str(name): int(count) for name, count in rows if name}
+
+    def _status_distribution(self, *criteria) -> dict[str, int]:
+        statement = select(Ticket.status_code, func.count()).select_from(Ticket)
+        if criteria:
+            statement = statement.where(*criteria)
+        rows = self._db.execute(
+            statement.group_by(Ticket.status_code).order_by(func.count().desc(), Ticket.status_code)
+        ).all()
+        return {
+            FRESHSERVICE_STATUS_LABELS.get(int(code), f"Status {code}"): int(count)
+            for code, count in rows
+        }
 
     def _category_distribution(self) -> list[FreshserviceNamedCount]:
         category = func.coalesce(Ticket.category, "Uncategorized")
@@ -184,6 +249,16 @@ class FreshserviceDashboardService:
                 is_stale = True
 
         return status, is_stale, warnings
+
+
+def _dashboard_day_bounds(now: datetime) -> tuple[datetime, datetime]:
+    local_now = now.astimezone(FRESHSERVICE_DASHBOARD_TIMEZONE)
+    day_start_local = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    next_day_start_local = day_start_local + timedelta(days=1)
+    return (
+        day_start_local.astimezone(timezone.utc),
+        next_day_start_local.astimezone(timezone.utc),
+    )
 
 
 def _named_counts(counts: dict[str, int]) -> list[FreshserviceNamedCount]:
