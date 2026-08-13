@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
 
-from app.contracts import IntegrationHealthSummary
+from app.contracts import ExecutiveSourceSummary, IntegrationHealthSummary
 from app.integrations.wazuh.client import WazuhClient
 from app.integrations.wazuh.indexer_client import WazuhIndexerClient
 from app.integrations.wazuh.models import (
@@ -61,6 +61,30 @@ class WazuhDashboardService:
             top_agents=alert_result.top_agents,
             alert_trend=alert_result.trend,
             recent_alerts=alert_result.alerts,
+        )
+
+    async def get_executive_summary(
+        self,
+        start: datetime,
+        end: datetime,
+    ) -> ExecutiveSourceSummary:
+        dashboard = await self.get_dashboard(start, end)
+        summary = dashboard.summary
+
+        return ExecutiveSourceSummary(
+            source="wazuh",
+            observed_at=dashboard.observed_at,
+            is_stale=dashboard.is_stale,
+            health=dashboard.health,
+            metrics={
+                "agents_total": summary.agents_total,
+                "agents_active": summary.agents_active,
+                "agents_disconnected": summary.agents_disconnected,
+                "alerts_total": summary.alerts_total,
+                "alerts_high": summary.alerts_high,
+                "alerts_critical": summary.alerts_critical,
+            },
+            warnings=dashboard.warnings,
         )
 
 
