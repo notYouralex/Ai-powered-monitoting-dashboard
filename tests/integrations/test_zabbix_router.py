@@ -8,6 +8,8 @@ from app.integrations.zabbix import router as zabbix_router_module
 from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
     ZabbixDashboardSummary,
+    ZabbixProblem,
+    ZabbixProblemHost,
 )
 from app.main import create_app
 
@@ -59,7 +61,35 @@ class FakeDashboardService:
                 interfaces_available=0,
                 interfaces_unavailable=0,
                 interfaces_unknown=0,
+                problems_total=1,
+                problems_not_classified=0,
+                problems_information=0,
+                problems_warning=0,
+                problems_average=0,
+                problems_high=1,
+                problems_disaster=0,
+                problems_unknown=0,
+                problems_unacknowledged=1,
+                problems_suppressed=0,
             ),
+            active_problems=[
+                ZabbixProblem(
+                    event_id="7001",
+                    trigger_id="9001",
+                    name="CPU load is high",
+                    severity="high",
+                    started_at=NOW,
+                    acknowledged=False,
+                    suppressed=False,
+                    hosts=[
+                        ZabbixProblemHost(
+                            host_id="10001",
+                            technical_name="web-01.internal",
+                            name="Web 01",
+                        )
+                    ],
+                )
+            ],
         )
 
 
@@ -100,6 +130,12 @@ def test_authenticated_zabbix_dashboard_returns_normalized_response(auth_env) ->
     assert body["source"] == "zabbix"
     assert body["health"]["status"] == "healthy"
     assert body["summary"]["hosts_total"] == 0
+    assert body["summary"]["problems_total"] == 1
+    assert body["summary"]["problems_high"] == 1
+    assert body["summary"]["problems_unacknowledged"] == 1
+    assert body["active_problems"][0]["event_id"] == "7001"
+    assert body["active_problems"][0]["severity"] == "high"
+    assert body["active_problems"][0]["hosts"][0]["host_id"] == "10001"
     assert fake_service.calls == 1
 
 
