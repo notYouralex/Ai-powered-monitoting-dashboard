@@ -17,10 +17,12 @@ def test_dockerfile_runs_application_as_non_root_user() -> None:
 
 def test_compose_requires_secrets_and_binds_api_to_loopback() -> None:
     compose = read("compose.yaml")
+    api = compose.split("fastapi-api:", 1)[1].split("background-worker:", 1)[0]
 
     assert "APP_SECRET_KEY: ${APP_SECRET_KEY:?" in compose
     assert "POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?" in compose
-    assert '"127.0.0.1:${APP_PORT:-8000}:8000"' in compose
+    assert "network_mode: host" in api
+    assert 'command: ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "${APP_PORT:-8000}"]' in api
     assert "replace-with-a-long-random-secret" not in compose
     assert "replace-me" not in compose
 
@@ -65,11 +67,28 @@ def test_compose_passes_optional_integration_settings_to_api() -> None:
 
 def test_postgresql_has_healthcheck_and_persistent_volume() -> None:
     compose = read("compose.yaml")
+    postgresql = compose.split("postgresql:", 1)[1].split("fastapi-api:", 1)[0]
 
-    assert "postgresql:" in compose
-    assert "healthcheck:" in compose
-    assert "pg_isready" in compose
+    assert "healthcheck:" in postgresql
+    assert "pg_isready" in postgresql
     assert "postgres-data:" in compose
+    assert '"127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"' in postgresql
+
+
+def test_api_uses_loopback_postgres_and_read_only_wazuh_certificates() -> None:
+    compose = read("compose.yaml")
+    api = compose.split("fastapi-api:", 1)[1].split("background-worker:", 1)[0]
+
+    assert "@127.0.0.1:${POSTGRES_HOST_PORT:-55432}/" in api
+    assert "./.runtime-certs:/run/wazuh-certs:ro" in api
+
+
+def test_background_worker_remains_on_compose_network() -> None:
+    compose = read("compose.yaml")
+    worker = compose.split("background-worker:", 1)[1]
+
+    assert "network_mode: host" not in worker
+    assert "@postgresql:5432/" in worker
 
 
 def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
