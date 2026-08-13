@@ -1061,4 +1061,193 @@ def test_zabbix_production_jsonrpc_method_literals_remain_read_only() -> None:
     source_path = Path(__file__).parents[2] / "app/integrations/zabbix/client.py"
     source = source_path.read_text()
     methods = set(re.findall(r'method="([a-z.]+)"', source))
-    assert methods == {"host.get", "problem.get", "trigger.get"}
+    assert methods == {"host.get", "problem.get", "trigger.get", "item.get"}
+
+
+_RESOURCE_PREFIXES = {"system.cpu.util", "vm.memory.size", "vfs.fs.size"}
+
+
+def _resource_item_record(
+    *,
+    item_id: str,
+    host_id: str = "10001",
+    key: str,
+    value: str,
+    clock: str = "1723521600",
+) -> dict[str, str]:
+    return {
+        "itemid": item_id,
+        "hostid": host_id,
+        "key_": key,
+        "lastvalue": value,
+        "lastclock": clock,
+    }
+
+
+def test_list_resource_pressure_issues_three_bounded_item_get_requests() -> None:
+    async def run() -> None:
+        started: set[str] = set()
+        all_started = asyncio.Event()
+        seen_params: dict[str, dict] = {}
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            assert body["jsonrpc"] == "2.0"
+            assert body["method"] == "item.get"
+            prefix = body["params"]["search"]["key_"]
+            assert prefix in _RESOURCE_PREFIXES
+            seen_params[prefix] = body["params"]
+            started.add(prefix)
+            if started == _RESOURCE_PREFIXES:
+                all_started.set()
+            await asyncio.wait_for(all_started.wait(), timeout=0.2)
+
+            if prefix == "system.cpu.util":
+                result = [
+                    _resource_item_record(
+                        item_id="1",
+                        key="system.cpu.util[,idle,avg1]",
+                        value="25",
+                    )
+                ]
+            elif prefix == "vm.memory.size":
+                result = [
+                    _resource_item_record(
+                        item_id="2",
+                        key="vm.memory.size[pused]",
+                        value="60",
+                    )
+                ]
+            else:
+                result = [
+                    _resource_item_record(
+                        item_id="3",
+                        key="vfs.fs.size[/,pused]",
+                        value="70",
+                    )
+                ]
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        rows = await client.list_resource_pressure()
+
+        assert started == _RESOURCE_PREFIXES
+        expected_common = {
+            "output": ["itemid", "hostid", "key_", "lastvalue", "lastclock"],
+            "monitored": True,
+            "filter": {"state": "0"},
+            "startSearch": True,
+            "sortfield": "itemid",
+            "limit": 10001,
+        }
+        for prefix in _RESOURCE_PREFIXES:
+            assert seen_params[prefix] == {
+                **expected_common,
+                "search": {"key_": prefix},
+            }
+        assert len(rows) == 1
+        assert rows[0].host_id == "10001"
+        assert rows[0].cpu_used_percent == pytest.approx(75.0)
+        assert rows[0].memory_used_percent == pytest.approx(60.0)
+        assert rows[0].disks[0].used_percent == pytest.approx(70.0)
+
+    asyncio.run(run())
+
+
+def test_list_resource_pressure_rejects_sentinel_result() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            prefix = body["params"]["search"]["key_"]
+            result = [{}] * 10001 if prefix == "system.cpu.util" else []
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_pressure()
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
+def test_list_resource_pressure_maps_normalizer_error_to_bad_response() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            prefix = body["params"]["search"]["key_"]
+            result = []
+            if prefix == "system.cpu.util":
+                result = [
+                    _resource_item_record(
+                        item_id="1",
+                        key="system.cpu.util[,idle]",
+                        value="101",
+                    )
+                ]
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_pressure()
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
+def test_public_client_exposes_resource_pressure_without_generic_or_mutation_methods() -> None:
+    public = {name for name in dir(ZabbixClient) if not name.startswith("_")}
+    assert "list_resource_pressure" in public
+    assert "request" not in public
+    assert "call" not in public
+    assert "create" not in public
+    assert "update" not in public
+    assert "delete" not in public
+
+
+def test_list_resource_pressure_rejects_more_than_5000_normalized_hosts() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            prefix = body["params"]["search"]["key_"]
+            result = []
+            if prefix == "system.cpu.util":
+                result = [
+                    _resource_item_record(
+                        item_id=str(index),
+                        host_id=str(index),
+                        key="system.cpu.util[,idle]",
+                        value="50",
+                    )
+                    for index in range(1, 5002)
+                ]
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_pressure()
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())

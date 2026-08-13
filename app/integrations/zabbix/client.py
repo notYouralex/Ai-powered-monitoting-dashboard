@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,9 @@ from app.integrations.zabbix.models import (
     ZabbixProblem,
     ZabbixProblemHost,
     ZabbixProblemSeverity,
+    ZabbixResourcePressure,
 )
+from app.integrations.zabbix.resource_pressure import normalize_resource_pressure
 
 
 ZABBIX_HOST_LIMIT = 5000
@@ -27,6 +30,9 @@ ZABBIX_INTERFACE_LIMIT = 32
 ZABBIX_PROBLEM_LIMIT = 1000
 ZABBIX_PROBLEM_SENTINEL_LIMIT = ZABBIX_PROBLEM_LIMIT + 1
 ZABBIX_PROBLEM_HOST_LIMIT = 32
+ZABBIX_RESOURCE_ITEM_LIMIT = 10000
+ZABBIX_RESOURCE_ITEM_SENTINEL_LIMIT = ZABBIX_RESOURCE_ITEM_LIMIT + 1
+ZABBIX_RESOURCE_HOST_LIMIT = 5000
 ZABBIX_REQUEST_ID = 1
 
 _INTERFACE_TYPES: dict[str, ZabbixInterfaceType] = {
@@ -183,6 +189,51 @@ class ZabbixClient:
                 )
                 for item in problem_items
             ]
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+            OverflowError,
+            OSError,
+            ValidationError,
+        ) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
+    async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
+        async def read_prefix(prefix: str) -> list[Any]:
+            return await self._read_jsonrpc(
+                method="item.get",
+                params={
+                    "output": ["itemid", "hostid", "key_", "lastvalue", "lastclock"],
+                    "monitored": True,
+                    "filter": {"state": "0"},
+                    "search": {"key_": prefix},
+                    "startSearch": True,
+                    "sortfield": "itemid",
+                    "limit": ZABBIX_RESOURCE_ITEM_SENTINEL_LIMIT,
+                },
+            )
+
+        cpu_items, memory_items, disk_items = await asyncio.gather(
+            read_prefix("system.cpu.util"),
+            read_prefix("vm.memory.size"),
+            read_prefix("vfs.fs.size"),
+        )
+        if any(
+            len(items) > ZABBIX_RESOURCE_ITEM_LIMIT
+            for items in (cpu_items, memory_items, disk_items)
+        ):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            resource_pressure = normalize_resource_pressure(
+                cpu_items,
+                memory_items,
+                disk_items,
+            )
+            if len(resource_pressure) > ZABBIX_RESOURCE_HOST_LIMIT:
+                raise ValueError("too many normalized Zabbix resource hosts")
+            return resource_pressure
         except (
             KeyError,
             TypeError,

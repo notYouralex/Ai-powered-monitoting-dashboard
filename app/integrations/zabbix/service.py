@@ -9,6 +9,7 @@ from app.integrations.zabbix.models import (
     ZabbixDashboardSummary,
     ZabbixHost,
     ZabbixProblem,
+    ZabbixResourcePressure,
 )
 
 
@@ -20,9 +21,10 @@ class ZabbixDashboardService:
 
     async def get_dashboard(self) -> ZabbixDashboardResponse:
         started = perf_counter()
-        hosts, active_problems = await asyncio.gather(
+        hosts, active_problems, resource_pressure = await asyncio.gather(
             self._client.list_hosts(),
             self._client.list_active_problems(),
+            self._client.list_resource_pressure(),
         )
         observed_at = datetime.now(timezone.utc)
         response_time_ms = max(0, int((perf_counter() - started) * 1000))
@@ -37,16 +39,18 @@ class ZabbixDashboardService:
                 is_stale=False,
                 warnings=[],
             ),
-            summary=_build_summary(hosts, active_problems),
+            summary=_build_summary(hosts, active_problems, resource_pressure),
             hosts=hosts,
             active_problems=active_problems,
-            warnings=_build_warnings(active_problems),
+            resource_pressure=resource_pressure,
+            warnings=_build_warnings(hosts, active_problems, resource_pressure),
         )
 
 
 def _build_summary(
     hosts: list[ZabbixHost],
     active_problems: list[ZabbixProblem],
+    resource_pressure: list[ZabbixResourcePressure],
 ) -> ZabbixDashboardSummary:
     enabled = sum(1 for host in hosts if host.enabled)
     maintenance = sum(1 for host in hosts if host.in_maintenance)
@@ -87,13 +91,72 @@ def _build_summary(
             1 for problem in active_problems if not problem.acknowledged
         ),
         problems_suppressed=sum(1 for problem in active_problems if problem.suppressed),
+        resource_hosts_total=len(resource_pressure),
+        resource_hosts_with_cpu=sum(
+            1 for pressure in resource_pressure if pressure.cpu_used_percent is not None
+        ),
+        resource_hosts_with_memory=sum(
+            1 for pressure in resource_pressure if pressure.memory_used_percent is not None
+        ),
+        resource_hosts_with_disk=sum(1 for pressure in resource_pressure if pressure.disks),
     )
 
 
-def _build_warnings(active_problems: list[ZabbixProblem]) -> list[str]:
+def _build_warnings(
+    hosts: list[ZabbixHost],
+    active_problems: list[ZabbixProblem],
+    resource_pressure: list[ZabbixResourcePressure],
+) -> list[str]:
+    warnings: list[str] = []
+
     unmapped = sum(1 for problem in active_problems if not problem.hosts)
-    if unmapped == 0:
-        return []
     if unmapped == 1:
-        return ["1 active Zabbix problem could not be mapped to a current host."]
-    return [f"{unmapped} active Zabbix problems could not be mapped to a current host."]
+        warnings.append(
+            "1 active Zabbix problem could not be mapped to a current host."
+        )
+    elif unmapped > 1:
+        warnings.append(
+            f"{unmapped} active Zabbix problems could not be mapped to a current host."
+        )
+
+    by_host = {pressure.host_id: pressure for pressure in resource_pressure}
+    enabled_hosts = [host for host in hosts if host.enabled]
+    missing_cpu = sum(
+        1
+        for host in enabled_hosts
+        if by_host.get(host.host_id) is None
+        or by_host[host.host_id].cpu_used_percent is None
+    )
+    missing_memory = sum(
+        1
+        for host in enabled_hosts
+        if by_host.get(host.host_id) is None
+        or by_host[host.host_id].memory_used_percent is None
+    )
+    missing_disk = sum(
+        1
+        for host in enabled_hosts
+        if by_host.get(host.host_id) is None or not by_host[host.host_id].disks
+    )
+
+    _append_resource_warning(warnings, missing_cpu, "CPU")
+    _append_resource_warning(warnings, missing_memory, "memory")
+    _append_resource_warning(warnings, missing_disk, "disk")
+    return warnings
+
+
+def _append_resource_warning(
+    warnings: list[str],
+    count: int,
+    metric: str,
+) -> None:
+    if count == 0:
+        return
+    if count == 1:
+        warnings.append(
+            f"1 enabled Zabbix host has no current {metric} utilization metric."
+        )
+        return
+    warnings.append(
+        f"{count} enabled Zabbix hosts have no current {metric} utilization metric."
+    )

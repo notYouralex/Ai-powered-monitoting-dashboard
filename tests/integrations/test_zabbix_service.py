@@ -2,10 +2,12 @@ import asyncio
 from datetime import datetime, timezone
 
 from app.integrations.zabbix.models import (
+    ZabbixDiskPressure,
     ZabbixHost,
     ZabbixHostInterface,
     ZabbixProblem,
     ZabbixProblemHost,
+    ZabbixResourcePressure,
 )
 from app.integrations.zabbix.service import ZabbixDashboardService
 
@@ -67,16 +69,45 @@ def problem(
     )
 
 
+def pressure(
+    host_id: str,
+    *,
+    cpu: float | None = None,
+    memory: float | None = None,
+    disk: float | None = None,
+) -> ZabbixResourcePressure:
+    disks = []
+    if disk is not None:
+        disks = [
+            ZabbixDiskPressure(
+                filesystem="/",
+                used_percent=disk,
+                observed_at=STARTED_AT,
+            )
+        ]
+    return ZabbixResourcePressure(
+        host_id=host_id,
+        cpu_used_percent=cpu,
+        cpu_observed_at=STARTED_AT if cpu is not None else None,
+        memory_used_percent=memory,
+        memory_observed_at=STARTED_AT if memory is not None else None,
+        disks=disks,
+    )
+
+
 class FakeZabbixClient:
     def __init__(
         self,
         hosts: list[ZabbixHost],
         active_problems: list[ZabbixProblem] | None = None,
+        resource_pressure: list[ZabbixResourcePressure] | None = None,
     ) -> None:
         self.hosts = hosts
         self.active_problems = [] if active_problems is None else active_problems
+        self.resource_pressure = [] if resource_pressure is None else resource_pressure
         self.host_calls = 0
         self.problem_calls = 0
+        self.resource_calls = 0
 
     async def list_hosts(self) -> list[ZabbixHost]:
         self.host_calls += 1
@@ -86,24 +117,39 @@ class FakeZabbixClient:
         self.problem_calls += 1
         return self.active_problems
 
+    async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
+        self.resource_calls += 1
+        return self.resource_pressure
+
 
 class CoordinatedClient:
     def __init__(self) -> None:
         self.host_started = asyncio.Event()
         self.problem_started = asyncio.Event()
+        self.resource_started = asyncio.Event()
+
+    async def _wait_for_all(self) -> None:
+        await asyncio.wait_for(self.host_started.wait(), timeout=0.2)
+        await asyncio.wait_for(self.problem_started.wait(), timeout=0.2)
+        await asyncio.wait_for(self.resource_started.wait(), timeout=0.2)
 
     async def list_hosts(self) -> list[ZabbixHost]:
         self.host_started.set()
-        await asyncio.wait_for(self.problem_started.wait(), timeout=0.2)
+        await self._wait_for_all()
         return []
 
     async def list_active_problems(self) -> list[ZabbixProblem]:
         self.problem_started.set()
-        await asyncio.wait_for(self.host_started.wait(), timeout=0.2)
+        await self._wait_for_all()
+        return []
+
+    async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
+        self.resource_started.set()
+        await self._wait_for_all()
         return []
 
 
-def test_dashboard_service_fetches_hosts_and_problems_concurrently() -> None:
+def test_dashboard_service_fetches_hosts_problems_and_resources_concurrently() -> None:
     async def run() -> None:
         service = ZabbixDashboardService(client=CoordinatedClient())
 
@@ -111,7 +157,9 @@ def test_dashboard_service_fetches_hosts_and_problems_concurrently() -> None:
 
         assert response.summary.hosts_total == 0
         assert response.summary.problems_total == 0
+        assert response.summary.resource_hosts_total == 0
         assert response.active_problems == []
+        assert response.resource_pressure == []
 
     asyncio.run(run())
 
@@ -130,6 +178,7 @@ def test_dashboard_service_builds_host_and_interface_summary() -> None:
 
         assert client.host_calls == 1
         assert client.problem_calls == 1
+        assert client.resource_calls == 1
         assert response.source == "zabbix"
         assert response.health.source == "zabbix"
         assert response.health.status == "healthy"
@@ -204,8 +253,13 @@ def test_dashboard_service_handles_empty_snapshot() -> None:
         assert response.summary.problems_unknown == 0
         assert response.summary.problems_unacknowledged == 0
         assert response.summary.problems_suppressed == 0
+        assert response.summary.resource_hosts_total == 0
+        assert response.summary.resource_hosts_with_cpu == 0
+        assert response.summary.resource_hosts_with_memory == 0
+        assert response.summary.resource_hosts_with_disk == 0
         assert response.hosts == []
         assert response.active_problems == []
+        assert response.resource_pressure == []
         assert response.warnings == []
 
     asyncio.run(run())
@@ -248,6 +302,57 @@ def test_dashboard_service_warns_once_for_multiple_unmapped_problems() -> None:
         assert response.health.warnings == []
         assert response.warnings == [
             "2 active Zabbix problems could not be mapped to a current host."
+        ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_builds_resource_pressure_summary() -> None:
+    async def run() -> None:
+        resources = [
+            pressure("1", cpu=70, memory=50, disk=80),
+            pressure("2", cpu=30, memory=40),
+            pressure("3", disk=90),
+        ]
+        client = FakeZabbixClient([], resource_pressure=resources)
+        service = ZabbixDashboardService(client=client)
+
+        response = await service.get_dashboard()
+
+        assert response.summary.resource_hosts_total == 3
+        assert response.summary.resource_hosts_with_cpu == 2
+        assert response.summary.resource_hosts_with_memory == 2
+        assert response.summary.resource_hosts_with_disk == 2
+        assert response.resource_pressure == resources
+        assert response.warnings == []
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_warns_for_missing_enabled_resource_metrics() -> None:
+    async def run() -> None:
+        hosts = [
+            host("1", enabled=True),
+            host("2", enabled=True),
+            host("3", enabled=False),
+        ]
+        problems = [problem("1", severity="high", mapped=False)]
+        resources = [
+            pressure("1", cpu=55),
+            pressure("3", memory=25, disk=30),
+        ]
+        client = FakeZabbixClient(hosts, problems, resources)
+        service = ZabbixDashboardService(client=client)
+
+        response = await service.get_dashboard()
+
+        assert response.health.status == "healthy"
+        assert response.health.warnings == []
+        assert response.warnings == [
+            "1 active Zabbix problem could not be mapped to a current host.",
+            "1 enabled Zabbix host has no current CPU utilization metric.",
+            "2 enabled Zabbix hosts have no current memory utilization metric.",
+            "2 enabled Zabbix hosts have no current disk utilization metric.",
         ]
 
     asyncio.run(run())

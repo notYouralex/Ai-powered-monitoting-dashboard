@@ -8,8 +8,10 @@ from app.integrations.zabbix import router as zabbix_router_module
 from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
     ZabbixDashboardSummary,
+    ZabbixDiskPressure,
     ZabbixProblem,
     ZabbixProblemHost,
+    ZabbixResourcePressure,
 )
 from app.main import create_app
 
@@ -71,6 +73,10 @@ class FakeDashboardService:
                 problems_unknown=0,
                 problems_unacknowledged=1,
                 problems_suppressed=0,
+                resource_hosts_total=1,
+                resource_hosts_with_cpu=1,
+                resource_hosts_with_memory=1,
+                resource_hosts_with_disk=1,
             ),
             active_problems=[
                 ZabbixProblem(
@@ -86,6 +92,22 @@ class FakeDashboardService:
                             host_id="10001",
                             technical_name="web-01.internal",
                             name="Web 01",
+                        )
+                    ],
+                )
+            ],
+            resource_pressure=[
+                ZabbixResourcePressure(
+                    host_id="10001",
+                    cpu_used_percent=75.0,
+                    cpu_observed_at=NOW,
+                    memory_used_percent=60.0,
+                    memory_observed_at=NOW,
+                    disks=[
+                        ZabbixDiskPressure(
+                            filesystem="/",
+                            used_percent=70.0,
+                            observed_at=NOW,
                         )
                     ],
                 )
@@ -136,6 +158,16 @@ def test_authenticated_zabbix_dashboard_returns_normalized_response(auth_env) ->
     assert body["active_problems"][0]["event_id"] == "7001"
     assert body["active_problems"][0]["severity"] == "high"
     assert body["active_problems"][0]["hosts"][0]["host_id"] == "10001"
+    assert body["summary"]["resource_hosts_total"] == 1
+    assert body["summary"]["resource_hosts_with_cpu"] == 1
+    assert body["summary"]["resource_hosts_with_memory"] == 1
+    assert body["summary"]["resource_hosts_with_disk"] == 1
+    assert body["resource_pressure"][0]["host_id"] == "10001"
+    assert body["resource_pressure"][0]["cpu_used_percent"] == 75.0
+    assert body["resource_pressure"][0]["memory_used_percent"] == 60.0
+    assert body["resource_pressure"][0]["cpu_observed_at"] == "2026-08-13T04:00:00Z"
+    assert body["resource_pressure"][0]["disks"][0]["filesystem"] == "/"
+    assert body["resource_pressure"][0]["disks"][0]["used_percent"] == 70.0
     assert fake_service.calls == 1
 
 

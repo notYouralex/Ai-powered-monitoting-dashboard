@@ -61,6 +61,25 @@ class ZabbixProblem(BaseModel):
     hosts: list[ZabbixProblemHost] = Field(default_factory=list, max_length=32)
 
 
+class ZabbixDiskPressure(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    filesystem: str = Field(min_length=1, max_length=512)
+    used_percent: float = Field(ge=0, le=100)
+    observed_at: datetime
+
+
+class ZabbixResourcePressure(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    host_id: str = Field(min_length=1, max_length=64)
+    cpu_used_percent: float | None = Field(default=None, ge=0, le=100)
+    cpu_observed_at: datetime | None = None
+    memory_used_percent: float | None = Field(default=None, ge=0, le=100)
+    memory_observed_at: datetime | None = None
+    disks: list[ZabbixDiskPressure] = Field(default_factory=list, max_length=64)
+
+
 class ZabbixDashboardSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -81,6 +100,10 @@ class ZabbixDashboardSummary(BaseModel):
     problems_unknown: int = Field(ge=0)
     problems_unacknowledged: int = Field(ge=0)
     problems_suppressed: int = Field(ge=0)
+    resource_hosts_total: int = Field(ge=0)
+    resource_hosts_with_cpu: int = Field(ge=0)
+    resource_hosts_with_memory: int = Field(ge=0)
+    resource_hosts_with_disk: int = Field(ge=0)
 
 
 class ZabbixDashboardResponse(BaseModel):
@@ -92,4 +115,5 @@ class ZabbixDashboardResponse(BaseModel):
     summary: ZabbixDashboardSummary
     hosts: list[ZabbixHost] = Field(default_factory=list, max_length=5000)
     active_problems: list[ZabbixProblem] = Field(default_factory=list, max_length=1000)
+    resource_pressure: list[ZabbixResourcePressure] = Field(default_factory=list, max_length=5000)
     warnings: list[str] = Field(default_factory=list, max_length=20)
