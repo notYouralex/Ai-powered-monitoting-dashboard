@@ -44,7 +44,7 @@ def test_application_exposes_only_implemented_source_endpoints() -> None:
     paths = set(app.openapi()["paths"])
 
     assert "/api/dashboard/wazuh" in paths
-    assert "/api/dashboard/zabbix" not in paths
+    assert "/api/dashboard/zabbix" in paths
     assert "/api/dashboard/snipe-it" not in paths
     assert "/api/dashboard/freshservice" in set(app.openapi()["paths"])
     assert "/api/integrations/health" not in paths
