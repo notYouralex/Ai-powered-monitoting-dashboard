@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.config import Settings, get_settings
-from app.integrations.zabbix.client import ZabbixClient
+from app.db.session import get_db
+from app.integrations.zabbix.cache import ZabbixCachedDashboardService
 from app.integrations.zabbix.models import ZabbixDashboardResponse
-from app.integrations.zabbix.service import ZabbixDashboardService
 
 
 router = APIRouter(
@@ -15,15 +16,14 @@ router = APIRouter(
 
 
 def get_zabbix_dashboard_service(
+    db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
-) -> ZabbixDashboardService:
-    return ZabbixDashboardService(
-        client=ZabbixClient.from_settings(settings),
-    )
+) -> ZabbixCachedDashboardService:
+    return ZabbixCachedDashboardService(db, settings)
 
 
 @router.get("", response_model=ZabbixDashboardResponse)
-async def get_zabbix_dashboard(
-    service: ZabbixDashboardService = Depends(get_zabbix_dashboard_service),
+def get_zabbix_dashboard(
+    service: ZabbixCachedDashboardService = Depends(get_zabbix_dashboard_service),
 ) -> ZabbixDashboardResponse:
-    return await service.get_dashboard()
+    return service.get_dashboard()

@@ -20,8 +20,13 @@ from app.integrations.zabbix.models import (
     ZabbixProblemHost,
     ZabbixProblemSeverity,
     ZabbixResourcePressure,
+    ZabbixResourceTrend,
 )
-from app.integrations.zabbix.resource_pressure import normalize_resource_pressure
+from app.integrations.zabbix.resource_pressure import (
+    normalize_resource_pressure,
+    select_resource_trend_items,
+)
+from app.integrations.zabbix.trends import completed_trend_window, normalize_resource_trends
 
 
 ZABBIX_HOST_LIMIT = 5000
@@ -33,6 +38,10 @@ ZABBIX_PROBLEM_HOST_LIMIT = 32
 ZABBIX_RESOURCE_ITEM_LIMIT = 10000
 ZABBIX_RESOURCE_ITEM_SENTINEL_LIMIT = ZABBIX_RESOURCE_ITEM_LIMIT + 1
 ZABBIX_RESOURCE_HOST_LIMIT = 5000
+ZABBIX_TREND_HOST_LIMIT = 10
+ZABBIX_TREND_SELECTION_LIMIT = 30
+ZABBIX_TREND_ROW_LIMIT = 720
+ZABBIX_TREND_ROW_SENTINEL_LIMIT = ZABBIX_TREND_ROW_LIMIT + 1
 ZABBIX_REQUEST_ID = 1
 
 _INTERFACE_TYPES: dict[str, ZabbixInterfaceType] = {
@@ -244,6 +253,96 @@ class ZabbixClient:
         ) as exc:
             raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
 
+    async def list_resource_trends(
+        self,
+        host_ids: list[str],
+    ) -> list[ZabbixResourceTrend]:
+        try:
+            requested_host_ids = self._normalize_trend_host_ids(host_ids)
+        except (TypeError, ValueError) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+        if not requested_host_ids:
+            return []
+
+        async def read_prefix(prefix: str) -> list[Any]:
+            return await self._read_jsonrpc(
+                method="item.get",
+                params={
+                    "output": ["itemid", "hostid", "key_", "lastvalue", "lastclock"],
+                    "hostids": requested_host_ids,
+                    "monitored": True,
+                    "filter": {"state": "0"},
+                    "search": {"key_": prefix},
+                    "startSearch": True,
+                    "sortfield": "itemid",
+                    "limit": ZABBIX_RESOURCE_ITEM_SENTINEL_LIMIT,
+                },
+            )
+
+        cpu_items, memory_items, disk_items = await asyncio.gather(
+            read_prefix("system.cpu.util"),
+            read_prefix("vm.memory.size"),
+            read_prefix("vfs.fs.size"),
+        )
+        if any(
+            len(items) > ZABBIX_RESOURCE_ITEM_LIMIT
+            for items in (cpu_items, memory_items, disk_items)
+        ):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            selections = select_resource_trend_items(
+                cpu_items,
+                memory_items,
+                disk_items,
+                requested_host_ids,
+            )
+            if len(selections) > ZABBIX_TREND_SELECTION_LIMIT:
+                raise ValueError("too many selected Zabbix trend items")
+            if not selections:
+                return []
+            time_from, time_till = completed_trend_window()
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+            OverflowError,
+            OSError,
+            ValidationError,
+        ) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
+        trend_items = await self._read_jsonrpc(
+            method="trend.get",
+            params={
+                "output": ["itemid", "clock", "value_avg"],
+                "itemids": [selection.item_id for selection in selections],
+                "time_from": time_from,
+                "time_till": time_till,
+                "limit": ZABBIX_TREND_ROW_SENTINEL_LIMIT,
+            },
+        )
+        if len(trend_items) > ZABBIX_TREND_ROW_LIMIT:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            return normalize_resource_trends(
+                trend_items,
+                selections,
+                time_from=time_from,
+                time_till=time_till,
+                host_rank=requested_host_ids,
+            )
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+            OverflowError,
+            OSError,
+            ValidationError,
+        ) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
     async def _read_jsonrpc(
         self,
         *,
@@ -346,6 +445,28 @@ class ZabbixClient:
                 seen.add(trigger_id)
                 trigger_ids.append(trigger_id)
         return trigger_ids
+
+    @staticmethod
+    def _normalize_trend_host_ids(host_ids: list[str]) -> list[str]:
+        if not isinstance(host_ids, list):
+            raise TypeError("Zabbix trend host IDs must be a list")
+        requested: list[str] = []
+        seen: set[str] = set()
+        for value in host_ids:
+            if not isinstance(value, str):
+                raise TypeError("Zabbix trend host ID must be a string")
+            host_id = value.strip()
+            if not host_id:
+                raise ValueError("Zabbix trend host ID is blank")
+            if len(host_id) > 64:
+                raise ValueError("Zabbix trend host ID is too long")
+            if host_id in seen:
+                continue
+            seen.add(host_id)
+            requested.append(host_id)
+            if len(requested) > ZABBIX_TREND_HOST_LIMIT:
+                raise ValueError("too many Zabbix trend hosts")
+        return requested
 
     @staticmethod
     def _normalize_problem_hosts(items: list[Any]) -> list[ZabbixProblemHost]:

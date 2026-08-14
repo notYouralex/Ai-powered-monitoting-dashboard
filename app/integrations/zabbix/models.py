@@ -142,9 +142,12 @@ class ZabbixDashboardResponse(BaseModel):
 
     source: Literal["zabbix"] = "zabbix"
     observed_at: datetime
+    is_stale: bool = False
     health: IntegrationHealthSummary
     summary: ZabbixDashboardSummary
     hosts: list[ZabbixHost] = Field(default_factory=list, max_length=5000)
     active_problems: list[ZabbixProblem] = Field(default_factory=list, max_length=1000)
     resource_pressure: list[ZabbixResourcePressure] = Field(default_factory=list, max_length=5000)
+    top_affected_hosts: list[ZabbixTopAffectedHost] = Field(default_factory=list, max_length=10)
+    resource_trends: list[ZabbixResourceTrend] = Field(default_factory=list, max_length=30)
     warnings: list[str] = Field(default_factory=list, max_length=20)

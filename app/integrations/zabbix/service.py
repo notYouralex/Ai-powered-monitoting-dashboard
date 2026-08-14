@@ -11,6 +11,7 @@ from app.integrations.zabbix.models import (
     ZabbixProblem,
     ZabbixResourcePressure,
 )
+from app.integrations.zabbix.top_hosts import rank_top_affected_hosts
 
 
 class ZabbixDashboardService:
@@ -25,6 +26,14 @@ class ZabbixDashboardService:
             self._client.list_hosts(),
             self._client.list_active_problems(),
             self._client.list_resource_pressure(),
+        )
+        top_affected_hosts = rank_top_affected_hosts(
+            hosts,
+            active_problems,
+            resource_pressure,
+        )
+        resource_trends = await self._client.list_resource_trends(
+            [row.host_id for row in top_affected_hosts]
         )
         observed_at = datetime.now(timezone.utc)
         response_time_ms = max(0, int((perf_counter() - started) * 1000))
@@ -43,6 +52,8 @@ class ZabbixDashboardService:
             hosts=hosts,
             active_problems=active_problems,
             resource_pressure=resource_pressure,
+            top_affected_hosts=top_affected_hosts,
+            resource_trends=resource_trends,
             warnings=_build_warnings(hosts, active_problems, resource_pressure),
         )
 

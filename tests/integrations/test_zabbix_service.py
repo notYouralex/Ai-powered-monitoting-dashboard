@@ -1,6 +1,9 @@
 import asyncio
 from datetime import datetime, timezone
 
+import pytest
+
+from app.core.errors import IntegrationError
 from app.integrations.zabbix.models import (
     ZabbixDiskPressure,
     ZabbixHost,
@@ -8,6 +11,8 @@ from app.integrations.zabbix.models import (
     ZabbixProblem,
     ZabbixProblemHost,
     ZabbixResourcePressure,
+    ZabbixResourceTrend,
+    ZabbixResourceTrendPoint,
 )
 from app.integrations.zabbix.service import ZabbixDashboardService
 
@@ -47,14 +52,15 @@ def problem(
     acknowledged: bool = False,
     suppressed: bool = False,
     mapped: bool = True,
+    host_id: str = "10001",
 ) -> ZabbixProblem:
     hosts = []
     if mapped:
         hosts = [
             ZabbixProblemHost(
-                host_id="10001",
-                technical_name="web-01.internal",
-                name="Web 01",
+                host_id=host_id,
+                technical_name=f"host-{host_id}",
+                name=f"Host {host_id}",
             )
         ]
     return ZabbixProblem(
@@ -95,19 +101,38 @@ def pressure(
     )
 
 
+def trend(host_id: str, *, metric: str = "cpu", value: float = 50) -> ZabbixResourceTrend:
+    return ZabbixResourceTrend(
+        host_id=host_id,
+        metric=metric,
+        filesystem="/" if metric == "disk" else None,
+        points=[
+            ZabbixResourceTrendPoint(
+                observed_at=STARTED_AT,
+                average_used_percent=value,
+            )
+        ],
+    )
+
+
 class FakeZabbixClient:
     def __init__(
         self,
         hosts: list[ZabbixHost],
         active_problems: list[ZabbixProblem] | None = None,
         resource_pressure: list[ZabbixResourcePressure] | None = None,
+        resource_trends: list[ZabbixResourceTrend] | None = None,
+        trend_error: IntegrationError | None = None,
     ) -> None:
         self.hosts = hosts
         self.active_problems = [] if active_problems is None else active_problems
         self.resource_pressure = [] if resource_pressure is None else resource_pressure
+        self.resource_trends = [] if resource_trends is None else resource_trends
+        self.trend_error = trend_error
         self.host_calls = 0
         self.problem_calls = 0
         self.resource_calls = 0
+        self.trend_calls: list[list[str]] = []
 
     async def list_hosts(self) -> list[ZabbixHost]:
         self.host_calls += 1
@@ -120,6 +145,12 @@ class FakeZabbixClient:
     async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
         self.resource_calls += 1
         return self.resource_pressure
+
+    async def list_resource_trends(self, host_ids: list[str]) -> list[ZabbixResourceTrend]:
+        self.trend_calls.append(host_ids)
+        if self.trend_error is not None:
+            raise self.trend_error
+        return self.resource_trends
 
 
 class CoordinatedClient:
@@ -146,6 +177,10 @@ class CoordinatedClient:
     async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
         self.resource_started.set()
         await self._wait_for_all()
+        return []
+
+    async def list_resource_trends(self, host_ids: list[str]) -> list[ZabbixResourceTrend]:
+        assert host_ids == []
         return []
 
 
@@ -354,5 +389,84 @@ def test_dashboard_service_warns_for_missing_enabled_resource_metrics() -> None:
             "2 enabled Zabbix hosts have no current memory utilization metric.",
             "2 enabled Zabbix hosts have no current disk utilization metric.",
         ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_ranks_top_hosts_then_fetches_trends_in_rank_order() -> None:
+    async def run() -> None:
+        hosts = [
+            host("1", enabled=True, availability="available"),
+            host("2", enabled=True, availability="available"),
+            host("3", enabled=True, availability="unavailable"),
+            host("4", enabled=False, availability="unavailable"),
+        ]
+        problems = [
+            problem("1", severity="warning", host_id="1"),
+            problem("2", severity="high", host_id="2"),
+        ]
+        resources = [
+            pressure("1", cpu=70, memory=60, disk=50),
+            pressure("2", cpu=40, memory=45, disk=55),
+            pressure("3", cpu=90, memory=80, disk=70),
+            pressure("4", cpu=99, memory=99, disk=99),
+        ]
+        trends = [trend("2", metric="cpu", value=60), trend("1", metric="disk", value=75)]
+        client = FakeZabbixClient(hosts, problems, resources, trends)
+        service = ZabbixDashboardService(client=client)
+
+        response = await service.get_dashboard()
+
+        assert client.trend_calls == [["2", "1", "3"]]
+        assert [row.host_id for row in response.top_affected_hosts] == ["2", "1", "3"]
+        assert response.top_affected_hosts[0].highest_problem_severity == "high"
+        assert response.top_affected_hosts[2].unavailable_interface_count == 1
+        assert response.resource_trends == trends
+        assert response.summary.hosts_total == 4
+        assert response.summary.problems_total == 2
+        assert response.summary.resource_hosts_total == 4
+        assert response.warnings == []
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_empty_ranking_still_calls_trends_with_empty_host_ids() -> None:
+    async def run() -> None:
+        client = FakeZabbixClient([host("1", enabled=True)])
+        service = ZabbixDashboardService(client=client)
+
+        response = await service.get_dashboard()
+
+        assert client.trend_calls == [[]]
+        assert response.top_affected_hosts == []
+        assert response.resource_trends == []
+        assert response.warnings == [
+            "1 enabled Zabbix host has no current CPU utilization metric.",
+            "1 enabled Zabbix host has no current memory utilization metric.",
+            "1 enabled Zabbix host has no current disk utilization metric.",
+        ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_propagates_trend_client_failure_without_partial_dashboard() -> None:
+    async def run() -> None:
+        error = IntegrationError(
+            source="zabbix",
+            code="SOURCE_UNAVAILABLE",
+            retryable=True,
+        )
+        client = FakeZabbixClient(
+            [host("1", enabled=True)],
+            resource_pressure=[pressure("1", cpu=50)],
+            trend_error=error,
+        )
+        service = ZabbixDashboardService(client=client)
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await service.get_dashboard()
+
+        assert exc_info.value is error
+        assert client.trend_calls == [["1"]]
 
     asyncio.run(run())

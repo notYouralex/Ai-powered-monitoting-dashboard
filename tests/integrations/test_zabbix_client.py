@@ -127,6 +127,243 @@ def test_list_hosts_uses_read_only_host_get_and_normalizes_interfaces() -> None:
     asyncio.run(run())
 
 
+def test_list_resource_trends_empty_host_ids_skips_network() -> None:
+    async def run() -> None:
+        requests = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal requests
+            requests += 1
+            raise AssertionError("empty trend request should not reach Zabbix")
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        assert await client.list_resource_trends([]) == []
+        assert requests == 0
+
+    asyncio.run(run())
+
+
+def test_list_resource_trends_deduplicates_hosts_and_uses_bounded_requests(monkeypatch) -> None:
+    async def run() -> None:
+        started: set[str] = set()
+        all_started = asyncio.Event()
+        seen_item_params: dict[str, dict] = {}
+        seen_trend_params: dict | None = None
+
+        monkeypatch.setattr(
+            "app.integrations.zabbix.client.completed_trend_window",
+            lambda: (1723507200, 1723593599),
+        )
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal seen_trend_params
+            body = json.loads(request.content)
+            if body["method"] == "item.get":
+                prefix = body["params"]["search"]["key_"]
+                seen_item_params[prefix] = body["params"]
+                started.add(prefix)
+                if started == _RESOURCE_PREFIXES:
+                    all_started.set()
+                await asyncio.wait_for(all_started.wait(), timeout=0.2)
+
+                if prefix == "system.cpu.util":
+                    result = [
+                        _resource_item_record(item_id="1", host_id="2", key="system.cpu.util[,idle]", value="20"),
+                        _resource_item_record(item_id="4", host_id="10", key="system.cpu.util[,idle]", value="30"),
+                    ]
+                elif prefix == "vm.memory.size":
+                    result = [
+                        _resource_item_record(item_id="2", host_id="2", key="vm.memory.size[pused]", value="60"),
+                        _resource_item_record(item_id="5", host_id="10", key="vm.memory.size[pavailable]", value="25"),
+                    ]
+                else:
+                    result = [
+                        _resource_item_record(item_id="3", host_id="2", key="vfs.fs.size[/,pused]", value="80"),
+                        _resource_item_record(item_id="6", host_id="10", key="vfs.fs.size[/,pfree]", value="30"),
+                    ]
+                return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": result})
+
+            assert body["method"] == "trend.get"
+            seen_trend_params = body["params"]
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": body["id"],
+                    "result": [
+                        {"itemid": "1", "clock": "1723507200", "value_avg": "40"},
+                        {"itemid": "5", "clock": "1723507200", "value_avg": "25"},
+                    ],
+                },
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        rows = await client.list_resource_trends(["2", "10", "2"])
+
+        expected_common = {
+            "output": ["itemid", "hostid", "key_", "lastvalue", "lastclock"],
+            "hostids": ["2", "10"],
+            "monitored": True,
+            "filter": {"state": "0"},
+            "startSearch": True,
+            "sortfield": "itemid",
+            "limit": 10001,
+        }
+        assert started == _RESOURCE_PREFIXES
+        for prefix in _RESOURCE_PREFIXES:
+            assert seen_item_params[prefix] == {
+                **expected_common,
+                "search": {"key_": prefix},
+            }
+        assert seen_trend_params == {
+            "output": ["itemid", "clock", "value_avg"],
+            "itemids": ["1", "2", "3", "4", "5", "6"],
+            "time_from": 1723507200,
+            "time_till": 1723593599,
+            "limit": 721,
+        }
+        assert [(row.host_id, row.metric) for row in rows] == [("2", "cpu"), ("10", "memory")]
+        assert rows[0].points[0].average_used_percent == pytest.approx(60.0)
+        assert rows[1].points[0].average_used_percent == pytest.approx(75.0)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "host_ids",
+    [
+        [str(index) for index in range(11)],
+        ["2", " "],
+        ["x" * 65],
+    ],
+)
+def test_list_resource_trends_rejects_invalid_host_ids_before_network(host_ids: list[str]) -> None:
+    async def run() -> None:
+        requests = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal requests
+            requests += 1
+            raise AssertionError("invalid trend request should not reach Zabbix")
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_trends(host_ids)
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+        assert requests == 0
+
+    asyncio.run(run())
+
+
+def test_list_resource_trends_rejects_item_sentinel_result() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            prefix = body["params"]["search"]["key_"]
+            result = [{}] * 10001 if prefix == "system.cpu.util" else []
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": result})
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_trends(["2"])
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
+def test_list_resource_trends_skips_trend_get_when_no_metric_is_selected() -> None:
+    async def run() -> None:
+        methods: list[str] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            methods.append(body["method"])
+            assert body["method"] == "item.get"
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": []})
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        assert await client.list_resource_trends(["2"]) == []
+        assert methods == ["item.get", "item.get", "item.get"]
+
+    asyncio.run(run())
+
+
+def test_list_resource_trends_rejects_trend_sentinel_result(monkeypatch) -> None:
+    async def run() -> None:
+        monkeypatch.setattr(
+            "app.integrations.zabbix.client.completed_trend_window",
+            lambda: (1723507200, 1723593599),
+        )
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            if body["method"] == "item.get":
+                prefix = body["params"]["search"]["key_"]
+                result = []
+                if prefix == "system.cpu.util":
+                    result = [_resource_item_record(item_id="1", host_id="2", key="system.cpu.util[,idle]", value="20")]
+                return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": result})
+            assert body["method"] == "trend.get"
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": [{}] * 721})
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_trends(["2"])
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
+def test_list_resource_trends_maps_normalizer_error_to_bad_response(monkeypatch) -> None:
+    async def run() -> None:
+        monkeypatch.setattr(
+            "app.integrations.zabbix.client.completed_trend_window",
+            lambda: (1723507200, 1723593599),
+        )
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            if body["method"] == "item.get":
+                prefix = body["params"]["search"]["key_"]
+                result = []
+                if prefix == "system.cpu.util":
+                    result = [_resource_item_record(item_id="1", host_id="2", key="system.cpu.util[,idle]", value="20")]
+                return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": result})
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": body["id"],
+                    "result": [{"itemid": "1", "clock": "1723507200", "value_avg": "101"}],
+                },
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_resource_trends(["2"])
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
 def _host_record(*, host_id: str = "10001", interfaces=None, status: str = "0") -> dict:
     return {
         "hostid": host_id,
@@ -1061,7 +1298,15 @@ def test_zabbix_production_jsonrpc_method_literals_remain_read_only() -> None:
     source_path = Path(__file__).parents[2] / "app/integrations/zabbix/client.py"
     source = source_path.read_text()
     methods = set(re.findall(r'method="([a-z.]+)"', source))
-    assert methods == {"host.get", "problem.get", "trigger.get", "item.get"}
+    assert methods == {
+        "host.get",
+        "problem.get",
+        "trigger.get",
+        "item.get",
+        "trend.get",
+    }
+    assert "history.get" not in source
+    assert "event.get" not in source
 
 
 _RESOURCE_PREFIXES = {"system.cpu.util", "vm.memory.size", "vfs.fs.size"}
@@ -1214,6 +1459,7 @@ def test_list_resource_pressure_maps_normalizer_error_to_bad_response() -> None:
 def test_public_client_exposes_resource_pressure_without_generic_or_mutation_methods() -> None:
     public = {name for name in dir(ZabbixClient) if not name.startswith("_")}
     assert "list_resource_pressure" in public
+    assert "list_resource_trends" in public
     assert "request" not in public
     assert "call" not in public
     assert "create" not in public

@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from argon2 import PasswordHasher, Type
+from pydantic import SecretStr
 
 from app.contracts import IntegrationHealthSummary
-from app.db.models import User
+from app.db.models import SyncRun, User, ZabbixDashboardCache
 from app.integrations.zabbix import router as zabbix_router_module
 from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
@@ -12,6 +13,9 @@ from app.integrations.zabbix.models import (
     ZabbixProblem,
     ZabbixProblemHost,
     ZabbixResourcePressure,
+    ZabbixResourceTrend,
+    ZabbixResourceTrendPoint,
+    ZabbixTopAffectedHost,
 )
 from app.main import create_app
 
@@ -44,7 +48,7 @@ class FakeDashboardService:
     def __init__(self) -> None:
         self.calls = 0
 
-    async def get_dashboard(self) -> ZabbixDashboardResponse:
+    def get_dashboard(self) -> ZabbixDashboardResponse:
         self.calls += 1
         return ZabbixDashboardResponse(
             observed_at=NOW,
@@ -112,6 +116,46 @@ class FakeDashboardService:
                     ],
                 )
             ],
+            top_affected_hosts=[
+                ZabbixTopAffectedHost(
+                    host_id="10001",
+                    technical_name="web-01.internal",
+                    name="Web 01",
+                    highest_problem_severity="high",
+                    active_problem_count=1,
+                    unavailable_interface_count=2,
+                    peak_resource_percent=92.0,
+                    peak_resource="disk",
+                    peak_filesystem="/var",
+                )
+            ],
+            resource_trends=[
+                ZabbixResourceTrend(
+                    host_id="10001",
+                    metric="cpu",
+                    points=[
+                        ZabbixResourceTrendPoint(
+                            observed_at=datetime(2026, 8, 13, 2, 0, tzinfo=timezone.utc),
+                            average_used_percent=55.0,
+                        ),
+                        ZabbixResourceTrendPoint(
+                            observed_at=datetime(2026, 8, 13, 3, 0, tzinfo=timezone.utc),
+                            average_used_percent=65.0,
+                        ),
+                    ],
+                ),
+                ZabbixResourceTrend(
+                    host_id="10001",
+                    metric="disk",
+                    filesystem="/var",
+                    points=[
+                        ZabbixResourceTrendPoint(
+                            observed_at=datetime(2026, 8, 13, 3, 0, tzinfo=timezone.utc),
+                            average_used_percent=88.0,
+                        )
+                    ],
+                ),
+            ],
         )
 
 
@@ -168,7 +212,85 @@ def test_authenticated_zabbix_dashboard_returns_normalized_response(auth_env) ->
     assert body["resource_pressure"][0]["cpu_observed_at"] == "2026-08-13T04:00:00Z"
     assert body["resource_pressure"][0]["disks"][0]["filesystem"] == "/"
     assert body["resource_pressure"][0]["disks"][0]["used_percent"] == 70.0
+    assert body["top_affected_hosts"][0]["host_id"] == "10001"
+    assert body["top_affected_hosts"][0]["technical_name"] == "web-01.internal"
+    assert body["top_affected_hosts"][0]["name"] == "Web 01"
+    assert body["top_affected_hosts"][0]["highest_problem_severity"] == "high"
+    assert body["top_affected_hosts"][0]["active_problem_count"] == 1
+    assert body["top_affected_hosts"][0]["unavailable_interface_count"] == 2
+    assert body["top_affected_hosts"][0]["peak_resource_percent"] == 92.0
+    assert body["top_affected_hosts"][0]["peak_resource"] == "disk"
+    assert body["top_affected_hosts"][0]["peak_filesystem"] == "/var"
+    assert body["resource_trends"][0]["host_id"] == "10001"
+    assert body["resource_trends"][0]["metric"] == "cpu"
+    assert body["resource_trends"][0]["filesystem"] is None
+    assert body["resource_trends"][0]["points"][0]["observed_at"] == "2026-08-13T02:00:00Z"
+    assert body["resource_trends"][0]["points"][0]["average_used_percent"] == 55.0
+    assert body["resource_trends"][0]["points"][1]["observed_at"] == "2026-08-13T03:00:00Z"
+    assert body["resource_trends"][0]["points"][1]["average_used_percent"] == 65.0
+    assert body["resource_trends"][1]["host_id"] == "10001"
+    assert body["resource_trends"][1]["metric"] == "disk"
+    assert body["resource_trends"][1]["filesystem"] == "/var"
+    assert body["resource_trends"][1]["points"][0]["average_used_percent"] == 88.0
     assert fake_service.calls == 1
+
+
+def test_authenticated_zabbix_dashboard_reads_cached_snapshot_after_failed_refresh(auth_env) -> None:
+    create_user(auth_env)
+    login(auth_env)
+    refreshed_at = datetime.now(timezone.utc)
+    snapshot = FakeDashboardService().get_dashboard().model_dump(mode="json")
+
+    with auth_env.session_factory() as db:
+        db.add(
+            ZabbixDashboardCache(
+                id=1,
+                snapshot=snapshot,
+                refreshed_at=refreshed_at,
+            )
+        )
+        db.add_all(
+            [
+                SyncRun(
+                    source="zabbix",
+                    sync_type="snapshot",
+                    status="success",
+                    started_at=refreshed_at - timedelta(seconds=1),
+                    completed_at=refreshed_at,
+                    records_received=1,
+                    records_upserted=1,
+                ),
+                SyncRun(
+                    source="zabbix",
+                    sync_type="snapshot",
+                    status="failed",
+                    started_at=refreshed_at + timedelta(milliseconds=1),
+                    completed_at=refreshed_at + timedelta(milliseconds=2),
+                    records_received=0,
+                    records_upserted=0,
+                    error_code="SOURCE_UNAVAILABLE",
+                ),
+            ]
+        )
+        db.commit()
+
+    auth_env.settings.zabbix_base_url = "http://127.0.0.1:1/api_jsonrpc.php"
+    auth_env.settings.zabbix_api_token = SecretStr("test-token")
+    auth_env.settings.zabbix_timeout_seconds = 1
+
+    response = auth_env.client.get("/api/dashboard/zabbix")
+
+    assert response.status_code == 200
+    body = response.json()
+    warning = "The latest Zabbix refresh failed; showing last successful cached data."
+    assert body["is_stale"] is True
+    assert body["health"]["status"] == "degraded"
+    assert body["health"]["is_stale"] is True
+    assert body["health"]["last_success_at"] == refreshed_at.isoformat().replace("+00:00", "Z")
+    assert warning in body["health"]["warnings"]
+    assert warning in body["warnings"]
+    assert body["top_affected_hosts"][0]["host_id"] == "10001"
+    assert body["resource_trends"][1]["filesystem"] == "/var"
 
 
 def test_zabbix_route_is_mounted_through_shared_router() -> None:

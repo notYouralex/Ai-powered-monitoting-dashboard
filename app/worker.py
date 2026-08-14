@@ -9,6 +9,11 @@ from app.core.errors import IntegrationError
 from app.db.session import SessionLocal
 from app.integrations.freshservice.client import FreshserviceClient
 from app.integrations.freshservice.sync import FreshserviceSyncService
+from app.integrations.zabbix.cache import (
+    ZABBIX_CACHE_REFRESH_INTERVAL_SECONDS,
+    ZabbixCacheRefreshService,
+)
+from app.integrations.zabbix.client import ZabbixClient
 
 
 async def run_freshservice_sync_once(
@@ -26,8 +31,22 @@ async def run_freshservice_sync_once(
     return run.status
 
 
-async def run_worker() -> None:
-    settings = get_settings()
+async def run_zabbix_refresh_once(
+    *,
+    settings: Settings,
+    session_factory=SessionLocal,
+    client_factory: Callable[[Settings], ZabbixClient] = ZabbixClient.from_settings,
+) -> str:
+    if settings.integration_config_state("zabbix") != "configured":
+        return "not_configured"
+
+    client = client_factory(settings)
+    with session_factory() as db:
+        run = await ZabbixCacheRefreshService(client).refresh(db)
+    return run.status
+
+
+async def _run_freshservice_loop(settings: Settings) -> None:
     while True:
         try:
             await run_freshservice_sync_once(settings=settings)
@@ -36,6 +55,25 @@ async def run_worker() -> None:
         except SQLAlchemyError:
             print("Freshservice synchronization database operation failed.", file=sys.stderr)
         await asyncio.sleep(settings.freshservice_sync_interval_seconds)
+
+
+async def _run_zabbix_loop(settings: Settings) -> None:
+    while True:
+        try:
+            await run_zabbix_refresh_once(settings=settings)
+        except IntegrationError as exc:
+            print(f"Zabbix refresh failed: {exc.code}", file=sys.stderr)
+        except SQLAlchemyError:
+            print("Zabbix refresh database operation failed.", file=sys.stderr)
+        await asyncio.sleep(ZABBIX_CACHE_REFRESH_INTERVAL_SECONDS)
+
+
+async def run_worker() -> None:
+    settings = get_settings()
+    await asyncio.gather(
+        _run_freshservice_loop(settings),
+        _run_zabbix_loop(settings),
+    )
 
 
 def main() -> int:
