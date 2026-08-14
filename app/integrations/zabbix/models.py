@@ -17,6 +17,7 @@ ZabbixProblemSeverity = Literal[
     "disaster",
     "unknown",
 ]
+ResourceTrendMetric = Literal["cpu", "memory", "disk"]
 
 
 class ZabbixHostInterface(BaseModel):
@@ -78,6 +79,36 @@ class ZabbixResourcePressure(BaseModel):
     memory_used_percent: float | None = Field(default=None, ge=0, le=100)
     memory_observed_at: datetime | None = None
     disks: list[ZabbixDiskPressure] = Field(default_factory=list, max_length=64)
+
+
+class ZabbixTopAffectedHost(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    host_id: str = Field(min_length=1, max_length=64)
+    technical_name: str = Field(min_length=1, max_length=256)
+    name: str = Field(min_length=1, max_length=256)
+    highest_problem_severity: ZabbixProblemSeverity | None = None
+    active_problem_count: int = Field(ge=0)
+    unavailable_interface_count: int = Field(ge=0)
+    peak_resource_percent: float | None = Field(default=None, ge=0, le=100)
+    peak_resource: ResourceTrendMetric | None = None
+    peak_filesystem: str | None = Field(default=None, max_length=512)
+
+
+class ZabbixResourceTrendPoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    observed_at: datetime
+    average_used_percent: float = Field(ge=0, le=100)
+
+
+class ZabbixResourceTrend(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    host_id: str = Field(min_length=1, max_length=64)
+    metric: ResourceTrendMetric
+    filesystem: str | None = Field(default=None, max_length=512)
+    points: list[ZabbixResourceTrendPoint] = Field(default_factory=list, max_length=24)
 
 
 class ZabbixDashboardSummary(BaseModel):

@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 import math
 from typing import Any
 
-from app.integrations.zabbix.models import ZabbixDiskPressure, ZabbixResourcePressure
+from app.integrations.zabbix.models import (
+    ResourceTrendMetric,
+    ZabbixDiskPressure,
+    ZabbixResourcePressure,
+)
 
 
 MAX_FILESYSTEMS_PER_HOST = 64
@@ -25,11 +29,112 @@ class _Candidate:
     filesystem: str | None = None
 
 
+@dataclass(frozen=True)
+class ResourceTrendItemSelection:
+    host_id: str
+    item_id: str
+    metric: ResourceTrendMetric
+    invert: bool
+    filesystem: str | None = None
+
+
 def normalize_resource_pressure(
     cpu_items: list[Any],
     memory_items: list[Any],
     disk_items: list[Any],
 ) -> list[ZabbixResourcePressure]:
+    cpu_by_host, memory_by_host, disk_by_host_fs = _select_resource_candidates(
+        cpu_items,
+        memory_items,
+        disk_items,
+    )
+    disks_by_host = _build_disks(disk_by_host_fs)
+
+    host_ids = set(cpu_by_host) | set(memory_by_host) | set(disks_by_host)
+    rows: list[ZabbixResourcePressure] = []
+    for host_id in sorted(host_ids, key=_id_sort_key):
+        cpu = cpu_by_host.get(host_id)
+        memory = memory_by_host.get(host_id)
+        rows.append(
+            ZabbixResourcePressure(
+                host_id=host_id,
+                cpu_used_percent=None if cpu is None else cpu.used_percent,
+                cpu_observed_at=None if cpu is None else cpu.observed_at,
+                memory_used_percent=None if memory is None else memory.used_percent,
+                memory_observed_at=None if memory is None else memory.observed_at,
+                disks=disks_by_host.get(host_id, []),
+            )
+        )
+    return rows
+
+
+def select_resource_trend_items(
+    cpu_items: list[Any],
+    memory_items: list[Any],
+    disk_items: list[Any],
+    host_ids: list[str],
+) -> list[ResourceTrendItemSelection]:
+    cpu_by_host, memory_by_host, disk_by_host_fs = _select_resource_candidates(
+        cpu_items,
+        memory_items,
+        disk_items,
+    )
+    requested = list(dict.fromkeys(host_ids))
+    selections: list[ResourceTrendItemSelection] = []
+    for host_id in requested:
+        cpu = cpu_by_host.get(host_id)
+        if cpu is not None:
+            selections.append(
+                ResourceTrendItemSelection(
+                    host_id=host_id,
+                    item_id=cpu.item_id,
+                    metric="cpu",
+                    invert=True,
+                )
+            )
+
+        memory = memory_by_host.get(host_id)
+        if memory is not None:
+            selections.append(
+                ResourceTrendItemSelection(
+                    host_id=host_id,
+                    item_id=memory.item_id,
+                    metric="memory",
+                    invert=memory.mode == "pavailable",
+                )
+            )
+
+        host_disks = [
+            (filesystem, candidate)
+            for (candidate_host, filesystem), candidate in disk_by_host_fs.items()
+            if candidate_host == host_id
+        ]
+        if host_disks:
+            filesystem, disk = min(
+                host_disks,
+                key=lambda value: (-value[1].used_percent, value[0]),
+            )
+            selections.append(
+                ResourceTrendItemSelection(
+                    host_id=host_id,
+                    item_id=disk.item_id,
+                    metric="disk",
+                    invert=disk.mode == "pfree",
+                    filesystem=filesystem,
+                )
+            )
+    return selections
+
+
+def _select_resource_candidates(
+    cpu_items: list[Any],
+    memory_items: list[Any],
+    disk_items: list[Any],
+) -> tuple[
+    dict[str, _Candidate],
+    dict[str, _Candidate],
+    dict[tuple[str, str], _Candidate],
+]:
     cpu_by_host: dict[str, _Candidate] = {}
     memory_by_host_mode: dict[tuple[str, str], _Candidate] = {}
     disk_by_host_fs_mode: dict[tuple[str, str, str], _Candidate] = {}
@@ -77,25 +182,11 @@ def normalize_resource_pressure(
         if current is None or _is_newer_candidate(candidate, current):
             disk_by_host_fs_mode[lookup] = candidate
 
-    memory_by_host = _prefer_memory_modes(memory_by_host_mode)
-    disks_by_host = _build_disks(disk_by_host_fs_mode)
-
-    host_ids = set(cpu_by_host) | set(memory_by_host) | set(disks_by_host)
-    rows: list[ZabbixResourcePressure] = []
-    for host_id in sorted(host_ids, key=_id_sort_key):
-        cpu = cpu_by_host.get(host_id)
-        memory = memory_by_host.get(host_id)
-        rows.append(
-            ZabbixResourcePressure(
-                host_id=host_id,
-                cpu_used_percent=None if cpu is None else cpu.used_percent,
-                cpu_observed_at=None if cpu is None else cpu.observed_at,
-                memory_used_percent=None if memory is None else memory.used_percent,
-                memory_observed_at=None if memory is None else memory.observed_at,
-                disks=disks_by_host.get(host_id, []),
-            )
-        )
-    return rows
+    return (
+        cpu_by_host,
+        _prefer_memory_modes(memory_by_host_mode),
+        _prefer_disk_modes(disk_by_host_fs_mode),
+    )
 
 
 def _item_key(item: Any) -> str:
@@ -227,17 +318,30 @@ def _prefer_memory_modes(
     return selected
 
 
-def _build_disks(
+def _prefer_disk_modes(
     candidates: dict[tuple[str, str, str], _Candidate],
-) -> dict[str, list[ZabbixDiskPressure]]:
+) -> dict[tuple[str, str], _Candidate]:
     host_filesystems = {(host_id, filesystem) for host_id, filesystem, _ in candidates}
-    selected_by_host: dict[str, list[ZabbixDiskPressure]] = {}
+    selected: dict[tuple[str, str], _Candidate] = {}
+    counts_by_host: dict[str, int] = {}
     for host_id, filesystem in host_filesystems:
         candidate = candidates.get((host_id, filesystem, "pused"))
         if candidate is None:
             candidate = candidates.get((host_id, filesystem, "pfree"))
         if candidate is None:
             continue
+        selected[(host_id, filesystem)] = candidate
+        counts_by_host[host_id] = counts_by_host.get(host_id, 0) + 1
+        if counts_by_host[host_id] > MAX_FILESYSTEMS_PER_HOST:
+            raise ValueError("too many Zabbix filesystems for one host")
+    return selected
+
+
+def _build_disks(
+    candidates: dict[tuple[str, str], _Candidate],
+) -> dict[str, list[ZabbixDiskPressure]]:
+    selected_by_host: dict[str, list[ZabbixDiskPressure]] = {}
+    for (host_id, filesystem), candidate in candidates.items():
         selected_by_host.setdefault(host_id, []).append(
             ZabbixDiskPressure(
                 filesystem=filesystem,
@@ -247,8 +351,6 @@ def _build_disks(
         )
 
     for disks in selected_by_host.values():
-        if len(disks) > MAX_FILESYSTEMS_PER_HOST:
-            raise ValueError("too many Zabbix filesystems for one host")
         disks.sort(key=lambda disk: disk.filesystem)
     return selected_by_host
 
