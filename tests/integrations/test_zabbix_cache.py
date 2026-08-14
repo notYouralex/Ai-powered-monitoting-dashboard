@@ -411,3 +411,83 @@ def test_cached_dashboard_without_successful_snapshot_returns_safe_source_error(
     assert exc_info.value.code == code
     assert exc_info.value.retryable is retryable
     db.close()
+
+
+def test_cached_dashboard_builds_normalized_executive_summary() -> None:
+    db = make_db()
+    seed_cache(db)
+    cached = db.get(ZabbixDashboardCache, 1)
+    assert cached is not None
+    snapshot = deepcopy(cached.snapshot)
+    snapshot["summary"].update(
+        {
+            "hosts_total": 12,
+            "hosts_enabled": 11,
+            "hosts_disabled": 1,
+            "hosts_in_maintenance": 2,
+            "interfaces_available": 10,
+            "interfaces_unavailable": 2,
+            "interfaces_unknown": 1,
+            "problems_total": 7,
+            "problems_high": 2,
+            "problems_disaster": 1,
+            "problems_unacknowledged": 4,
+            "resource_hosts_total": 9,
+            "resource_hosts_with_cpu": 8,
+            "resource_hosts_with_memory": 7,
+            "resource_hosts_with_disk": 6,
+        }
+    )
+    cached.snapshot = snapshot
+    db.commit()
+    now = T0 + timedelta(seconds=60)
+
+    response = ZabbixCachedDashboardService(
+        db,
+        make_settings(configured=True),
+        clock=lambda: now,
+    ).get_executive_summary()
+
+    assert response.source == "zabbix"
+    assert response.observed_at == T0
+    assert response.health.source == "zabbix"
+    assert response.health.status == "healthy"
+    assert response.is_stale is False
+    assert response.warnings == ["Existing normalized warning."]
+    assert response.metrics == {
+        "hosts_total": 12,
+        "hosts_enabled": 11,
+        "hosts_disabled": 1,
+        "hosts_in_maintenance": 2,
+        "interfaces_unavailable": 2,
+        "problems_total": 7,
+        "problems_high": 2,
+        "problems_disaster": 1,
+        "problems_unacknowledged": 4,
+        "resource_hosts_total": 9,
+        "resource_hosts_with_cpu": 8,
+        "resource_hosts_with_memory": 7,
+        "resource_hosts_with_disk": 6,
+    }
+    db.close()
+
+
+def test_cached_executive_summary_preserves_degraded_stale_state() -> None:
+    db = make_db()
+    seed_cache(db, latest_status="failed", latest_at=T0 + timedelta(seconds=60))
+    now = T0 + timedelta(seconds=70)
+
+    response = ZabbixCachedDashboardService(
+        db,
+        make_settings(configured=True),
+        clock=lambda: now,
+    ).get_executive_summary()
+
+    warning = "The latest Zabbix refresh failed; showing last successful cached data."
+    assert response.source == "zabbix"
+    assert response.is_stale is True
+    assert response.health.status == "degraded"
+    assert response.health.is_stale is True
+    assert response.health.warnings == [warning]
+    assert response.warnings == ["Existing normalized warning.", warning]
+    db.close()

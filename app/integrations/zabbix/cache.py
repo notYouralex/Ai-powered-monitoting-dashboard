@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.contracts import ExecutiveSourceSummary
 from app.core.config import Settings
 from app.core.errors import IntegrationError
 from app.db.models import SyncRun, ZabbixDashboardCache
@@ -181,6 +182,33 @@ class ZabbixCachedDashboardService:
                 "health": health,
                 "warnings": _merge_warnings(response.warnings, state_warnings),
             }
+        )
+
+    def get_executive_summary(self) -> ExecutiveSourceSummary:
+        dashboard = self.get_dashboard()
+        summary = dashboard.summary
+
+        return ExecutiveSourceSummary(
+            source="zabbix",
+            observed_at=dashboard.observed_at,
+            is_stale=dashboard.is_stale,
+            health=dashboard.health,
+            metrics={
+                "hosts_total": summary.hosts_total,
+                "hosts_enabled": summary.hosts_enabled,
+                "hosts_disabled": summary.hosts_disabled,
+                "hosts_in_maintenance": summary.hosts_in_maintenance,
+                "interfaces_unavailable": summary.interfaces_unavailable,
+                "problems_total": summary.problems_total,
+                "problems_high": summary.problems_high,
+                "problems_disaster": summary.problems_disaster,
+                "problems_unacknowledged": summary.problems_unacknowledged,
+                "resource_hosts_total": summary.resource_hosts_total,
+                "resource_hosts_with_cpu": summary.resource_hosts_with_cpu,
+                "resource_hosts_with_memory": summary.resource_hosts_with_memory,
+                "resource_hosts_with_disk": summary.resource_hosts_with_disk,
+            },
+            warnings=dashboard.warnings,
         )
 
     def _latest_run(self) -> SyncRun | None:
