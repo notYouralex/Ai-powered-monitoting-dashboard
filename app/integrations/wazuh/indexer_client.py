@@ -13,14 +13,22 @@ from app.core.http import create_http_client, request_with_retries
 from app.integrations.wazuh.models import (
     WazuhAlert,
     WazuhAlertSearchResult,
+    WazuhFimSummary,
+    WazuhMitreSummary,
     WazuhNamedCount,
     WazuhTrendPoint,
+    WazuhVulnerability,
+    WazuhVulnerabilitySummary,
 )
 
 
 WAZUH_ALERT_INDEX = "wazuh-alerts*"
+WAZUH_VULNERABILITY_INDEX = "wazuh-states-vulnerabilities*"
 WAZUH_RECENT_ALERT_LIMIT = 50
+WAZUH_RECENT_VULNERABILITY_LIMIT = 20
 WAZUH_TOP_AGENT_LIMIT = 10
+WAZUH_TOP_ALERT_LIMIT = 5
+WAZUH_MITRE_BUCKET_LIMIT = 20
 WAZUH_MAX_TREND_BUCKETS = 512
 _ALERT_SOURCE_FIELDS = (
     "timestamp",
@@ -30,6 +38,17 @@ _ALERT_SOURCE_FIELDS = (
     "rule.groups",
     "agent.id",
     "agent.name",
+)
+_VULNERABILITY_SOURCE_FIELDS = (
+    "agent.id",
+    "agent.name",
+    "package.name",
+    "package.version",
+    "vulnerability.id",
+    "vulnerability.severity",
+    "vulnerability.detected_at",
+    "vulnerability.score.base",
+    "vulnerability.description",
 )
 
 
@@ -125,6 +144,38 @@ class WazuhIndexerClient:
         payload = self._parse_json_object(response)
         return self._normalize_search_response(payload)
 
+    async def search_vulnerabilities(self) -> WazuhVulnerabilitySummary:
+        body = self._build_vulnerability_search_body()
+        async with create_http_client(
+            timeout_seconds=self._timeout_seconds,
+            verify_tls=self._verify_tls,
+            ca_bundle=self._ca_bundle,
+            transport=self._transport,
+        ) as client:
+            try:
+                response = await request_with_retries(
+                    client,
+                    "POST",
+                    f"{self._base_url}/{WAZUH_VULNERABILITY_INDEX}/_search",
+                    retry_safe=True,
+                    auth=httpx.BasicAuth(
+                        self._username,
+                        self._password.get_secret_value(),
+                    ),
+                    params={
+                        "ignore_unavailable": "true",
+                        "allow_no_indices": "true",
+                        "allow_partial_search_results": "false",
+                    },
+                    json=body,
+                )
+            except httpx.RequestError as exc:
+                raise self._source_error("SOURCE_UNAVAILABLE", retryable=True) from exc
+
+        self._raise_for_status(response)
+        payload = self._parse_json_object(response)
+        return self._normalize_vulnerability_search_response(payload)
+
     @staticmethod
     def _build_search_body(
         start: datetime,
@@ -159,6 +210,57 @@ class WazuhIndexerClient:
                         "order": {"_count": "desc"},
                     }
                 },
+                "top_alerts": {
+                    "terms": {
+                        "field": "rule.description",
+                        "size": WAZUH_TOP_ALERT_LIMIT,
+                        "order": {"_count": "desc"},
+                    }
+                },
+                "fim": {
+                    "filter": {"exists": {"field": "syscheck.path"}},
+                    "aggs": {
+                        "events": {
+                            "terms": {
+                                "field": "syscheck.event",
+                                "size": 10,
+                            }
+                        },
+                        "top_agents": {
+                            "terms": {
+                                "field": "agent.name",
+                                "size": WAZUH_TOP_AGENT_LIMIT,
+                                "order": {"_count": "desc"},
+                            }
+                        },
+                    },
+                },
+                "mitre": {
+                    "filter": {"exists": {"field": "rule.mitre.id"}},
+                    "aggs": {
+                        "tactics": {
+                            "terms": {
+                                "field": "rule.mitre.tactic",
+                                "size": WAZUH_MITRE_BUCKET_LIMIT,
+                                "order": {"_count": "desc"},
+                            }
+                        },
+                        "techniques": {
+                            "terms": {
+                                "field": "rule.mitre.technique",
+                                "size": WAZUH_MITRE_BUCKET_LIMIT,
+                                "order": {"_count": "desc"},
+                            }
+                        },
+                        "top_agents": {
+                            "terms": {
+                                "field": "agent.name",
+                                "size": WAZUH_TOP_AGENT_LIMIT,
+                                "order": {"_count": "desc"},
+                            }
+                        },
+                    },
+                },
                 "alert_trend": {
                     "date_histogram": {
                         "field": "timestamp",
@@ -168,6 +270,33 @@ class WazuhIndexerClient:
                             "min": start.isoformat(),
                             "max": end.isoformat(),
                         },
+                    }
+                },
+            },
+        }
+
+    @staticmethod
+    def _build_vulnerability_search_body() -> dict[str, Any]:
+        return {
+            "size": WAZUH_RECENT_VULNERABILITY_LIMIT,
+            "track_total_hits": True,
+            "_source": list(_VULNERABILITY_SOURCE_FIELDS),
+            "query": {"match_all": {}},
+            "sort": [{"vulnerability.detected_at": {"order": "desc"}}],
+            "aggs": {
+                "severity": {
+                    "terms": {
+                        "field": "vulnerability.severity",
+                        "size": 20,
+                    }
+                },
+                "unique_cves": {"cardinality": {"field": "vulnerability.id"}},
+                "affected_agents": {"cardinality": {"field": "agent.id"}},
+                "top_agents": {
+                    "terms": {
+                        "field": "agent.name",
+                        "size": WAZUH_TOP_AGENT_LIMIT,
+                        "order": {"_count": "desc"},
                     }
                 },
             },
@@ -195,13 +324,62 @@ class WazuhIndexerClient:
             alerts = [self._normalize_alert_hit(hit) for hit in raw_hits]
             severity_levels = self._parse_severity_buckets(aggregations.get("severity_levels"))
             top_agents = self._parse_named_buckets(aggregations.get("top_agents"))
+            top_alerts = self._parse_named_buckets(
+                aggregations.get("top_alerts"),
+                limit=WAZUH_TOP_ALERT_LIMIT,
+            )
+            fim = self._parse_fim_summary(aggregations.get("fim"))
+            mitre = self._parse_mitre_summary(aggregations.get("mitre"))
             trend = self._parse_trend_buckets(aggregations.get("alert_trend"))
             return WazuhAlertSearchResult(
                 total_alerts=total_alerts,
                 severity_levels=severity_levels,
                 top_agents=top_agents,
+                top_alerts=top_alerts,
+                fim=fim,
+                mitre=mitre,
                 trend=trend,
                 alerts=alerts,
+            )
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
+    def _normalize_vulnerability_search_response(
+        self,
+        payload: dict[str, Any],
+    ) -> WazuhVulnerabilitySummary:
+        if payload.get("timed_out") is True:
+            raise self._source_error("SOURCE_UNAVAILABLE", retryable=True)
+
+        shards = payload.get("_shards")
+        if not isinstance(shards, dict) or shards.get("failed") != 0:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        hits = payload.get("hits")
+        aggregations = payload.get("aggregations")
+        if not isinstance(hits, dict) or not isinstance(aggregations, dict):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        raw_hits = hits.get("hits")
+        if not isinstance(raw_hits, list):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            by_severity = self._parse_named_buckets(aggregations.get("severity"), limit=20)
+            by_severity = [
+                WazuhNamedCount(
+                    name="Unspecified" if item.name == "-" else item.name,
+                    count=item.count,
+                )
+                for item in by_severity
+            ]
+            return WazuhVulnerabilitySummary(
+                total=self._parse_total_hits(hits.get("total")),
+                unique_cves=self._parse_cardinality(aggregations.get("unique_cves")),
+                affected_agents=self._parse_cardinality(aggregations.get("affected_agents")),
+                by_severity=by_severity,
+                top_agents=self._parse_named_buckets(aggregations.get("top_agents")),
+                recent=[self._normalize_vulnerability_hit(hit) for hit in raw_hits],
             )
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
             raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
@@ -261,15 +439,95 @@ class WazuhIndexerClient:
         return result
 
     @staticmethod
-    def _parse_named_buckets(value: Any) -> list[WazuhNamedCount]:
+    def _parse_named_buckets(
+        value: Any,
+        *,
+        limit: int = WAZUH_TOP_AGENT_LIMIT,
+    ) -> list[WazuhNamedCount]:
         buckets = _require_buckets(value)
         return [
             WazuhNamedCount(
                 name=_required_string(bucket.get("key")),
                 count=_required_nonnegative_int(bucket.get("doc_count")),
             )
-            for bucket in buckets[:WAZUH_TOP_AGENT_LIMIT]
+            for bucket in buckets[:limit]
         ]
+
+    @classmethod
+    def _parse_fim_summary(cls, value: Any) -> WazuhFimSummary:
+        if not isinstance(value, dict):
+            raise TypeError("FIM aggregation must be an object")
+        event_counts = {
+            item.name.lower(): item.count
+            for item in cls._parse_named_buckets(value.get("events"), limit=10)
+        }
+        return WazuhFimSummary(
+            total=_required_nonnegative_int(value.get("doc_count")),
+            added=event_counts.get("added", 0),
+            modified=event_counts.get("modified", 0),
+            deleted=event_counts.get("deleted", 0),
+            top_agents=cls._parse_named_buckets(value.get("top_agents")),
+        )
+
+    @classmethod
+    def _parse_mitre_summary(cls, value: Any) -> WazuhMitreSummary:
+        if not isinstance(value, dict):
+            raise TypeError("MITRE aggregation must be an object")
+        return WazuhMitreSummary(
+            total=_required_nonnegative_int(value.get("doc_count")),
+            tactics=cls._parse_named_buckets(
+                value.get("tactics"),
+                limit=WAZUH_MITRE_BUCKET_LIMIT,
+            ),
+            techniques=cls._parse_named_buckets(
+                value.get("techniques"),
+                limit=WAZUH_MITRE_BUCKET_LIMIT,
+            ),
+            top_agents=cls._parse_named_buckets(value.get("top_agents")),
+        )
+
+    @staticmethod
+    def _parse_cardinality(value: Any) -> int:
+        if not isinstance(value, dict):
+            raise TypeError("cardinality aggregation must be an object")
+        return _required_nonnegative_int(value.get("value"))
+
+    @staticmethod
+    def _normalize_vulnerability_hit(hit: Any) -> WazuhVulnerability:
+        if not isinstance(hit, dict):
+            raise TypeError("vulnerability hit must be an object")
+        source = hit.get("_source")
+        if not isinstance(source, dict):
+            raise TypeError("vulnerability source must be an object")
+
+        vulnerability = source.get("vulnerability")
+        if not isinstance(vulnerability, dict):
+            raise TypeError("vulnerability data must be an object")
+        agent = source.get("agent")
+        if not isinstance(agent, dict):
+            agent = {}
+        package = source.get("package")
+        if not isinstance(package, dict):
+            package = {}
+        score = vulnerability.get("score")
+        if not isinstance(score, dict):
+            score = {}
+
+        severity = _required_string(vulnerability.get("severity"))
+        if severity == "-":
+            severity = "Unspecified"
+
+        return WazuhVulnerability(
+            vulnerability_id=_required_string(vulnerability.get("id")),
+            severity=severity,
+            score=_optional_float(score.get("base")),
+            detected_at=_optional_datetime(vulnerability.get("detected_at")),
+            agent_id=_optional_string(agent.get("id")),
+            agent_name=_optional_string(agent.get("name")),
+            package_name=_optional_string(package.get("name")),
+            package_version=_optional_string(package.get("version")),
+            description=_optional_string(vulnerability.get("description")),
+        )
 
     @staticmethod
     def _parse_trend_buckets(value: Any) -> list[WazuhTrendPoint]:
@@ -363,3 +621,24 @@ def _required_datetime(value: Any) -> datetime:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise ValueError("required Wazuh timestamp is invalid") from exc
+
+
+def _optional_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    return _required_datetime(value)
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError("boolean is not a valid float")
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())
+        except ValueError as exc:
+            raise ValueError("optional Wazuh float is invalid") from exc
+    raise ValueError("optional Wazuh float is invalid")

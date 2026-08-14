@@ -43,12 +43,59 @@ class WazuhTrendPoint(BaseModel):
     count: int = Field(ge=0)
 
 
+class WazuhFimSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total: int = Field(default=0, ge=0)
+    added: int = Field(default=0, ge=0)
+    modified: int = Field(default=0, ge=0)
+    deleted: int = Field(default=0, ge=0)
+    top_agents: list[WazuhNamedCount] = Field(default_factory=list, max_length=10)
+
+
+class WazuhMitreSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total: int = Field(default=0, ge=0)
+    tactics: list[WazuhNamedCount] = Field(default_factory=list, max_length=20)
+    techniques: list[WazuhNamedCount] = Field(default_factory=list, max_length=20)
+    top_agents: list[WazuhNamedCount] = Field(default_factory=list, max_length=10)
+
+
+class WazuhVulnerability(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    vulnerability_id: str = Field(min_length=1, max_length=128)
+    severity: str = Field(min_length=1, max_length=64)
+    score: float | None = Field(default=None, ge=0, le=10)
+    detected_at: datetime | None = None
+    agent_id: str | None = Field(default=None, max_length=64)
+    agent_name: str | None = Field(default=None, max_length=256)
+    package_name: str | None = Field(default=None, max_length=512)
+    package_version: str | None = Field(default=None, max_length=512)
+    description: str | None = Field(default=None, max_length=4096)
+
+
+class WazuhVulnerabilitySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total: int = Field(default=0, ge=0)
+    unique_cves: int = Field(default=0, ge=0)
+    affected_agents: int = Field(default=0, ge=0)
+    by_severity: list[WazuhNamedCount] = Field(default_factory=list, max_length=20)
+    top_agents: list[WazuhNamedCount] = Field(default_factory=list, max_length=10)
+    recent: list[WazuhVulnerability] = Field(default_factory=list, max_length=20)
+
+
 class WazuhAlertSearchResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     total_alerts: int = Field(ge=0)
     severity_levels: dict[int, int] = Field(default_factory=dict)
     top_agents: list[WazuhNamedCount] = Field(default_factory=list, max_length=10)
+    top_alerts: list[WazuhNamedCount] = Field(default_factory=list, max_length=5)
+    fim: WazuhFimSummary = Field(default_factory=WazuhFimSummary)
+    mitre: WazuhMitreSummary = Field(default_factory=WazuhMitreSummary)
     trend: list[WazuhTrendPoint] = Field(default_factory=list, max_length=512)
     alerts: list[WazuhAlert] = Field(default_factory=list, max_length=50)
 
@@ -67,6 +114,12 @@ class WazuhDashboardSummary(BaseModel):
     alerts_medium: int = Field(ge=0)
     alerts_high: int = Field(ge=0)
     alerts_critical: int = Field(ge=0)
+    vulnerabilities_total: int = Field(default=0, ge=0)
+    vulnerabilities_critical: int = Field(default=0, ge=0)
+    vulnerabilities_high: int = Field(default=0, ge=0)
+    vulnerable_agents: int = Field(default=0, ge=0)
+    fim_events: int = Field(default=0, ge=0)
+    mitre_events: int = Field(default=0, ge=0)
 
 
 class WazuhAgent(BaseModel):
@@ -100,6 +153,10 @@ class WazuhDashboardResponse(BaseModel):
     summary: WazuhDashboardSummary
     agents: list[WazuhAgent] = Field(default_factory=list, max_length=10000)
     top_agents: list[WazuhNamedCount] = Field(default_factory=list, max_length=10)
+    top_alerts: list[WazuhNamedCount] = Field(default_factory=list, max_length=5)
+    vulnerabilities: WazuhVulnerabilitySummary = Field(default_factory=WazuhVulnerabilitySummary)
+    fim: WazuhFimSummary = Field(default_factory=WazuhFimSummary)
+    mitre: WazuhMitreSummary = Field(default_factory=WazuhMitreSummary)
     alert_trend: list[WazuhTrendPoint] = Field(default_factory=list, max_length=512)
     recent_alerts: list[WazuhAlert] = Field(default_factory=list, max_length=50)
     warnings: list[str] = Field(default_factory=list, max_length=20)
