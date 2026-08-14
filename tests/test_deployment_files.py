@@ -15,6 +15,16 @@ def test_dockerfile_runs_application_as_non_root_user() -> None:
     assert "CMD" in dockerfile and "uvicorn" in dockerfile
 
 
+def test_dockerfile_installs_runtime_dependencies_from_uv_lock() -> None:
+    dockerfile = read("Dockerfile")
+
+    assert "COPY pyproject.toml uv.lock README.md ./" in dockerfile
+    assert "python -m pip install --no-cache-dir uv==0.12.2" in dockerfile
+    assert "uv sync --frozen --no-editable --no-install-project" in dockerfile
+    assert 'PATH="/app/.venv/bin:$PATH"' in dockerfile
+    assert "python -m pip install --no-cache-dir ." not in dockerfile
+
+
 def test_compose_requires_secrets_and_binds_api_to_loopback() -> None:
     compose = read("compose.yaml")
     api = compose.split("fastapi-api:", 1)[1].split("background-worker:", 1)[0]
