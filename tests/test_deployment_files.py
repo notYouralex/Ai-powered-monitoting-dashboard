@@ -99,6 +99,22 @@ def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
     assert "/health" in api
 
 
+def test_background_worker_receives_zabbix_settings() -> None:
+    compose = read("compose.yaml")
+    worker = compose.split("background-worker:", 1)[1]
+
+    expected_settings = (
+        "ZABBIX_BASE_URL",
+        "ZABBIX_API_TOKEN",
+        "ZABBIX_VERIFY_TLS",
+        "ZABBIX_CA_BUNDLE",
+        "ZABBIX_TIMEOUT_SECONDS",
+    )
+
+    for setting in expected_settings:
+        assert f"{setting}: ${{{setting}" in worker
+
+
 def test_entrypoint_applies_migrations_before_starting_application() -> None:
     entrypoint = read("docker/entrypoint.sh")
 
