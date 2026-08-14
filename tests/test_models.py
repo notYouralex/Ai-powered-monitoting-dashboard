@@ -163,3 +163,52 @@ def test_alembic_head_creates_freshservice_sync_tables(tmp_path) -> None:
     tables = set(inspect(engine).get_table_names())
     assert "tickets" in tables
     assert "sync_runs" in tables
+
+
+def test_zabbix_dashboard_cache_round_trips_normalized_json() -> None:
+    from app.db.base import Base
+    from app.db.models import ZabbixDashboardCache
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    refreshed_at = datetime(2026, 8, 14, 1, 0, tzinfo=timezone.utc)
+    snapshot = {
+        "source": "zabbix",
+        "observed_at": "2026-08-14T01:00:00Z",
+        "is_stale": False,
+    }
+
+    with Session(engine) as db:
+        db.add(
+            ZabbixDashboardCache(
+                id=1,
+                snapshot=snapshot,
+                refreshed_at=refreshed_at,
+            )
+        )
+        db.commit()
+        db.expire_all()
+
+        cached = db.get(ZabbixDashboardCache, 1)
+        assert cached is not None
+        assert cached.snapshot == snapshot
+        assert cached.refreshed_at == refreshed_at
+
+
+def test_alembic_head_creates_zabbix_dashboard_cache_table(tmp_path) -> None:
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import create_engine, inspect
+
+    database_path = tmp_path / "zabbix-cache-migration.db"
+    config = Config("alembic.ini")
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{database_path}")
+
+    command.upgrade(config, "head")
+
+    engine = create_engine(f"sqlite:///{database_path}")
+    columns = {
+        column["name"] for column in inspect(engine).get_columns("zabbix_dashboard_cache")
+    }
+    assert columns == {"id", "snapshot", "refreshed_at"}

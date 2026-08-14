@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Index, Integer, String
+from sqlalchemy import JSON, BigInteger, Boolean, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UTCDateTime
@@ -129,3 +130,11 @@ class SyncRun(Base):
         Index("ix_sync_runs_source_started", "source", "started_at"),
         Index("ix_sync_runs_source_status_completed", "source", "status", "completed_at"),
     )
+
+
+class ZabbixDashboardCache(Base):
+    __tablename__ = "zabbix_dashboard_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    refreshed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
