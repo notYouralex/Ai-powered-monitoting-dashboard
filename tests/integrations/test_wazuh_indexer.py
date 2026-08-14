@@ -88,6 +88,36 @@ def test_search_alerts_uses_bounded_read_only_query_and_normalizes_response() ->
                                 {"key": "db-01", "doc_count": 1},
                             ]
                         },
+                        "top_alerts": {
+                            "buckets": [
+                                {"key": "SSH authentication failed.", "doc_count": 2},
+                                {"key": "Service stopped.", "doc_count": 1},
+                            ]
+                        },
+                        "fim": {
+                            "doc_count": 2,
+                            "events": {
+                                "buckets": [
+                                    {"key": "added", "doc_count": 1},
+                                    {"key": "modified", "doc_count": 1},
+                                ]
+                            },
+                            "top_agents": {
+                                "buckets": [{"key": "web-01", "doc_count": 2}]
+                            },
+                        },
+                        "mitre": {
+                            "doc_count": 2,
+                            "tactics": {
+                                "buckets": [{"key": "Credential Access", "doc_count": 2}]
+                            },
+                            "techniques": {
+                                "buckets": [{"key": "Password Guessing", "doc_count": 2}]
+                            },
+                            "top_agents": {
+                                "buckets": [{"key": "web-01", "doc_count": 2}]
+                            },
+                        },
                         "alert_trend": {
                             "buckets": [
                                 {
@@ -122,11 +152,26 @@ def test_search_alerts_uses_bounded_read_only_query_and_normalizes_response() ->
         assert seen_body["query"]["range"]["timestamp"]["gte"] == START.isoformat()
         assert seen_body["query"]["range"]["timestamp"]["lte"] == END.isoformat()
         assert seen_body["aggs"]["alert_trend"]["date_histogram"]["fixed_interval"] == "1h"
+        assert seen_body["aggs"]["top_alerts"]["terms"]["size"] == 5
+        assert seen_body["aggs"]["fim"]["filter"] == {"exists": {"field": "syscheck.path"}}
+        assert seen_body["aggs"]["mitre"]["filter"] == {
+            "exists": {"field": "rule.mitre.id"}
+        }
 
         assert result.total_alerts == 3
         assert result.severity_levels == {12: 2, 15: 1}
         assert result.top_agents[0].name == "web-01"
         assert result.top_agents[0].count == 2
+        assert result.top_alerts[0].name == "SSH authentication failed."
+        assert result.top_alerts[0].count == 2
+        assert result.fim.total == 2
+        assert result.fim.added == 1
+        assert result.fim.modified == 1
+        assert result.fim.deleted == 0
+        assert result.fim.top_agents[0].name == "web-01"
+        assert result.mitre.total == 2
+        assert result.mitre.tactics[0].name == "Credential Access"
+        assert result.mitre.techniques[0].name == "Password Guessing"
         assert result.trend[0].count == 3
         assert result.alerts[0].rule_id == "5710"
         assert result.alerts[0].rule_level == 12
@@ -148,6 +193,18 @@ def test_search_alerts_accepts_empty_result() -> None:
                     "aggregations": {
                         "severity_levels": {"buckets": []},
                         "top_agents": {"buckets": []},
+                        "top_alerts": {"buckets": []},
+                        "fim": {
+                            "doc_count": 0,
+                            "events": {"buckets": []},
+                            "top_agents": {"buckets": []},
+                        },
+                        "mitre": {
+                            "doc_count": 0,
+                            "tactics": {"buckets": []},
+                            "techniques": {"buckets": []},
+                            "top_agents": {"buckets": []},
+                        },
                         "alert_trend": {"buckets": []},
                     },
                 },
@@ -163,7 +220,90 @@ def test_search_alerts_accepts_empty_result() -> None:
         assert result.alerts == []
         assert result.severity_levels == {}
         assert result.top_agents == []
+        assert result.top_alerts == []
+        assert result.fim.total == 0
+        assert result.mitre.total == 0
         assert result.trend == []
+
+    asyncio.run(run())
+
+
+def test_search_vulnerabilities_uses_current_state_index_and_normalizes_response() -> None:
+    async def run() -> None:
+        seen_request: httpx.Request | None = None
+        seen_body: dict | None = None
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal seen_request, seen_body
+            seen_request = request
+            seen_body = __import__("json").loads(request.content)
+            return httpx.Response(
+                200,
+                json={
+                    "timed_out": False,
+                    "_shards": {"failed": 0},
+                    "hits": {
+                        "total": {"value": 2, "relation": "eq"},
+                        "hits": [
+                            {
+                                "_source": {
+                                    "agent": {"id": "001", "name": "web-01"},
+                                    "package": {"name": "openssl", "version": "3.0.1"},
+                                    "vulnerability": {
+                                        "id": "CVE-2026-0001",
+                                        "severity": "Critical",
+                                        "detected_at": "2026-08-10T00:50:00.000Z",
+                                        "score": {"base": 9.8},
+                                        "description": "Example OpenSSL vulnerability.",
+                                    },
+                                }
+                            }
+                        ],
+                    },
+                    "aggregations": {
+                        "severity": {
+                            "buckets": [
+                                {"key": "Critical", "doc_count": 1},
+                                {"key": "-", "doc_count": 1},
+                            ]
+                        },
+                        "unique_cves": {"value": 2},
+                        "affected_agents": {"value": 1},
+                        "top_agents": {
+                            "buckets": [{"key": "web-01", "doc_count": 2}]
+                        },
+                    },
+                },
+            )
+
+        client = WazuhIndexerClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await client.search_vulnerabilities()
+
+        assert seen_request is not None
+        assert seen_request.method == "POST"
+        assert seen_request.url.path == "/wazuh-states-vulnerabilities*/_search"
+        assert seen_body is not None
+        assert seen_body["size"] == 20
+        assert seen_body["track_total_hits"] is True
+        assert seen_body["sort"] == [{"vulnerability.detected_at": {"order": "desc"}}]
+        assert "vulnerability.reference" not in seen_body["_source"]
+
+        assert result.total == 2
+        assert result.unique_cves == 2
+        assert result.affected_agents == 1
+        assert [(item.name, item.count) for item in result.by_severity] == [
+            ("Critical", 1),
+            ("Unspecified", 1),
+        ]
+        assert result.top_agents[0].name == "web-01"
+        assert result.recent[0].vulnerability_id == "CVE-2026-0001"
+        assert result.recent[0].severity == "Critical"
+        assert result.recent[0].score == 9.8
+        assert result.recent[0].agent_name == "web-01"
+        assert result.recent[0].package_name == "openssl"
 
     asyncio.run(run())
 

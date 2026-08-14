@@ -67,6 +67,7 @@ class FreshserviceDashboardSummary(BaseModel):
     tickets_closed: int = Field(ge=0)
     tickets_unknown: int = Field(ge=0)
     high_priority_open: int = Field(ge=0)
+    due_today: int = Field(ge=0)
     overdue_open: int = Field(ge=0)
     escalated_open: int = Field(ge=0)
 
@@ -81,6 +82,12 @@ class FreshserviceDashboardResponse(BaseModel):
     summary: FreshserviceDashboardSummary
     status_distribution: list[FreshserviceNamedCount] = Field(default_factory=list, max_length=16)
     priority_distribution: list[FreshserviceNamedCount] = Field(default_factory=list, max_length=16)
+    unresolved_status_distribution: list[FreshserviceNamedCount] = Field(
+        default_factory=list, max_length=16
+    )
+    unresolved_priority_distribution: list[FreshserviceNamedCount] = Field(
+        default_factory=list, max_length=16
+    )
     category_distribution: list[FreshserviceNamedCount] = Field(default_factory=list, max_length=10)
     resolution_trend: list[FreshserviceTrendPoint] = Field(default_factory=list, max_length=31)
     recent_tickets: list[FreshserviceTicket] = Field(default_factory=list, max_length=50)

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
 
-from app.contracts import IntegrationHealthSummary
+from app.contracts import ExecutiveSourceSummary, IntegrationHealthSummary
 from app.integrations.wazuh.client import WazuhClient
 from app.integrations.wazuh.indexer_client import WazuhIndexerClient
 from app.integrations.wazuh.models import (
@@ -10,6 +10,7 @@ from app.integrations.wazuh.models import (
     WazuhAlertSearchResult,
     WazuhDashboardResponse,
     WazuhDashboardSummary,
+    WazuhVulnerabilitySummary,
 )
 
 
@@ -32,13 +33,14 @@ class WazuhDashboardService:
     ) -> WazuhDashboardResponse:
         started = perf_counter()
         interval = trend_interval_for_range(end - start)
-        agents, alert_result = await asyncio.gather(
+        agents, alert_result, vulnerabilities = await asyncio.gather(
             self._agent_client.list_agents(),
             self._indexer_client.search_alerts(
                 start,
                 end,
                 trend_interval=interval,
             ),
+            self._indexer_client.search_vulnerabilities(),
         )
         observed_at = datetime.now(timezone.utc)
         response_time_ms = max(0, int((perf_counter() - started) * 1000))
@@ -56,11 +58,45 @@ class WazuhDashboardService:
                 is_stale=False,
                 warnings=[],
             ),
-            summary=_build_summary(agents, alert_result),
+            summary=_build_summary(agents, alert_result, vulnerabilities),
             agents=agents,
             top_agents=alert_result.top_agents,
+            top_alerts=alert_result.top_alerts,
+            vulnerabilities=vulnerabilities,
+            fim=alert_result.fim,
+            mitre=alert_result.mitre,
             alert_trend=alert_result.trend,
             recent_alerts=alert_result.alerts,
+        )
+
+    async def get_executive_summary(
+        self,
+        start: datetime,
+        end: datetime,
+    ) -> ExecutiveSourceSummary:
+        dashboard = await self.get_dashboard(start, end)
+        summary = dashboard.summary
+
+        return ExecutiveSourceSummary(
+            source="wazuh",
+            observed_at=dashboard.observed_at,
+            is_stale=dashboard.is_stale,
+            health=dashboard.health,
+            metrics={
+                "agents_total": summary.agents_total,
+                "agents_active": summary.agents_active,
+                "agents_disconnected": summary.agents_disconnected,
+                "alerts_total": summary.alerts_total,
+                "alerts_high": summary.alerts_high,
+                "alerts_critical": summary.alerts_critical,
+                "vulnerabilities_total": summary.vulnerabilities_total,
+                "vulnerabilities_high": summary.vulnerabilities_high,
+                "vulnerabilities_critical": summary.vulnerabilities_critical,
+                "vulnerable_agents": summary.vulnerable_agents,
+                "fim_events": summary.fim_events,
+                "mitre_events": summary.mitre_events,
+            },
+            warnings=dashboard.warnings,
         )
 
 
@@ -77,6 +113,7 @@ def trend_interval_for_range(duration: timedelta) -> str:
 def _build_summary(
     agents: list[WazuhAgent],
     alerts: WazuhAlertSearchResult,
+    vulnerabilities: WazuhVulnerabilitySummary,
 ) -> WazuhDashboardSummary:
     agent_counts = {
         "active": 0,
@@ -99,6 +136,15 @@ def _build_summary(
         else:
             critical += count
 
+    vulnerability_critical = 0
+    vulnerability_high = 0
+    for item in vulnerabilities.by_severity:
+        severity = item.name.strip().lower()
+        if severity == "critical":
+            vulnerability_critical += item.count
+        elif severity == "high":
+            vulnerability_high += item.count
+
     return WazuhDashboardSummary(
         agents_total=len(agents),
         agents_active=agent_counts["active"],
@@ -111,4 +157,10 @@ def _build_summary(
         alerts_medium=medium,
         alerts_high=high,
         alerts_critical=critical,
+        vulnerabilities_total=vulnerabilities.total,
+        vulnerabilities_critical=vulnerability_critical,
+        vulnerabilities_high=vulnerability_high,
+        vulnerable_agents=vulnerabilities.affected_agents,
+        fim_events=alerts.fim.total,
+        mitre_events=alerts.mitre.total,
     )

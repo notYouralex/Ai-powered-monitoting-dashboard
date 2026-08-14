@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from argon2 import PasswordHasher, Type
 
 from app.db.models import SyncRun, Ticket, User
+from app.integrations.freshservice.service import FreshserviceDashboardService
 
 
 NOW = datetime(2026, 8, 10, 8, 0, tzinfo=timezone.utc)
@@ -28,7 +29,7 @@ def seed_user_and_tickets(auth_env) -> None:
                     priority_code=4,
                     priority="urgent",
                     category="Network",
-                    due_by=NOW - timedelta(hours=1),
+                    due_by=NOW - timedelta(days=1),
                     is_escalated=True,
                     source_created_at=NOW - timedelta(days=2),
                     source_updated_at=NOW - timedelta(minutes=5),
@@ -59,6 +60,32 @@ def seed_user_and_tickets(auth_env) -> None:
                     resolved_at=NOW - timedelta(hours=1),
                     synced_at=NOW - timedelta(minutes=2),
                 ),
+                Ticket(
+                    source_ticket_id=104,
+                    subject="Waiting for customer",
+                    status_code=6,
+                    status="unknown",
+                    priority_code=2,
+                    priority="medium",
+                    category="Network",
+                    due_by=NOW - timedelta(days=1),
+                    source_created_at=NOW - timedelta(days=4),
+                    source_updated_at=NOW - timedelta(minutes=7),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=105,
+                    subject="Open ticket due today",
+                    status_code=2,
+                    status="open",
+                    priority_code=2,
+                    priority="medium",
+                    category="Software",
+                    due_by=NOW - timedelta(hours=1),
+                    source_created_at=NOW - timedelta(days=1),
+                    source_updated_at=NOW - timedelta(minutes=8),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
             ]
         )
         db.add(
@@ -68,8 +95,8 @@ def seed_user_and_tickets(auth_env) -> None:
                 status="success",
                 started_at=NOW - timedelta(minutes=3),
                 completed_at=NOW - timedelta(minutes=2),
-                records_received=3,
-                records_upserted=3,
+                records_received=5,
+                records_upserted=5,
             )
         )
         db.commit()
@@ -103,20 +130,65 @@ def test_dashboard_reads_synchronized_reporting_data(auth_env, monkeypatch) -> N
     assert body["health"]["status"] == "healthy"
     assert body["health"]["is_stale"] is False
     assert body["summary"] == {
-        "tickets_total": 3,
-        "tickets_open": 1,
-        "tickets_pending": 1,
+        "tickets_total": 5,
+        "tickets_open": 2,
+        "tickets_pending": 2,
         "tickets_resolved": 1,
         "tickets_closed": 0,
         "tickets_unknown": 0,
         "high_priority_open": 1,
+        "due_today": 1,
         "overdue_open": 1,
         "escalated_open": 1,
     }
-    assert body["status_distribution"][0]["count"] >= 1
+    assert {item["name"]: item["count"] for item in body["status_distribution"]} == {
+        "Open": 2,
+        "Pending": 1,
+        "Pending Customer": 1,
+        "Resolved": 1,
+    }
+    assert {
+        item["name"]: item["count"] for item in body["unresolved_status_distribution"]
+    } == {
+        "Open": 2,
+        "Pending": 1,
+        "Pending Customer": 1,
+    }
+    assert {
+        item["name"]: item["count"] for item in body["unresolved_priority_distribution"]
+    } == {
+        "medium": 3,
+        "urgent": 1,
+    }
     assert body["category_distribution"][0]["count"] >= 1
     assert body["resolution_trend"][0]["count"] == 1
     assert body["recent_tickets"][0]["ticket_id"] == 101
+
+
+def test_dashboard_service_builds_bounded_executive_summary(auth_env, monkeypatch) -> None:
+    seed_user_and_tickets(auth_env)
+    auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
+    auth_env.settings.freshservice_api_key = "fake-key"
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: NOW)
+
+    with auth_env.session_factory() as db:
+        service = FreshserviceDashboardService(db=db, settings=auth_env.settings)
+        response = service.get_executive_summary()
+
+    assert response.source == "freshservice"
+    assert response.health.source == "freshservice"
+    assert response.health.status == "healthy"
+    assert response.is_stale is False
+    assert response.warnings == []
+    assert response.metrics == {
+        "tickets_total": 5,
+        "tickets_open": 2,
+        "tickets_pending": 2,
+        "high_priority_open": 1,
+        "due_today": 1,
+        "overdue_open": 1,
+        "escalated_open": 1,
+    }
 
 
 def test_dashboard_returns_stale_data_when_latest_sync_failed(auth_env, monkeypatch) -> None:
@@ -144,7 +216,7 @@ def test_dashboard_returns_stale_data_when_latest_sync_failed(auth_env, monkeypa
     body = response.json()
     assert body["health"]["status"] == "degraded"
     assert body["health"]["is_stale"] is True
-    assert body["summary"]["tickets_total"] == 3
+    assert body["summary"]["tickets_total"] == 5
     assert body["warnings"]
 
 
