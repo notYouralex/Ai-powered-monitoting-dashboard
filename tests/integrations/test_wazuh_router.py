@@ -109,6 +109,14 @@ def test_authenticated_dashboard_returns_normalized_response(auth_env) -> None:
     assert body["source"] == "wazuh"
     assert body["health"]["status"] == "healthy"
     assert body["summary"]["alerts_total"] == 0
+    assert body["summary"]["vulnerabilities_total"] == 0
+    assert body["summary"]["fim_events"] == 0
+    assert body["summary"]["mitre_events"] == 0
+    assert "threat_level" not in body["summary"]
+    assert body["top_alerts"] == []
+    assert body["vulnerabilities"]["total"] == 0
+    assert body["fim"]["total"] == 0
+    assert body["mitre"]["total"] == 0
     assert fake_service.calls == [
         (
             datetime(2026, 8, 10, 0, 0, tzinfo=timezone.utc),

@@ -4,8 +4,12 @@ from app.integrations.wazuh.models import (
     WazuhAgent,
     WazuhAlert,
     WazuhAlertSearchResult,
+    WazuhFimSummary,
+    WazuhMitreSummary,
     WazuhNamedCount,
     WazuhTrendPoint,
+    WazuhVulnerability,
+    WazuhVulnerabilitySummary,
 )
 from app.integrations.wazuh.service import WazuhDashboardService, trend_interval_for_range
 
@@ -40,6 +44,20 @@ class FakeIndexerClient:
             total_alerts=15,
             severity_levels={3: 1, 7: 2, 11: 3, 12: 4, 14: 2, 15: 2, 16: 1},
             top_agents=[WazuhNamedCount(name="web-01", count=8)],
+            top_alerts=[WazuhNamedCount(name="Severe authentication activity.", count=4)],
+            fim=WazuhFimSummary(
+                total=4,
+                added=2,
+                modified=1,
+                deleted=1,
+                top_agents=[WazuhNamedCount(name="web-01", count=4)],
+            ),
+            mitre=WazuhMitreSummary(
+                total=6,
+                tactics=[WazuhNamedCount(name="Credential Access", count=6)],
+                techniques=[WazuhNamedCount(name="Password Guessing", count=6)],
+                top_agents=[WazuhNamedCount(name="web-01", count=6)],
+            ),
             trend=[WazuhTrendPoint(timestamp=START, count=15)],
             alerts=[
                 WazuhAlert(
@@ -50,6 +68,32 @@ class FakeIndexerClient:
                     agent_id="001",
                     agent_name="web-01",
                     groups=["sshd"],
+                )
+            ],
+        )
+
+    async def search_vulnerabilities(self) -> WazuhVulnerabilitySummary:
+        return WazuhVulnerabilitySummary(
+            total=7,
+            unique_cves=5,
+            affected_agents=2,
+            by_severity=[
+                WazuhNamedCount(name="Critical", count=2),
+                WazuhNamedCount(name="High", count=3),
+                WazuhNamedCount(name="Medium", count=2),
+            ],
+            top_agents=[WazuhNamedCount(name="web-01", count=5)],
+            recent=[
+                WazuhVulnerability(
+                    vulnerability_id="CVE-2026-0001",
+                    severity="Critical",
+                    score=9.8,
+                    detected_at=END - timedelta(minutes=2),
+                    agent_id="001",
+                    agent_name="web-01",
+                    package_name="openssl",
+                    package_version="3.0.1",
+                    description="Example OpenSSL vulnerability.",
                 )
             ],
         )
@@ -82,8 +126,18 @@ def test_dashboard_service_combines_agents_alerts_and_health() -> None:
         assert response.summary.alerts_medium == 5
         assert response.summary.alerts_high == 6
         assert response.summary.alerts_critical == 3
+        assert response.summary.vulnerabilities_total == 7
+        assert response.summary.vulnerabilities_critical == 2
+        assert response.summary.vulnerabilities_high == 3
+        assert response.summary.vulnerable_agents == 2
+        assert response.summary.fim_events == 4
+        assert response.summary.mitre_events == 6
 
         assert response.top_agents[0].name == "web-01"
+        assert response.top_alerts[0].count == 4
+        assert response.vulnerabilities.recent[0].vulnerability_id == "CVE-2026-0001"
+        assert response.fim.added == 2
+        assert response.mitre.tactics[0].name == "Credential Access"
         assert response.alert_trend[0].count == 15
         assert response.recent_alerts[0].rule_id == "5710"
         assert len(response.agents) == 5
@@ -111,6 +165,12 @@ def test_dashboard_service_builds_bounded_executive_summary() -> None:
             "alerts_total": 15,
             "alerts_high": 6,
             "alerts_critical": 3,
+            "vulnerabilities_total": 7,
+            "vulnerabilities_high": 3,
+            "vulnerabilities_critical": 2,
+            "vulnerable_agents": 2,
+            "fim_events": 4,
+            "mitre_events": 6,
         }
 
     asyncio.run(run())
