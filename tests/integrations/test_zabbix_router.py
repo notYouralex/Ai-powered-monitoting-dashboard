@@ -166,8 +166,8 @@ def test_zabbix_dashboard_requires_authentication(auth_env) -> None:
     assert response.json() == {"detail": "Not authenticated"}
 
 
-def test_zabbix_dashboard_accepts_configured_grafana_service_token(auth_env) -> None:
-    auth_env.settings.grafana_service_token = SecretStr("g" * 48)
+def test_zabbix_dashboard_accepts_configured_grafana_api_token(auth_env) -> None:
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
     dependency = getattr(zabbix_router_module, "get_zabbix_dashboard_service", None)
     assert dependency is not None
     fake_service = FakeDashboardService()
@@ -183,8 +183,8 @@ def test_zabbix_dashboard_accepts_configured_grafana_service_token(auth_env) -> 
     assert fake_service.calls == 1
 
 
-def test_zabbix_dashboard_rejects_invalid_grafana_service_token(auth_env) -> None:
-    auth_env.settings.grafana_service_token = SecretStr("g" * 48)
+def test_zabbix_dashboard_rejects_invalid_grafana_api_token(auth_env) -> None:
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
 
     response = auth_env.client.get(
         "/api/dashboard/zabbix",
@@ -195,8 +195,8 @@ def test_zabbix_dashboard_rejects_invalid_grafana_service_token(auth_env) -> Non
     assert response.json() == {"detail": "Not authenticated"}
 
 
-def test_grafana_service_token_does_not_authenticate_user_endpoints(auth_env) -> None:
-    auth_env.settings.grafana_service_token = SecretStr("g" * 48)
+def test_grafana_api_token_does_not_authenticate_user_endpoints(auth_env) -> None:
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
 
     response = auth_env.client.get(
         "/api/auth/me",
@@ -210,7 +210,7 @@ def test_grafana_service_token_does_not_authenticate_user_endpoints(auth_env) ->
 def test_invalid_bearer_header_does_not_fall_back_to_valid_session(auth_env) -> None:
     create_user(auth_env)
     login(auth_env)
-    auth_env.settings.grafana_service_token = SecretStr("g" * 48)
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
 
     response = auth_env.client.get(
         "/api/dashboard/zabbix",

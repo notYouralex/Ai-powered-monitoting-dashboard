@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import require_dashboard_access
+from app.grafana.dependencies import require_dashboard_access
 from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.integrations.zabbix.cache import ZabbixCachedDashboardService

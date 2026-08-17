@@ -17,4 +17,4 @@ datasources:
       allowDangerousHTTPMethods: false
       timeoutInSeconds: 10
     secureJsonData:
-      bearerToken: $GRAFANA_SERVICE_TOKEN
+      bearerToken: $GRAFANA_API_TOKEN

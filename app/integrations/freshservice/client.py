@@ -30,6 +30,8 @@ _STATUS_NAMES: dict[int, FreshserviceTicketStatus] = {
     3: "pending",
     4: "resolved",
     5: "closed",
+    6: "pending",
+    7: "pending",
 }
 _PRIORITY_NAMES: dict[int, FreshserviceTicketPriority] = {
     1: "low",

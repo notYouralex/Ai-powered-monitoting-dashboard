@@ -1,3 +1,4 @@
+from calendar import monthrange
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -18,7 +19,7 @@ from app.integrations.freshservice.models import (
 
 
 OPEN_STATUS_CODES = (2,)
-PENDING_STATUS_CODES = (3, 6)
+PENDING_STATUS_CODES = (3, 6, 7)
 RESOLVED_STATUS_CODES = (4,)
 CLOSED_STATUS_CODES = (5,)
 ACTIVE_STATUS_CODES = OPEN_STATUS_CODES + PENDING_STATUS_CODES
@@ -54,12 +55,14 @@ class FreshserviceDashboardService:
     def get_dashboard(self) -> FreshserviceDashboardResponse:
         now = utc_now()
         total = self._count()
+        six_month_start = _dashboard_month_start(now, months=6)
+        historical_scope = Ticket.source_created_at >= six_month_start
         unresolved = Ticket.status_code.notin_(TERMINAL_STATUS_CODES)
-        status_counts = self._status_distribution()
-        priority_counts = self._distribution(Ticket.priority)
+        status_counts = self._status_distribution(historical_scope)
+        priority_counts = self._distribution(Ticket.priority, historical_scope)
         unresolved_status_counts = self._status_distribution(unresolved)
         unresolved_priority_counts = self._distribution(Ticket.priority, unresolved)
-        category_counts = self._category_distribution()
+        category_counts = self._category_distribution(historical_scope)
         day_start, next_day_start = _dashboard_day_bounds(now)
         latest_run = self._latest_run()
         last_success = self._latest_success()
@@ -70,10 +73,9 @@ class FreshserviceDashboardService:
             last_success=last_success,
         )
 
-        resolved_since = now - timedelta(days=30)
         resolved_values = self._db.scalars(
             select(Ticket.resolved_at)
-            .where(Ticket.resolved_at.is_not(None), Ticket.resolved_at >= resolved_since)
+            .where(Ticket.resolved_at.is_not(None), historical_scope)
             .order_by(Ticket.resolved_at)
         ).all()
         resolved_by_date = Counter(value.date() for value in resolved_values if value is not None)
@@ -85,9 +87,15 @@ class FreshserviceDashboardService:
         summary = FreshserviceDashboardSummary(
             tickets_total=total,
             tickets_open=self._count(Ticket.status_code.in_(OPEN_STATUS_CODES)),
-            tickets_pending=self._count(Ticket.status_code.in_(PENDING_STATUS_CODES)),
-            tickets_resolved=self._count(Ticket.status_code.in_(RESOLVED_STATUS_CODES)),
-            tickets_closed=self._count(Ticket.status_code.in_(CLOSED_STATUS_CODES)),
+            tickets_pending=self._count(
+                Ticket.status_code.in_(PENDING_STATUS_CODES), historical_scope
+            ),
+            tickets_resolved=self._count(
+                Ticket.status_code.in_(RESOLVED_STATUS_CODES), historical_scope
+            ),
+            tickets_closed=self._count(
+                Ticket.status_code.in_(CLOSED_STATUS_CODES), historical_scope
+            ),
             tickets_unknown=self._count(Ticket.status_code.notin_(KNOWN_SUMMARY_STATUS_CODES)),
             high_priority_open=self._count(
                 Ticket.status_code.in_(ACTIVE_STATUS_CODES),
@@ -184,14 +192,13 @@ class FreshserviceDashboardService:
             for code, count in rows
         }
 
-    def _category_distribution(self) -> list[FreshserviceNamedCount]:
+    def _category_distribution(self, *criteria) -> list[FreshserviceNamedCount]:
         category = func.coalesce(Ticket.category, "Uncategorized")
+        statement = select(category, func.count()).select_from(Ticket)
+        if criteria:
+            statement = statement.where(*criteria)
         rows = self._db.execute(
-            select(category, func.count())
-            .select_from(Ticket)
-            .group_by(category)
-            .order_by(func.count().desc(), category)
-            .limit(10)
+            statement.group_by(category).order_by(func.count().desc(), category).limit(10)
         ).all()
         return [FreshserviceNamedCount(name=str(name), count=int(count)) for name, count in rows]
 
@@ -249,6 +256,24 @@ class FreshserviceDashboardService:
                 is_stale = True
 
         return status, is_stale, warnings
+
+
+def _dashboard_month_start(now: datetime, *, months: int) -> datetime:
+    local_now = now.astimezone(FRESHSERVICE_DASHBOARD_TIMEZONE)
+    month_index = local_now.year * 12 + local_now.month - 1 - months
+    year, zero_based_month = divmod(month_index, 12)
+    month = zero_based_month + 1
+    day = min(local_now.day, monthrange(year, month)[1])
+    start_local = local_now.replace(
+        year=year,
+        month=month,
+        day=day,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    return start_local.astimezone(timezone.utc)
 
 
 def _dashboard_day_bounds(now: datetime) -> tuple[datetime, datetime]:

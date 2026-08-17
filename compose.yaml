@@ -35,7 +35,7 @@ services:
       LOGIN_WINDOW_SECONDS: ${LOGIN_WINDOW_SECONDS:-300}
       LOGIN_MAX_FAILURES: ${LOGIN_MAX_FAILURES:-5}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      GRAFANA_SERVICE_TOKEN: ${GRAFANA_SERVICE_TOKEN:-}
+      GRAFANA_API_TOKEN: ${GRAFANA_API_TOKEN:-}
       WAZUH_BASE_URL: ${WAZUH_BASE_URL:-}
       WAZUH_USERNAME: ${WAZUH_USERNAME:-}
       WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
@@ -124,36 +124,5 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
 
-  grafana:
-    image: grafana/grafana:13.1.0
-    depends_on:
-      fastapi-api:
-        condition: service_healthy
-    network_mode: host
-    environment:
-      APP_PORT: ${APP_PORT:-8000}
-      GRAFANA_SERVICE_TOKEN: ${GRAFANA_SERVICE_TOKEN:?set GRAFANA_SERVICE_TOKEN in .env}
-      GF_SERVER_HTTP_ADDR: "127.0.0.1"
-      GF_SERVER_HTTP_PORT: ${GRAFANA_PORT:-3000}
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
-      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:?set GRAFANA_SECRET_KEY in .env}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@3.7.3
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards/zabbix:ro
-    read_only: true
-    tmpfs:
-      - /tmp
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    restart: unless-stopped
-
 volumes:
   postgres-data:
-  grafana-data:

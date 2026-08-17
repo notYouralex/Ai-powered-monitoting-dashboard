@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.auth.dependencies import get_current_user
+from app.grafana.dependencies import require_dashboard_access
 from app.core.config import Settings, get_settings
 from app.integrations.wazuh.client import WazuhClient
 from app.integrations.wazuh.indexer_client import WazuhIndexerClient
@@ -16,7 +16,7 @@ WAZUH_MAX_RANGE = timedelta(days=30)
 router = APIRouter(
     prefix="/api/dashboard/wazuh",
     tags=["dashboard", "wazuh"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_dashboard_access)],
 )
 
 

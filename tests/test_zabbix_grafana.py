@@ -128,6 +128,6 @@ def test_zabbix_fastapi_datasource_uses_environment_backed_bearer_auth() -> None
     assert "url: http://127.0.0.1:$APP_PORT" in datasource
     assert "auth_method: bearerToken" in datasource
     assert "allowDangerousHTTPMethods: false" in datasource
-    assert "bearerToken: $GRAFANA_SERVICE_TOKEN" in datasource
+    assert "bearerToken: $GRAFANA_API_TOKEN" in datasource
     assert "Bearer " not in datasource
     assert "replace-" not in datasource
