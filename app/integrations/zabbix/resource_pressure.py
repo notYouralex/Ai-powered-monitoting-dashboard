@@ -89,7 +89,7 @@ def select_resource_trend_items(
                     host_id=host_id,
                     item_id=cpu.item_id,
                     metric="cpu",
-                    invert=True,
+                    invert=cpu.mode == "idle",
                 )
             )
 
@@ -135,20 +135,22 @@ def _select_resource_candidates(
     dict[str, _Candidate],
     dict[tuple[str, str], _Candidate],
 ]:
-    cpu_by_host: dict[str, _Candidate] = {}
+    cpu_by_host_mode: dict[tuple[str, str], _Candidate] = {}
     memory_by_host_mode: dict[tuple[str, str], _Candidate] = {}
     disk_by_host_fs_mode: dict[tuple[str, str, str], _Candidate] = {}
 
     for item in cpu_items:
         key = _item_key(item)
-        if not _is_supported_cpu_key(key):
+        mode = _cpu_mode(key)
+        if mode is None:
             continue
-        candidate = _candidate(item, mode="idle", invert=True)
+        candidate = _candidate(item, mode=mode, invert=mode == "idle")
         if candidate is None:
             continue
-        current = cpu_by_host.get(candidate.host_id)
+        lookup = (candidate.host_id, mode)
+        current = cpu_by_host_mode.get(lookup)
         if current is None or _is_newer_candidate(candidate, current):
-            cpu_by_host[candidate.host_id] = candidate
+            cpu_by_host_mode[lookup] = candidate
 
     for item in memory_items:
         key = _item_key(item)
@@ -183,7 +185,7 @@ def _select_resource_candidates(
             disk_by_host_fs_mode[lookup] = candidate
 
     return (
-        cpu_by_host,
+        _prefer_cpu_modes(cpu_by_host_mode),
         _prefer_memory_modes(memory_by_host_mode),
         _prefer_disk_modes(disk_by_host_fs_mode),
     )
@@ -213,28 +215,44 @@ def _key_params(key: str, prefix: str) -> list[str] | None:
         raise ValueError("invalid Zabbix item key") from exc
 
 
-def _is_supported_cpu_key(key: str) -> bool:
+def _cpu_mode(key: str) -> str | None:
     params = _key_params(key, "system.cpu.util")
-    if params is None or not 2 <= len(params) <= 4:
-        return False
+    if params is None:
+        return None
+    if len(params) == 1:
+        sensor = params[0].strip().casefold()
+        return "used" if sensor.startswith("jnxoperatingcpu.") else None
+    if not 2 <= len(params) <= 4:
+        return None
     cpu = params[0].strip().casefold()
     state = params[1].strip().casefold()
     mode = params[2].strip().casefold() if len(params) >= 3 else ""
     logical = params[3].strip().casefold() if len(params) >= 4 else ""
-    return (
+    if (
         cpu in {"", "all"}
         and state == "idle"
         and mode in {"", "avg1"}
         and logical in {"", "logical"}
-    )
+    ):
+        return "idle"
+    return None
 
 
 def _memory_mode(key: str) -> str | None:
     params = _key_params(key, "vm.memory.size")
+    if params is not None:
+        if len(params) != 1:
+            return None
+        mode = params[0].strip().casefold()
+        return mode if mode in {"pused", "pavailable"} else None
+
+    params = _key_params(key, "vm.memory.util")
     if params is None or len(params) != 1:
         return None
-    mode = params[0].strip().casefold()
-    return mode if mode in {"pused", "pavailable"} else None
+    sensor = params[0].strip().casefold()
+    if sensor.startswith("jnxoperatingbuffer.") or sensor == "memoryusedpercentage":
+        return "util"
+    return None
 
 
 def _disk_key(key: str) -> tuple[str, str] | None:
@@ -304,6 +322,20 @@ def _is_newer_candidate(candidate: _Candidate, current: _Candidate) -> bool:
     return _id_sort_key(candidate.item_id) < _id_sort_key(current.item_id)
 
 
+def _prefer_cpu_modes(
+    candidates: dict[tuple[str, str], _Candidate],
+) -> dict[str, _Candidate]:
+    host_ids = {host_id for host_id, _ in candidates}
+    selected: dict[str, _Candidate] = {}
+    for host_id in host_ids:
+        candidate = candidates.get((host_id, "idle"))
+        if candidate is None:
+            candidate = candidates.get((host_id, "used"))
+        if candidate is not None:
+            selected[host_id] = candidate
+    return selected
+
+
 def _prefer_memory_modes(
     candidates: dict[tuple[str, str], _Candidate],
 ) -> dict[str, _Candidate]:
@@ -311,6 +343,8 @@ def _prefer_memory_modes(
     selected: dict[str, _Candidate] = {}
     for host_id in host_ids:
         candidate = candidates.get((host_id, "pused"))
+        if candidate is None:
+            candidate = candidates.get((host_id, "util"))
         if candidate is None:
             candidate = candidates.get((host_id, "pavailable"))
         if candidate is not None:

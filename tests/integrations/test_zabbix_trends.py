@@ -61,6 +61,20 @@ def test_selects_one_cpu_memory_and_hottest_disk_per_requested_host() -> None:
     ]
 
 
+def test_snmp_direct_utilization_trend_selections_are_not_inverted() -> None:
+    selections = select_resource_trend_items(
+        [item("1", "2", "system.cpu.util[jnxOperatingCPU.9.1.0.0]", "27")],
+        [item("2", "2", "vm.memory.util[memoryUsedPercentage]", "58")],
+        [],
+        ["2"],
+    )
+
+    assert [(row.metric, row.item_id, row.invert) for row in selections] == [
+        ("cpu", "1", False),
+        ("memory", "2", False),
+    ]
+
+
 def test_selection_ignores_unrequested_hosts_and_preserves_requested_order() -> None:
     selections = select_resource_trend_items(
         [

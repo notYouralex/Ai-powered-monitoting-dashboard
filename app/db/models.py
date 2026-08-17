@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, BigInteger, Boolean, ForeignKey, Index, Integer, String
+from sqlalchemy import JSON, BigInteger, Boolean, Date, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UTCDateTime
@@ -110,6 +110,41 @@ class Ticket(Base):
         Index("ix_tickets_priority", "priority"),
         Index("ix_tickets_source_updated_at", "source_updated_at"),
         Index("ix_tickets_due_by", "due_by"),
+    )
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_asset_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    asset_tag: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    serial: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    model_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    category_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    category: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    manufacturer_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status_label_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    assigned_to_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    assigned_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    location_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    warranty_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    warranty_expires: Mapped[date | None] = mapped_column(Date, nullable=True)
+    synced_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_assets_asset_tag", "asset_tag"),
+        Index("ix_assets_serial", "serial"),
+        Index("ix_assets_status_label", "status_label"),
+        Index("ix_assets_category", "category"),
+        Index("ix_assets_synced_at", "synced_at"),
     )
 
 

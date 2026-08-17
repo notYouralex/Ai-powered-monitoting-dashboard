@@ -1,7 +1,10 @@
 import json
 from pathlib import Path
 
+from argon2 import PasswordHasher, Type
 from pydantic import SecretStr
+
+from app.db.models import User
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +48,33 @@ def test_dashboard_routes_reject_invalid_grafana_bearer_token(auth_env) -> None:
 
     assert auth_env.client.get("/api/dashboard/freshservice", headers=headers).status_code == 401
     assert auth_env.client.get("/api/dashboard/wazuh", headers=headers).status_code == 401
+
+
+def test_invalid_authorization_does_not_fall_back_to_signed_in_session(auth_env) -> None:
+    with auth_env.session_factory() as db:
+        db.add(
+            User(
+                username="grafana-test-user",
+                password_hash=PasswordHasher(type=Type.ID).hash("correct horse"),
+                is_active=True,
+                is_admin=False,
+            )
+        )
+        db.commit()
+
+    login = auth_env.client.post(
+        "/api/auth/login",
+        json={"username": "grafana-test-user", "password": "correct horse"},
+    )
+    assert login.status_code == 200
+
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
+    response = auth_env.client.get(
+        "/api/dashboard/freshservice",
+        headers={"Authorization": "Basic not-a-grafana-token"},
+    )
+
+    assert response.status_code == 401
 
 
 def test_existing_grafana_setup_keeps_datasource_secret_out_of_git() -> None:

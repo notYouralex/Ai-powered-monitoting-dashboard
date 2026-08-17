@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -32,6 +31,7 @@ def get_auth_context(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     return AuthContext(user=auth_session.user, session=auth_session)
+
 
 
 def get_current_user(context: AuthContext = Depends(get_auth_context)) -> User:

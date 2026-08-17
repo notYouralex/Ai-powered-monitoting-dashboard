@@ -66,6 +66,9 @@ class FakeZabbixClient:
     async def list_resource_trends(self, host_ids: list[str]):
         return []
 
+    async def list_topology_maps(self):
+        return []
+
 
 def test_refresh_creates_normalized_singleton_snapshot_and_success_run() -> None:
     async def run() -> None:

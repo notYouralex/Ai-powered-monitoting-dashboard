@@ -212,3 +212,57 @@ def test_alembic_head_creates_zabbix_dashboard_cache_table(tmp_path) -> None:
         column["name"] for column in inspect(engine).get_columns("zabbix_dashboard_cache")
     }
     assert columns == {"id", "snapshot", "refreshed_at"}
+
+
+def test_snipe_it_asset_schema_has_stable_source_and_reporting_fields() -> None:
+    from app.db.base import Base
+    from app.db.session import create_engine_for_url
+
+    engine = create_engine_for_url("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    inspector = inspect(engine)
+
+    columns = {column["name"] for column in inspector.get_columns("assets")}
+    assert {
+        "source_asset_id",
+        "asset_tag",
+        "name",
+        "serial",
+        "model",
+        "category",
+        "manufacturer",
+        "status_label",
+        "status_type",
+        "assigned_to_id",
+        "assigned_type",
+        "location",
+        "purchase_date",
+        "warranty_months",
+        "warranty_expires",
+        "synced_at",
+    }.issubset(columns)
+
+    unique_constraints = inspector.get_unique_constraints("assets")
+    assert any(
+        constraint["column_names"] == ["source_asset_id"]
+        for constraint in unique_constraints
+    )
+
+
+def test_alembic_head_creates_snipe_it_assets_table(tmp_path) -> None:
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import create_engine, inspect
+
+    database_path = tmp_path / "snipe-it-assets-migration.db"
+    config = Config("alembic.ini")
+    config.set_main_option("sqlalchemy.url", f"sqlite:///{database_path}")
+
+    command.upgrade(config, "head")
+
+    engine = create_engine(f"sqlite:///{database_path}")
+    columns = {column["name"] for column in inspect(engine).get_columns("assets")}
+    assert "source_asset_id" in columns
+    assert "asset_tag" in columns
+    assert "serial" in columns
+    assert "synced_at" in columns

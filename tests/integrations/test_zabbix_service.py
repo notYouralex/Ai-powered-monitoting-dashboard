@@ -13,6 +13,9 @@ from app.integrations.zabbix.models import (
     ZabbixResourcePressure,
     ZabbixResourceTrend,
     ZabbixResourceTrendPoint,
+    ZabbixTopologyEdge,
+    ZabbixTopologyMap,
+    ZabbixTopologyNode,
 )
 from app.integrations.zabbix.service import ZabbixDashboardService
 
@@ -122,13 +125,17 @@ class FakeZabbixClient:
         active_problems: list[ZabbixProblem] | None = None,
         resource_pressure: list[ZabbixResourcePressure] | None = None,
         resource_trends: list[ZabbixResourceTrend] | None = None,
+        topology_maps: list[ZabbixTopologyMap] | None = None,
         trend_error: IntegrationError | None = None,
+        topology_error: IntegrationError | None = None,
     ) -> None:
         self.hosts = hosts
         self.active_problems = [] if active_problems is None else active_problems
         self.resource_pressure = [] if resource_pressure is None else resource_pressure
         self.resource_trends = [] if resource_trends is None else resource_trends
+        self.topology_maps = [] if topology_maps is None else topology_maps
         self.trend_error = trend_error
+        self.topology_error = topology_error
         self.host_calls = 0
         self.problem_calls = 0
         self.resource_calls = 0
@@ -151,6 +158,11 @@ class FakeZabbixClient:
         if self.trend_error is not None:
             raise self.trend_error
         return self.resource_trends
+
+    async def list_topology_maps(self) -> list[ZabbixTopologyMap]:
+        if self.topology_error is not None:
+            raise self.topology_error
+        return self.topology_maps
 
 
 class CoordinatedClient:
@@ -181,6 +193,9 @@ class CoordinatedClient:
 
     async def list_resource_trends(self, host_ids: list[str]) -> list[ZabbixResourceTrend]:
         assert host_ids == []
+        return []
+
+    async def list_topology_maps(self) -> list[ZabbixTopologyMap]:
         return []
 
 
@@ -445,6 +460,78 @@ def test_dashboard_service_empty_ranking_still_calls_trends_with_empty_host_ids(
             "1 enabled Zabbix host has no current memory utilization metric.",
             "1 enabled Zabbix host has no current disk utilization metric.",
         ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_enriches_topology_with_live_host_state_and_problem_counts() -> None:
+    async def run() -> None:
+        topology = ZabbixTopologyMap(
+            map_id="7",
+            name="Campus Network",
+            width=1200,
+            height=800,
+            nodes=[
+                ZabbixTopologyNode(
+                    node_id="10",
+                    host_id="1",
+                    title="1",
+                    status="unknown",
+                    x=100,
+                    y=50,
+                ),
+                ZabbixTopologyNode(
+                    node_id="11",
+                    host_id="2",
+                    title="Remote Radio",
+                    status="unknown",
+                    x=400,
+                    y=300,
+                ),
+            ],
+            edges=[ZabbixTopologyEdge(edge_id="20", source="10", target="11")],
+        )
+        client = FakeZabbixClient(
+            [
+                host("1", enabled=True, availability="available"),
+                host("2", enabled=True, availability="unavailable"),
+            ],
+            [
+                problem("1", severity="high", host_id="2"),
+                problem("2", severity="warning", host_id="2"),
+            ],
+            topology_maps=[topology],
+        )
+
+        response = await ZabbixDashboardService(client=client).get_dashboard()
+
+        assert len(response.topology_maps) == 1
+        nodes = response.topology_maps[0].nodes
+        assert [(node.title, node.status, node.active_problem_count) for node in nodes] == [
+            ("Host 1", "available", 0),
+            ("Remote Radio", "unavailable", 2),
+        ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_keeps_core_data_when_topology_read_fails() -> None:
+    async def run() -> None:
+        client = FakeZabbixClient(
+            [host("1", enabled=True, availability="available")],
+            topology_error=IntegrationError(
+                source="zabbix",
+                code="SOURCE_BAD_RESPONSE",
+                retryable=False,
+            ),
+        )
+
+        response = await ZabbixDashboardService(client=client).get_dashboard()
+
+        assert response.health.status == "healthy"
+        assert response.summary.hosts_total == 1
+        assert response.topology_maps == []
+        assert "Zabbix topology maps are unavailable; core monitoring data remains available." in response.warnings
 
     asyncio.run(run())
 

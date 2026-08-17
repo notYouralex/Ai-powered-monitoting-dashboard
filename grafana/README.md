@@ -25,8 +25,9 @@ The source-controlled dashboard templates are:
 
 - `grafana/dashboards/wazuh.json`
 - `grafana/dashboards/freshservice.json`
+- `grafana/dashboards/zabbix-infrastructure.json`
 
-They query only the canonical FastAPI dashboard endpoints and use a Grafana datasource input placeholder instead of a host-specific datasource UID.
+They query only the canonical FastAPI dashboard endpoints. Wazuh and Freshservice use a Grafana datasource input placeholder; the Zabbix reference dashboard uses an Infinity datasource variable and should be pointed at the same securely configured `Monitoring API` datasource when imported.
 
 Freshservice historical panels use a six-calendar-month ticket creation-date scope in the `Asia/Manila` timezone to match the Freshservice reporting view. This applies to Pending, Resolved, Closed, all-ticket status distribution, category distribution, and resolution trend data. Current operational metrics such as Open, Due Today, Overdue, Escalated, and unresolved distributions remain current-state counts even when an older ticket is still actionable.
 
@@ -43,7 +44,7 @@ This UI-import approach keeps the bearer token in Grafana's secure datasource co
 ## Runtime sequence
 
 1. Rebuild/recreate the FastAPI API container so it loads the new `GRAFANA_API_TOKEN` authentication support.
-2. Confirm bearer-token access to `/api/dashboard/wazuh` and `/api/dashboard/freshservice`.
+2. Confirm bearer-token access to `/api/dashboard/wazuh`, `/api/dashboard/freshservice`, and `/api/dashboard/zabbix`.
 3. Configure the Infinity datasource in the existing Grafana UI using the secure bearer token field.
-4. Import the Wazuh and Freshservice dashboard JSON files and select the Monitoring API datasource when prompted.
+4. Import the Wazuh, Freshservice, and Zabbix dashboard JSON files and point them at the Monitoring API datasource.
 5. Validate panel rendering and data freshness in Grafana.

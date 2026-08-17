@@ -18,6 +18,13 @@ ZabbixProblemSeverity = Literal[
     "unknown",
 ]
 ResourceTrendMetric = Literal["cpu", "memory", "disk"]
+ZabbixTopologyStatus = Literal[
+    "available",
+    "unavailable",
+    "unknown",
+    "maintenance",
+    "disabled",
+]
 
 
 class ZabbixHostInterface(BaseModel):
@@ -111,6 +118,38 @@ class ZabbixResourceTrend(BaseModel):
     points: list[ZabbixResourceTrendPoint] = Field(default_factory=list, max_length=24)
 
 
+class ZabbixTopologyNode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str = Field(min_length=1, max_length=64)
+    host_id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=256)
+    status: ZabbixTopologyStatus = "unknown"
+    x: int = Field(ge=0, le=100000)
+    y: int = Field(ge=0, le=100000)
+    active_problem_count: int = Field(default=0, ge=0, le=1000)
+
+
+class ZabbixTopologyEdge(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    edge_id: str = Field(min_length=1, max_length=64)
+    source: str = Field(min_length=1, max_length=64)
+    target: str = Field(min_length=1, max_length=64)
+    label: str | None = Field(default=None, max_length=512)
+
+
+class ZabbixTopologyMap(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    map_id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=256)
+    width: int = Field(ge=1, le=100000)
+    height: int = Field(ge=1, le=100000)
+    nodes: list[ZabbixTopologyNode] = Field(default_factory=list, max_length=1000)
+    edges: list[ZabbixTopologyEdge] = Field(default_factory=list, max_length=2000)
+
+
 class ZabbixDashboardSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -150,4 +189,5 @@ class ZabbixDashboardResponse(BaseModel):
     resource_pressure: list[ZabbixResourcePressure] = Field(default_factory=list, max_length=5000)
     top_affected_hosts: list[ZabbixTopAffectedHost] = Field(default_factory=list, max_length=10)
     resource_trends: list[ZabbixResourceTrend] = Field(default_factory=list, max_length=30)
+    topology_maps: list[ZabbixTopologyMap] = Field(default_factory=list, max_length=100)
     warnings: list[str] = Field(default_factory=list, max_length=20)

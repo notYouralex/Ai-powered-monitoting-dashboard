@@ -63,6 +63,7 @@ def test_compose_passes_optional_integration_settings_to_api() -> None:
         "SNIPE_IT_VERIFY_TLS",
         "SNIPE_IT_CA_BUNDLE",
         "SNIPE_IT_TIMEOUT_SECONDS",
+        "SNIPE_IT_SYNC_INTERVAL_SECONDS",
         "FRESHSERVICE_BASE_URL",
         "FRESHSERVICE_API_KEY",
         "FRESHSERVICE_VERIFY_TLS",
@@ -95,7 +96,7 @@ def test_api_uses_loopback_postgres_and_read_only_wazuh_certificates() -> None:
 
 def test_background_worker_remains_on_compose_network() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     assert "network_mode: host" not in worker
     assert "@postgresql:5432/" in worker
@@ -109,9 +110,9 @@ def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
     assert "/health" in api
 
 
-def test_background_worker_receives_zabbix_settings() -> None:
+def test_background_worker_receives_zabbix_and_snipe_it_settings() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     expected_settings = (
         "ZABBIX_BASE_URL",
@@ -119,6 +120,12 @@ def test_background_worker_receives_zabbix_settings() -> None:
         "ZABBIX_VERIFY_TLS",
         "ZABBIX_CA_BUNDLE",
         "ZABBIX_TIMEOUT_SECONDS",
+        "SNIPE_IT_BASE_URL",
+        "SNIPE_IT_API_TOKEN",
+        "SNIPE_IT_VERIFY_TLS",
+        "SNIPE_IT_CA_BUNDLE",
+        "SNIPE_IT_TIMEOUT_SECONDS",
+        "SNIPE_IT_SYNC_INTERVAL_SECONDS",
     )
 
     for setting in expected_settings:
@@ -127,7 +134,7 @@ def test_background_worker_receives_zabbix_settings() -> None:
 
 def test_background_worker_mounts_runtime_certificates_read_only() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     assert "./.runtime-certs:/run/wazuh-certs:ro" in worker
 
@@ -144,10 +151,25 @@ def test_compose_defines_isolated_background_worker_without_host_port() -> None:
     compose = read("compose.yaml")
 
     assert "background-worker:" in compose
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
     assert 'command: ["python", "-m", "app.worker"]' in worker
     assert 'RUN_MIGRATIONS: "false"' in worker
     assert "fastapi-api:" in worker and "condition: service_healthy" in worker
     assert "FRESHSERVICE_API_KEY" in worker
     assert "FRESHSERVICE_SYNC_INTERVAL_SECONDS" in worker
     assert "ports:" not in worker
+
+
+def test_compose_reuses_external_grafana_instead_of_defining_duplicate_service() -> None:
+    compose = read("compose.yaml")
+
+    assert "\n  grafana:\n" not in compose
+    assert "grafana-data:" not in compose
+
+
+def test_api_receives_grafana_api_token_without_exposing_value() -> None:
+    compose = read("compose.yaml")
+    api = compose.split("fastapi-api:", 1)[1].split("background-worker:", 1)[0]
+
+    assert "GRAFANA_API_TOKEN: ${GRAFANA_API_TOKEN:-}" in api
+    assert "Bearer " not in api

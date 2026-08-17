@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     snipe_it_verify_tls: bool = True
     snipe_it_ca_bundle: Path | None = None
     snipe_it_timeout_seconds: int = Field(default=10, ge=1, le=60)
+    snipe_it_sync_interval_seconds: int = Field(default=900, ge=300, le=900)
 
     freshservice_base_url: AnyHttpUrl | None = None
     freshservice_api_key: SecretStr | None = None

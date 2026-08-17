@@ -16,17 +16,18 @@ def require_dashboard_access(
 ) -> None:
     """Allow a signed-in user or the read-only Grafana service token."""
 
-    authorization = request.headers.get("Authorization", "")
-    scheme, _, raw_token = authorization.partition(" ")
-    expected_token = settings.grafana_api_token
-
-    if (
-        expected_token is not None
-        and scheme.lower() == "bearer"
-        and raw_token
-        and compare_digest(raw_token, expected_token.get_secret_value())
-    ):
-        return
+    authorization = request.headers.get("Authorization")
+    if authorization is not None:
+        scheme, _, raw_token = authorization.partition(" ")
+        expected_token = settings.grafana_api_token
+        if (
+            expected_token is not None
+            and scheme.lower() == "bearer"
+            and raw_token
+            and compare_digest(raw_token, expected_token.get_secret_value())
+        ):
+            return
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     if request.cookies.get(SESSION_COOKIE_NAME):
         get_auth_context(request=request, db=db, settings=settings)

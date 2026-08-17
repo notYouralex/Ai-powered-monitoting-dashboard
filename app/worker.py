@@ -9,6 +9,8 @@ from app.core.errors import IntegrationError
 from app.db.session import SessionLocal
 from app.integrations.freshservice.client import FreshserviceClient
 from app.integrations.freshservice.sync import FreshserviceSyncService
+from app.integrations.snipe_it.client import SnipeItClient
+from app.integrations.snipe_it.sync import SnipeItSyncService
 from app.integrations.zabbix.cache import (
     ZABBIX_CACHE_REFRESH_INTERVAL_SECONDS,
     ZabbixCacheRefreshService,
@@ -28,6 +30,21 @@ async def run_freshservice_sync_once(
     client = client_factory(settings)
     with session_factory() as db:
         run = await FreshserviceSyncService(client).sync(db)
+    return run.status
+
+
+async def run_snipe_it_sync_once(
+    *,
+    settings: Settings,
+    session_factory=SessionLocal,
+    client_factory: Callable[[Settings], SnipeItClient] = SnipeItClient.from_settings,
+) -> str:
+    if settings.integration_config_state("snipe_it") != "configured":
+        return "not_configured"
+
+    client = client_factory(settings)
+    with session_factory() as db:
+        run = await SnipeItSyncService(client).sync(db)
     return run.status
 
 
@@ -57,6 +74,17 @@ async def _run_freshservice_loop(settings: Settings) -> None:
         await asyncio.sleep(settings.freshservice_sync_interval_seconds)
 
 
+async def _run_snipe_it_loop(settings: Settings) -> None:
+    while True:
+        try:
+            await run_snipe_it_sync_once(settings=settings)
+        except IntegrationError as exc:
+            print(f"Snipe-IT synchronization failed: {exc.code}", file=sys.stderr)
+        except SQLAlchemyError:
+            print("Snipe-IT synchronization database operation failed.", file=sys.stderr)
+        await asyncio.sleep(settings.snipe_it_sync_interval_seconds)
+
+
 async def _run_zabbix_loop(settings: Settings) -> None:
     while True:
         try:
@@ -72,6 +100,7 @@ async def run_worker() -> None:
     settings = get_settings()
     await asyncio.gather(
         _run_freshservice_loop(settings),
+        _run_snipe_it_loop(settings),
         _run_zabbix_loop(settings),
     )
 
