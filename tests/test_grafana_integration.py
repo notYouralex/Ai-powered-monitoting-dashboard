@@ -33,10 +33,12 @@ def test_grafana_bearer_token_is_scoped_to_dashboard_routes(auth_env) -> None:
     headers = {"Authorization": f"Bearer {token}"}
 
     freshservice = auth_env.client.get("/api/dashboard/freshservice", headers=headers)
+    snipe_it = auth_env.client.get("/api/dashboard/snipe-it", headers=headers)
     wazuh = auth_env.client.get("/api/dashboard/wazuh", headers=headers)
     auth_me = auth_env.client.get("/api/auth/me", headers=headers)
 
     assert freshservice.status_code == 200
+    assert snipe_it.status_code == 200
     assert wazuh.status_code == 503
     assert wazuh.json()["error"]["code"] == "SOURCE_NOT_CONFIGURED"
     assert auth_me.status_code == 401
@@ -47,6 +49,7 @@ def test_dashboard_routes_reject_invalid_grafana_bearer_token(auth_env) -> None:
     headers = {"Authorization": "Bearer wrong-token"}
 
     assert auth_env.client.get("/api/dashboard/freshservice", headers=headers).status_code == 401
+    assert auth_env.client.get("/api/dashboard/snipe-it", headers=headers).status_code == 401
     assert auth_env.client.get("/api/dashboard/wazuh", headers=headers).status_code == 401
 
 
@@ -170,6 +173,49 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
     for target in targets:
         assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
         assert target["url"] == "/api/dashboard/freshservice"
+        assert "Authorization" not in json.dumps(target)
+
+
+def test_snipe_it_dashboard_uses_only_canonical_snipe_it_api() -> None:
+    dashboard = load_dashboard("snipe-it.json")
+
+    assert dashboard["uid"] == "monitoring-snipe-it"
+    assert dashboard["title"] == "Snipe-IT Asset Management"
+    assert dashboard["__inputs"] == [
+        {
+            "name": "DS_MONITORING_API",
+            "label": "Monitoring API",
+            "description": "",
+            "type": "datasource",
+            "pluginId": "yesoreyeram-infinity-datasource",
+            "pluginName": "Infinity",
+        }
+    ]
+    titles = {panel["title"] for panel in dashboard["panels"]}
+    assert {
+        "Total Assets",
+        "Assigned Assets",
+        "Unassigned Assets",
+        "Missing Serial",
+        "Missing Asset Tag",
+        "Warranty Expired",
+        "Warranty Expiring Soon",
+        "Integration Health",
+        "Stale Data",
+        "Observed At",
+        "Last Successful Sync",
+        "Assets by Status",
+        "Assets by Category",
+        "Assets by Location",
+        "Warnings",
+    }.issubset(titles)
+
+    targets = list(iter_targets(dashboard))
+    assert targets
+    for target in targets:
+        assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
+        assert target["url"] == "/api/dashboard/snipe-it"
+        assert target["url_options"]["method"] == "GET"
         assert "Authorization" not in json.dumps(target)
 
 

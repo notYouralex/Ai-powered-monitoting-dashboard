@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
 
 from argon2 import PasswordHasher, Type
+from pydantic import SecretStr
 from sqlalchemy import text
 
 from app.db.models import SyncRun, User
@@ -86,6 +87,34 @@ def login(auth_env) -> None:
 def test_snipe_it_dashboard_requires_authentication(auth_env) -> None:
     response = auth_env.client.get("/api/dashboard/snipe-it")
     assert response.status_code == 401
+
+
+def test_snipe_it_dashboard_accepts_configured_grafana_api_token(auth_env) -> None:
+    auth_env.settings.grafana_api_token = SecretStr("g" * 48)
+    expected = None
+    with auth_env.session_factory() as db:
+        expected = SnipeItDashboardService(
+            db=db,
+            settings=auth_env.settings,
+            asset_repository=FakeAssetRepository(),
+            clock=lambda: NOW,
+        ).get_dashboard()
+
+    class FakeService:
+        def get_dashboard(self):
+            return expected
+
+    auth_env.client.app.dependency_overrides[get_snipe_it_dashboard_service] = lambda: FakeService()
+    try:
+        response = auth_env.client.get(
+            "/api/dashboard/snipe-it",
+            headers={"Authorization": f"Bearer {'g' * 48}"},
+        )
+    finally:
+        auth_env.client.app.dependency_overrides.pop(get_snipe_it_dashboard_service, None)
+
+    assert response.status_code == 200
+    assert response.json()["source"] == "snipe_it"
 
 
 def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(auth_env) -> None:
