@@ -96,7 +96,7 @@ def test_api_uses_loopback_postgres_and_read_only_wazuh_certificates() -> None:
 
 def test_background_worker_remains_on_compose_network() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     assert "network_mode: host" not in worker
     assert "@postgresql:5432/" in worker
@@ -112,7 +112,7 @@ def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
 
 def test_background_worker_receives_zabbix_and_snipe_it_settings() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     expected_settings = (
         "ZABBIX_BASE_URL",
@@ -134,7 +134,7 @@ def test_background_worker_receives_zabbix_and_snipe_it_settings() -> None:
 
 def test_background_worker_mounts_runtime_certificates_read_only() -> None:
     compose = read("compose.yaml")
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
     assert "./.runtime-certs:/run/wazuh-certs:ro" in worker
 
@@ -151,10 +151,35 @@ def test_compose_defines_isolated_background_worker_without_host_port() -> None:
     compose = read("compose.yaml")
 
     assert "background-worker:" in compose
-    worker = compose.split("background-worker:", 1)[1]
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
     assert 'command: ["python", "-m", "app.worker"]' in worker
     assert 'RUN_MIGRATIONS: "false"' in worker
     assert "fastapi-api:" in worker and "condition: service_healthy" in worker
     assert "FRESHSERVICE_API_KEY" in worker
     assert "FRESHSERVICE_SYNC_INTERVAL_SECONDS" in worker
     assert "ports:" not in worker
+
+
+def test_compose_defines_loopback_only_grafana_with_secure_provisioning() -> None:
+    compose = read("compose.yaml")
+    grafana = compose.split("grafana:", 1)[1].split("\nvolumes:", 1)[0]
+
+    assert "image: grafana/grafana:13.1.0" in grafana
+    assert "network_mode: host" in grafana
+    assert 'GF_SERVER_HTTP_ADDR: "127.0.0.1"' in grafana
+    assert "GF_SERVER_HTTP_PORT: ${GRAFANA_PORT:-3000}" in grafana
+    assert "GRAFANA_SERVICE_TOKEN: ${GRAFANA_SERVICE_TOKEN:?" in grafana
+    assert "GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?" in grafana
+    assert "GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:?" in grafana
+    assert "GF_PLUGINS_PREINSTALL_SYNC: yesoreyeram-infinity-datasource@3.7.3" in grafana
+    assert "./grafana/provisioning:/etc/grafana/provisioning:ro" in grafana
+    assert "./grafana/dashboards:/var/lib/grafana/dashboards/zabbix:ro" in grafana
+    assert "ports:" not in grafana
+
+
+def test_api_receives_grafana_service_token_without_exposing_value() -> None:
+    compose = read("compose.yaml")
+    api = compose.split("fastapi-api:", 1)[1].split("background-worker:", 1)[0]
+
+    assert "GRAFANA_SERVICE_TOKEN: ${GRAFANA_SERVICE_TOKEN:-}" in api
+    assert "Bearer " not in api

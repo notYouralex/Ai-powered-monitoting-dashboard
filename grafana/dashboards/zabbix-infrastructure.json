@@ -1,0 +1,974 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Source-controlled Zabbix infrastructure reference dashboard. FastAPI owns canonical metric meaning; Grafana only presents the normalized /api/dashboard/zabbix response through the provisioned authenticated Infinity datasource.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Canonical integration health, freshness, and observation timestamps from FastAPI.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "health.status",
+              "text": "Health",
+              "type": "string"
+            },
+            {
+              "selector": "is_stale",
+              "text": "Stale",
+              "type": "boolean"
+            },
+            {
+              "selector": "health.last_success_at",
+              "text": "Last success",
+              "type": "timestamp"
+            },
+            {
+              "selector": "observed_at",
+              "text": "Observed",
+              "type": "timestamp"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "[$]",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Integration Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Canonical host totals from the Zabbix dashboard summary.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "hosts_total",
+              "text": "Total",
+              "type": "number"
+            },
+            {
+              "selector": "hosts_enabled",
+              "text": "Enabled",
+              "type": "number"
+            },
+            {
+              "selector": "hosts_disabled",
+              "text": "Disabled",
+              "type": "number"
+            },
+            {
+              "selector": "hosts_in_maintenance",
+              "text": "Maintenance",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "[$.summary]",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Host Availability",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Available, unavailable, and unknown interface counts from FastAPI.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "interfaces_available",
+              "text": "Available",
+              "type": "number"
+            },
+            {
+              "selector": "interfaces_unavailable",
+              "text": "Unavailable",
+              "type": "number"
+            },
+            {
+              "selector": "interfaces_unknown",
+              "text": "Unknown",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "[$.summary]",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Interface Availability",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Unresolved Zabbix problems already normalized by FastAPI.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 5
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "name",
+              "text": "Problem",
+              "type": "string"
+            },
+            {
+              "selector": "severity",
+              "text": "Severity",
+              "type": "string"
+            },
+            {
+              "selector": "started_at",
+              "text": "Started",
+              "type": "timestamp"
+            },
+            {
+              "selector": "acknowledged",
+              "text": "Acknowledged",
+              "type": "boolean"
+            },
+            {
+              "selector": "suppressed",
+              "text": "Suppressed",
+              "type": "boolean"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.active_problems",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Active Problems",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Canonical active-problem severity buckets from FastAPI.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "problems_information",
+              "text": "Information",
+              "type": "number"
+            },
+            {
+              "selector": "problems_warning",
+              "text": "Warning",
+              "type": "number"
+            },
+            {
+              "selector": "problems_average",
+              "text": "Average",
+              "type": "number"
+            },
+            {
+              "selector": "problems_high",
+              "text": "High",
+              "type": "number"
+            },
+            {
+              "selector": "problems_disaster",
+              "text": "Disaster",
+              "type": "number"
+            },
+            {
+              "selector": "problems_unknown",
+              "text": "Unknown",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "[$.summary]",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Active Problems by Severity",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Current normalized CPU, memory, and disk utilization. No thresholds or business definitions are recalculated in Grafana.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "host_id",
+              "text": "Host ID",
+              "type": "string"
+            },
+            {
+              "selector": "cpu_used_percent",
+              "text": "CPU used %",
+              "type": "number"
+            },
+            {
+              "selector": "memory_used_percent",
+              "text": "Memory used %",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.resource_pressure",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        },
+        {
+          "columns": [
+            {
+              "selector": "host_id",
+              "text": "Host ID",
+              "type": "string"
+            },
+            {
+              "selector": "filesystem",
+              "text": "Filesystem",
+              "type": "string"
+            },
+            {
+              "selector": "used_percent",
+              "text": "Disk used %",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "B",
+          "root_selector": "$map($.resource_pressure, function($r) { $map($r.disks, function($d) { {'host_id': $r.host_id, 'filesystem': $d.filesystem, 'used_percent': $d.used_percent} }) }).*",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Resource Pressure",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Backend-ranked top affected enabled hosts. Grafana does not rerank these records.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "name",
+              "text": "Host",
+              "type": "string"
+            },
+            {
+              "selector": "highest_problem_severity",
+              "text": "Highest severity",
+              "type": "string"
+            },
+            {
+              "selector": "active_problem_count",
+              "text": "Problems",
+              "type": "number"
+            },
+            {
+              "selector": "unavailable_interface_count",
+              "text": "Unavailable interfaces",
+              "type": "number"
+            },
+            {
+              "selector": "peak_resource",
+              "text": "Peak resource",
+              "type": "string"
+            },
+            {
+              "selector": "peak_resource_percent",
+              "text": "Peak %",
+              "type": "number"
+            },
+            {
+              "selector": "peak_filesystem",
+              "text": "Filesystem",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.top_affected_hosts",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Top Affected Hosts",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Backend-provided hourly CPU trend points for ranked hosts.",
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 22
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "Time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "value",
+              "text": "Used %",
+              "type": "number"
+            },
+            {
+              "selector": "host",
+              "text": "Host",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$map($.resource_trends[metric='cpu'], function($t) { $map($t.points, function($p) { {'time': $p.observed_at, 'value': $p.average_used_percent, 'host': $t.host_id} }) }).*",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "CPU Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Backend-provided hourly memory trend points for ranked hosts.",
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 22
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "Time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "value",
+              "text": "Used %",
+              "type": "number"
+            },
+            {
+              "selector": "host",
+              "text": "Host",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$map($.resource_trends[metric='memory'], function($t) { $map($t.points, function($p) { {'time': $p.observed_at, 'value': $p.average_used_percent, 'host': $t.host_id} }) }).*",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Memory Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Backend-provided hourly hottest-filesystem trend points for ranked hosts.",
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 22
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "Time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "value",
+              "text": "Used %",
+              "type": "number"
+            },
+            {
+              "selector": "host",
+              "text": "Host",
+              "type": "string"
+            },
+            {
+              "selector": "filesystem",
+              "text": "Filesystem",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$map($.resource_trends[metric='disk'], function($t) { $map($t.points, function($p) { {'time': $p.observed_at, 'value': $p.average_used_percent, 'host': $t.host_id, 'filesystem': $t.filesystem} }) }).*",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Disk Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Bounded source and staleness warnings returned by FastAPI.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "warning",
+              "text": "Warning",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$map($.warnings, function($w) { {'warning': $w} })",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Warnings",
+      "type": "table"
+    },
+    {
+      "description": "Reserved for the approved local-AI phase. No AI output is fabricated before that backend contract exists.",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 12,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "### AI Infrastructure Summary\n\nThis panel is reserved for the local AI phase. It intentionally does not generate or display synthetic infrastructure conclusions before the approved AI backend is available.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.0.0",
+      "title": "AI Infrastructure Summary",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "zabbix",
+    "infrastructure"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Zabbix FastAPI",
+          "value": "zabbix-fastapi"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Zabbix FastAPI datasource",
+        "multi": false,
+        "name": "zabbix_ds",
+        "options": [],
+        "query": "yesoreyeram-infinity-datasource",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Zabbix Infrastructure",
+  "uid": "zabbix-infrastructure",
+  "version": 1,
+  "weekStart": ""
+}

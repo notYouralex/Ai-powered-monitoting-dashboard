@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     login_window_seconds: int = 300
     login_max_failures: int = 5
     cookie_secure: bool = False
+    grafana_service_token: SecretStr | None = None
 
     wazuh_base_url: AnyHttpUrl | None = None
     wazuh_username: str | None = None
@@ -83,12 +84,20 @@ class Settings(BaseSettings):
         "freshservice_base_url",
         "freshservice_api_key",
         "freshservice_ca_bundle",
+        "grafana_service_token",
         mode="before",
     )
     @classmethod
     def empty_string_to_none(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator("grafana_service_token")
+    @classmethod
+    def validate_grafana_service_token(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < 32:
+            raise ValueError("GRAFANA_SERVICE_TOKEN must be at least 32 characters when configured")
         return value
 
     @field_validator(
