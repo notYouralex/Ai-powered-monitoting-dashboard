@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     login_window_seconds: int = 300
     login_max_failures: int = 5
     cookie_secure: bool = False
+    grafana_api_token: SecretStr | None = None
 
     wazuh_base_url: AnyHttpUrl | None = None
     wazuh_username: str | None = None
@@ -65,6 +66,7 @@ class Settings(BaseSettings):
     freshservice_sync_interval_seconds: int = Field(default=600, ge=300, le=900)
 
     @field_validator(
+        "grafana_api_token",
         "wazuh_base_url",
         "wazuh_username",
         "wazuh_password",
@@ -141,6 +143,12 @@ class Settings(BaseSettings):
             )
 
         if self.app_env == "production":
+            if (
+                self.grafana_api_token is not None
+                and len(self.grafana_api_token.get_secret_value()) < 32
+            ):
+                raise ValueError("GRAFANA_API_TOKEN must be at least 32 characters in production")
+
             wazuh_tls_checks = (
                 (self.wazuh_server_config_state(), self.wazuh_verify_tls, "WAZUH_VERIFY_TLS"),
                 (
