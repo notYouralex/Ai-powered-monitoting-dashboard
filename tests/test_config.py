@@ -25,3 +25,16 @@ def test_development_accepts_explicit_non_placeholder_secret() -> None:
 
     assert settings.session_idle_minutes == 30
     assert settings.login_max_failures == 5
+
+
+def test_production_rejects_short_grafana_api_token() -> None:
+    from app.core.config import Settings
+
+    with pytest.raises(ValueError, match="GRAFANA_API_TOKEN"):
+        Settings(
+            app_env="production",
+            app_secret_key="p" * 48,
+            database_url="sqlite:///test.db",
+            grafana_api_token="too-short",
+            _env_file=None,
+        )

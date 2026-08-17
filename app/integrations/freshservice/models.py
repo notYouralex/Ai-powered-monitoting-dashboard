@@ -89,6 +89,6 @@ class FreshserviceDashboardResponse(BaseModel):
         default_factory=list, max_length=16
     )
     category_distribution: list[FreshserviceNamedCount] = Field(default_factory=list, max_length=10)
-    resolution_trend: list[FreshserviceTrendPoint] = Field(default_factory=list, max_length=31)
+    resolution_trend: list[FreshserviceTrendPoint] = Field(default_factory=list, max_length=186)
     recent_tickets: list[FreshserviceTicket] = Field(default_factory=list, max_length=50)
     warnings: list[str] = Field(default_factory=list, max_length=20)

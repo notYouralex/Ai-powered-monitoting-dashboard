@@ -1,0 +1,5 @@
+apiVersion: 1
+
+# The existing host Grafana datasource is configured manually so its bearer
+# token is stored by Grafana and never committed to this repository.
+datasources: []
