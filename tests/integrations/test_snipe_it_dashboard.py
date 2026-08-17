@@ -224,27 +224,10 @@ def test_configured_dashboard_reports_unavailable_until_asset_store_exists(auth_
     assert response.warnings
 
 
-def test_sqlalchemy_adapter_reads_pending_asset_schema_shape(auth_env) -> None:
+def test_sqlalchemy_adapter_reads_committed_asset_schema(auth_env) -> None:
     configure_snipe_it(auth_env)
     seed_sync_run(auth_env)
     with auth_env.session_factory() as db:
-        db.execute(
-            text(
-                """
-                CREATE TABLE assets (
-                    source_asset_id BIGINT PRIMARY KEY,
-                    asset_tag VARCHAR(255),
-                    serial VARCHAR(255),
-                    category VARCHAR(255),
-                    status_label VARCHAR(255),
-                    assigned_to_id BIGINT,
-                    location VARCHAR(255),
-                    warranty_expires DATE,
-                    synced_at DATETIME NOT NULL
-                )
-                """
-            )
-        )
         db.execute(
             text(
                 """
