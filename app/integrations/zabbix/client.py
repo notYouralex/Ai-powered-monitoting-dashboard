@@ -21,6 +21,9 @@ from app.integrations.zabbix.models import (
     ZabbixProblemSeverity,
     ZabbixResourcePressure,
     ZabbixResourceTrend,
+    ZabbixTopologyEdge,
+    ZabbixTopologyMap,
+    ZabbixTopologyNode,
 )
 from app.integrations.zabbix.resource_pressure import (
     normalize_resource_pressure,
@@ -42,6 +45,10 @@ ZABBIX_TREND_HOST_LIMIT = 10
 ZABBIX_TREND_SELECTION_LIMIT = 30
 ZABBIX_TREND_ROW_LIMIT = 720
 ZABBIX_TREND_ROW_SENTINEL_LIMIT = ZABBIX_TREND_ROW_LIMIT + 1
+ZABBIX_MAP_LIMIT = 100
+ZABBIX_MAP_SENTINEL_LIMIT = ZABBIX_MAP_LIMIT + 1
+ZABBIX_MAP_NODE_LIMIT = 1000
+ZABBIX_MAP_EDGE_LIMIT = 2000
 ZABBIX_REQUEST_ID = 1
 
 _INTERFACE_TYPES: dict[str, ZabbixInterfaceType] = {
@@ -146,6 +153,37 @@ class ZabbixClient:
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
             raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
 
+    async def list_topology_maps(self) -> list[ZabbixTopologyMap]:
+        result = await self._read_jsonrpc(
+            method="map.get",
+            params={
+                "output": ["sysmapid", "name", "width", "height"],
+                "selectSelements": [
+                    "selementid",
+                    "elementtype",
+                    "elements",
+                    "label",
+                    "x",
+                    "y",
+                ],
+                "selectLinks": [
+                    "linkid",
+                    "selementid1",
+                    "selementid2",
+                    "label",
+                ],
+                "sortfield": "name",
+                "limit": ZABBIX_MAP_SENTINEL_LIMIT,
+            },
+        )
+        if len(result) > ZABBIX_MAP_LIMIT:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            return [self._normalize_topology_map(item) for item in result]
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
     async def list_active_problems(self) -> list[ZabbixProblem]:
         problem_items = await self._read_jsonrpc(
             method="problem.get",
@@ -223,15 +261,19 @@ class ZabbixClient:
                 },
             )
 
-        cpu_items, memory_items, disk_items = await asyncio.gather(
+        cpu_items, memory_size_items, memory_util_items, disk_items = await asyncio.gather(
             read_prefix("system.cpu.util"),
             read_prefix("vm.memory.size"),
+            read_prefix("vm.memory.util"),
             read_prefix("vfs.fs.size"),
         )
         if any(
             len(items) > ZABBIX_RESOURCE_ITEM_LIMIT
-            for items in (cpu_items, memory_items, disk_items)
+            for items in (cpu_items, memory_size_items, memory_util_items, disk_items)
         ):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+        memory_items = [*memory_size_items, *memory_util_items]
+        if len(memory_items) > ZABBIX_RESOURCE_ITEM_LIMIT:
             raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
 
         try:
@@ -279,15 +321,19 @@ class ZabbixClient:
                 },
             )
 
-        cpu_items, memory_items, disk_items = await asyncio.gather(
+        cpu_items, memory_size_items, memory_util_items, disk_items = await asyncio.gather(
             read_prefix("system.cpu.util"),
             read_prefix("vm.memory.size"),
+            read_prefix("vm.memory.util"),
             read_prefix("vfs.fs.size"),
         )
         if any(
             len(items) > ZABBIX_RESOURCE_ITEM_LIMIT
-            for items in (cpu_items, memory_items, disk_items)
+            for items in (cpu_items, memory_size_items, memory_util_items, disk_items)
         ):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+        memory_items = [*memory_size_items, *memory_util_items]
+        if len(memory_items) > ZABBIX_RESOURCE_ITEM_LIMIT:
             raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
 
         try:
@@ -545,6 +591,81 @@ class ZabbixClient:
         )
 
     @staticmethod
+    def _normalize_topology_map(item: Any) -> ZabbixTopologyMap:
+        if not isinstance(item, dict):
+            raise TypeError("map item must be an object")
+        selements = item.get("selements", [])
+        links = item.get("links", [])
+        if not isinstance(selements, list) or not isinstance(links, list):
+            raise TypeError("map elements and links must be lists")
+        if len(selements) > ZABBIX_MAP_NODE_LIMIT:
+            raise ValueError("too many Zabbix map elements")
+        if len(links) > ZABBIX_MAP_EDGE_LIMIT:
+            raise ValueError("too many Zabbix map links")
+
+        nodes: list[ZabbixTopologyNode] = []
+        node_ids: set[str] = set()
+        for selement in selements:
+            if not isinstance(selement, dict):
+                raise TypeError("map element must be an object")
+            if str(selement.get("elementtype")) != "0":
+                continue
+            node = ZabbixClient._normalize_topology_node(selement)
+            if node.node_id in node_ids:
+                raise ValueError("duplicate Zabbix map element ID")
+            node_ids.add(node.node_id)
+            nodes.append(node)
+
+        edges: list[ZabbixTopologyEdge] = []
+        edge_ids: set[str] = set()
+        for link in links:
+            if not isinstance(link, dict):
+                raise TypeError("map link must be an object")
+            source = _required_string(link.get("selementid1"))
+            target = _required_string(link.get("selementid2"))
+            if source not in node_ids or target not in node_ids:
+                continue
+            edge_id = _required_string(link.get("linkid"))
+            if edge_id in edge_ids:
+                raise ValueError("duplicate Zabbix map link ID")
+            edge_ids.add(edge_id)
+            edges.append(
+                ZabbixTopologyEdge(
+                    edge_id=edge_id,
+                    source=source,
+                    target=target,
+                    label=_optional_string(link.get("label")),
+                )
+            )
+
+        return ZabbixTopologyMap(
+            map_id=_required_string(item.get("sysmapid")),
+            name=_required_string(item.get("name")),
+            width=_bounded_nonnegative_int(item.get("width"), minimum=1),
+            height=_bounded_nonnegative_int(item.get("height"), minimum=1),
+            nodes=nodes,
+            edges=edges,
+        )
+
+    @staticmethod
+    def _normalize_topology_node(item: dict[str, Any]) -> ZabbixTopologyNode:
+        elements = item.get("elements")
+        if not isinstance(elements, list) or len(elements) != 1:
+            raise ValueError("host map element must contain exactly one host")
+        host = elements[0]
+        if not isinstance(host, dict):
+            raise TypeError("host map element data must be an object")
+        host_id = _required_string(host.get("hostid"))
+        return ZabbixTopologyNode(
+            node_id=_required_string(item.get("selementid")),
+            host_id=host_id,
+            title=_optional_string(item.get("label")) or host_id,
+            status="unknown",
+            x=_bounded_nonnegative_int(item.get("x")),
+            y=_bounded_nonnegative_int(item.get("y")),
+        )
+
+    @staticmethod
     def _normalize_host(item: Any) -> ZabbixHost:
         if not isinstance(item, dict):
             raise TypeError("host item must be an object")
@@ -595,6 +716,13 @@ def _optional_string(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _bounded_nonnegative_int(value: Any, *, minimum: int = 0) -> int:
+    number = int(_required_string(value))
+    if number < minimum or number > 100000:
+        raise ValueError("Zabbix numeric field is out of bounds")
+    return number
 
 
 def _binary_bool(value: Any, *, true_value: str) -> bool:

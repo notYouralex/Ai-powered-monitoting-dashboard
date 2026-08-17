@@ -59,12 +59,25 @@ def test_zabbix_dashboard_covers_the_approved_infrastructure_views() -> None:
         "Active Problems by Severity",
         "Resource Pressure",
         "Top Affected Hosts",
+        "Network Topology",
         "CPU Trend",
         "Memory Trend",
         "Disk Trend",
         "Warnings",
         "AI Infrastructure Summary",
     }.issubset(panel_titles)
+
+
+def test_zabbix_dashboard_network_topology_uses_node_graph_frames() -> None:
+    dashboard = load_dashboard()
+    panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Network Topology")
+
+    assert panel["type"] == "nodeGraph"
+    targets = {target["refId"]: target for target in panel["targets"]}
+    assert targets["nodes"]["format"] == "node-graph-nodes"
+    assert targets["nodes"]["root_selector"] == "$.topology_maps[0].nodes"
+    assert targets["edges"]["format"] == "node-graph-edges"
+    assert targets["edges"]["root_selector"] == "$.topology_maps[0].edges"
 
 
 def test_zabbix_dashboard_uses_only_normalized_fastapi_contract() -> None:

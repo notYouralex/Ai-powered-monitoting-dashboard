@@ -61,6 +61,22 @@ def test_normalizer_builds_cpu_memory_and_disk_pressure() -> None:
     assert all(disk.observed_at == expected_at for disk in row.disks)
 
 
+def test_snmp_direct_cpu_and_memory_utilization_are_normalized_without_inversion() -> None:
+    rows = resource_pressure.normalize_resource_pressure(
+        [item("1", "7", "system.cpu.util[jnxOperatingCPU.9.1.0.0]", "27")],
+        [
+            item("2", "7", "vm.memory.util[jnxOperatingBuffer.9.1.0.0]", "39"),
+            item("3", "8", "vm.memory.util[memoryUsedPercentage]", "58.75"),
+        ],
+        [],
+    )
+
+    assert [(row.host_id, row.cpu_used_percent, row.memory_used_percent) for row in rows] == [
+        ("7", 27.0, 39.0),
+        ("8", None, 58.75),
+    ]
+
+
 def test_cpu_uses_aggregate_idle_newest_then_smallest_item_id() -> None:
     rows = resource_pressure.normalize_resource_pressure(
         [

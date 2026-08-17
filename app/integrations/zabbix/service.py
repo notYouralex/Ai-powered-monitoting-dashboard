@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from time import perf_counter
 
 from app.contracts import IntegrationHealthSummary
+from app.core.errors import IntegrationError
 from app.integrations.zabbix.client import ZabbixClient
 from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
@@ -10,6 +11,8 @@ from app.integrations.zabbix.models import (
     ZabbixHost,
     ZabbixProblem,
     ZabbixResourcePressure,
+    ZabbixTopologyMap,
+    ZabbixTopologyNode,
 )
 from app.integrations.zabbix.top_hosts import rank_top_affected_hosts
 
@@ -35,6 +38,17 @@ class ZabbixDashboardService:
         resource_trends = await self._client.list_resource_trends(
             [row.host_id for row in top_affected_hosts]
         )
+        topology_warning: str | None = None
+        try:
+            topology_maps = await self._client.list_topology_maps()
+        except IntegrationError:
+            topology_maps = []
+            topology_warning = (
+                "Zabbix topology maps are unavailable; core monitoring data remains available."
+            )
+        else:
+            topology_maps = _enrich_topology_maps(topology_maps, hosts, active_problems)
+
         observed_at = datetime.now(timezone.utc)
         response_time_ms = max(0, int((perf_counter() - started) * 1000))
         return ZabbixDashboardResponse(
@@ -54,8 +68,62 @@ class ZabbixDashboardService:
             resource_pressure=resource_pressure,
             top_affected_hosts=top_affected_hosts,
             resource_trends=resource_trends,
-            warnings=_build_warnings(hosts, active_problems, resource_pressure),
+            topology_maps=topology_maps,
+            warnings=_build_warnings(
+                hosts,
+                active_problems,
+                resource_pressure,
+                topology_warning=topology_warning,
+            ),
         )
+
+
+def _enrich_topology_maps(
+    topology_maps: list[ZabbixTopologyMap],
+    hosts: list[ZabbixHost],
+    active_problems: list[ZabbixProblem],
+) -> list[ZabbixTopologyMap]:
+    hosts_by_id = {host.host_id: host for host in hosts}
+    problem_counts: dict[str, int] = {}
+    for problem in active_problems:
+        for problem_host in problem.hosts:
+            problem_counts[problem_host.host_id] = problem_counts.get(problem_host.host_id, 0) + 1
+
+    enriched: list[ZabbixTopologyMap] = []
+    for topology in topology_maps:
+        nodes: list[ZabbixTopologyNode] = []
+        for node in topology.nodes:
+            host = hosts_by_id.get(node.host_id)
+            title = node.title
+            status = "unknown"
+            if host is not None:
+                if title == node.host_id:
+                    title = host.name
+                status = _topology_host_status(host)
+            nodes.append(
+                node.model_copy(
+                    update={
+                        "title": title,
+                        "status": status,
+                        "active_problem_count": problem_counts.get(node.host_id, 0),
+                    }
+                )
+            )
+        enriched.append(topology.model_copy(update={"nodes": nodes}))
+    return enriched
+
+
+def _topology_host_status(host: ZabbixHost) -> str:
+    if not host.enabled:
+        return "disabled"
+    if host.in_maintenance:
+        return "maintenance"
+    availability = {interface.availability for interface in host.interfaces}
+    if "unavailable" in availability:
+        return "unavailable"
+    if "available" in availability:
+        return "available"
+    return "unknown"
 
 
 def _build_summary(
@@ -117,6 +185,8 @@ def _build_warnings(
     hosts: list[ZabbixHost],
     active_problems: list[ZabbixProblem],
     resource_pressure: list[ZabbixResourcePressure],
+    *,
+    topology_warning: str | None = None,
 ) -> list[str]:
     warnings: list[str] = []
 
@@ -153,6 +223,8 @@ def _build_warnings(
     _append_resource_warning(warnings, missing_cpu, "CPU")
     _append_resource_warning(warnings, missing_memory, "memory")
     _append_resource_warning(warnings, missing_disk, "disk")
+    if topology_warning is not None:
+        warnings.append(topology_warning)
     return warnings
 
 

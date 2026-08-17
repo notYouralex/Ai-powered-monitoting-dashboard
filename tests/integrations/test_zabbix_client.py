@@ -127,6 +127,134 @@ def test_list_hosts_uses_read_only_host_get_and_normalizes_interfaces() -> None:
     asyncio.run(run())
 
 
+def test_list_topology_maps_uses_read_only_map_get_and_normalizes_host_links() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            assert request.headers["Authorization"] == "Bearer fake-zabbix-token"
+            assert body["method"] == "map.get"
+            assert body["params"] == {
+                "output": ["sysmapid", "name", "width", "height"],
+                "selectSelements": [
+                    "selementid",
+                    "elementtype",
+                    "elements",
+                    "label",
+                    "x",
+                    "y",
+                ],
+                "selectLinks": [
+                    "linkid",
+                    "selementid1",
+                    "selementid2",
+                    "label",
+                ],
+                "sortfield": "name",
+                "limit": 101,
+            }
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": body["id"],
+                    "result": [
+                        {
+                            "sysmapid": "7",
+                            "name": "Campus Network",
+                            "width": "1200",
+                            "height": "800",
+                            "selements": [
+                                {
+                                    "selementid": "10",
+                                    "elementtype": "0",
+                                    "elements": [{"hostid": "10001"}],
+                                    "label": "Core",
+                                    "x": "100",
+                                    "y": "50",
+                                },
+                                {
+                                    "selementid": "11",
+                                    "elementtype": "0",
+                                    "elements": [{"hostid": "10002"}],
+                                    "label": "",
+                                    "x": "400",
+                                    "y": "300",
+                                },
+                                {
+                                    "selementid": "12",
+                                    "elementtype": "4",
+                                    "elements": [],
+                                    "label": "Decoration",
+                                    "x": "0",
+                                    "y": "0",
+                                },
+                            ],
+                            "links": [
+                                {
+                                    "linkid": "20",
+                                    "selementid1": "10",
+                                    "selementid2": "11",
+                                    "label": "uplink",
+                                },
+                                {
+                                    "linkid": "21",
+                                    "selementid1": "10",
+                                    "selementid2": "12",
+                                    "label": "ignored",
+                                },
+                            ],
+                        }
+                    ],
+                },
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        maps = await client.list_topology_maps()
+
+        assert len(maps) == 1
+        topology = maps[0]
+        assert topology.map_id == "7"
+        assert topology.name == "Campus Network"
+        assert topology.width == 1200
+        assert topology.height == 800
+        assert [(node.node_id, node.host_id, node.title, node.x, node.y) for node in topology.nodes] == [
+            ("10", "10001", "Core", 100, 50),
+            ("11", "10002", "10002", 400, 300),
+        ]
+        assert [(edge.edge_id, edge.source, edge.target, edge.label) for edge in topology.edges] == [
+            ("20", "10", "11", "uplink")
+        ]
+
+    asyncio.run(run())
+
+
+def test_list_topology_maps_rejects_map_sentinel_result() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": body["id"],
+                    "result": [{}] * 101,
+                },
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_topology_maps()
+
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
 def test_list_resource_trends_empty_host_ids_skips_network() -> None:
     async def run() -> None:
         requests = 0
@@ -295,7 +423,7 @@ def test_list_resource_trends_skips_trend_get_when_no_metric_is_selected() -> No
             make_settings(), transport=httpx.MockTransport(handler)
         )
         assert await client.list_resource_trends(["2"]) == []
-        assert methods == ["item.get", "item.get", "item.get"]
+        assert methods == ["item.get", "item.get", "item.get", "item.get"]
 
     asyncio.run(run())
 
@@ -1304,12 +1432,18 @@ def test_zabbix_production_jsonrpc_method_literals_remain_read_only() -> None:
         "trigger.get",
         "item.get",
         "trend.get",
+        "map.get",
     }
     assert "history.get" not in source
     assert "event.get" not in source
 
 
-_RESOURCE_PREFIXES = {"system.cpu.util", "vm.memory.size", "vfs.fs.size"}
+_RESOURCE_PREFIXES = {
+    "system.cpu.util",
+    "vm.memory.size",
+    "vm.memory.util",
+    "vfs.fs.size",
+}
 
 
 def _resource_item_record(
@@ -1329,7 +1463,7 @@ def _resource_item_record(
     }
 
 
-def test_list_resource_pressure_issues_three_bounded_item_get_requests() -> None:
+def test_list_resource_pressure_issues_four_bounded_item_get_requests() -> None:
     async def run() -> None:
         started: set[str] = set()
         all_started = asyncio.Event()
@@ -1356,10 +1490,12 @@ def test_list_resource_pressure_issues_three_bounded_item_get_requests() -> None
                     )
                 ]
             elif prefix == "vm.memory.size":
+                result = []
+            elif prefix == "vm.memory.util":
                 result = [
                     _resource_item_record(
                         item_id="2",
-                        key="vm.memory.size[pused]",
+                        key="vm.memory.util[memoryUsedPercentage]",
                         value="60",
                     )
                 ]

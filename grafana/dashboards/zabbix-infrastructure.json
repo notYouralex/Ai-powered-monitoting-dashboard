@@ -854,6 +854,127 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
+      "description": "Read-only Zabbix map topology normalized by FastAPI. The first visible Zabbix map is rendered; host state and active-problem counts come from the same cached dashboard snapshot.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 13,
+      "options": {},
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "node_id",
+              "text": "id",
+              "type": "string"
+            },
+            {
+              "selector": "title",
+              "text": "title",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "mainStat",
+              "type": "string"
+            },
+            {
+              "selector": "active_problem_count",
+              "text": "secondaryStat",
+              "type": "number"
+            },
+            {
+              "selector": "host_id",
+              "text": "detail__host_id",
+              "type": "string"
+            },
+            {
+              "selector": "x",
+              "text": "detail__zabbix_x",
+              "type": "number"
+            },
+            {
+              "selector": "y",
+              "text": "detail__zabbix_y",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "node-graph-nodes",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "nodes",
+          "root_selector": "$.topology_maps[0].nodes",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        },
+        {
+          "columns": [
+            {
+              "selector": "edge_id",
+              "text": "id",
+              "type": "string"
+            },
+            {
+              "selector": "source",
+              "text": "source",
+              "type": "string"
+            },
+            {
+              "selector": "target",
+              "text": "target",
+              "type": "string"
+            },
+            {
+              "selector": "label",
+              "text": "mainStat",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "filters": [],
+          "format": "node-graph-edges",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "edges",
+          "root_selector": "$.topology_maps[0].edges",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Network Topology",
+      "type": "nodeGraph"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
       "description": "Bounded source and staleness warnings returned by FastAPI.",
       "fieldConfig": {
         "defaults": {},
@@ -863,7 +984,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 40
       },
       "id": 11,
       "options": {
@@ -916,7 +1037,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 40
       },
       "id": 12,
       "options": {
