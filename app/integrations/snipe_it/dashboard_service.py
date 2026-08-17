@@ -12,7 +12,7 @@ from sqlalchemy import MetaData, Table, select
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import Session
 
-from app.contracts import IntegrationHealthSummary, IntegrationStatus
+from app.contracts import ExecutiveSourceSummary, IntegrationHealthSummary, IntegrationStatus
 from app.core.config import Settings, get_settings
 from app.db.models import SyncRun
 from app.db.session import get_db
@@ -192,6 +192,27 @@ class SnipeItDashboardService:
                 limit=10,
             ),
             warnings=warnings,
+        )
+
+    def get_executive_summary(self) -> ExecutiveSourceSummary:
+        dashboard = self.get_dashboard()
+        summary = dashboard.summary
+
+        return ExecutiveSourceSummary(
+            source="snipe_it",
+            observed_at=dashboard.observed_at,
+            is_stale=dashboard.is_stale,
+            health=dashboard.health,
+            metrics={
+                "assets_total": summary.assets_total,
+                "assets_assigned": summary.assets_assigned,
+                "assets_unassigned": summary.assets_unassigned,
+                "assets_missing_serial": summary.assets_missing_serial,
+                "assets_missing_asset_tag": summary.assets_missing_asset_tag,
+                "warranty_expired": summary.warranty_expired,
+                "warranty_expiring_soon": summary.warranty_expiring_soon,
+            },
+            warnings=dashboard.warnings,
         )
 
     def _latest_run(self) -> SyncRun | None:

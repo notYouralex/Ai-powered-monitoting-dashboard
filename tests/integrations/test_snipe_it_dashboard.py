@@ -158,6 +158,64 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
     assert "assigned_to" not in response.model_dump_json()
 
 
+def test_executive_summary_uses_normalized_dashboard_metrics(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    seed_sync_run(auth_env)
+    repository = FakeAssetRepository(
+        [
+            asset(101, assigned_to_id=10),
+            asset(102, asset_tag=None, serial=None, warranty_expires=date(2026, 8, 10)),
+            asset(103, assigned_to_id=11, warranty_expires=date(2026, 9, 1)),
+            asset(104, warranty_expires=None),
+        ]
+    )
+
+    with auth_env.session_factory() as db:
+        response = SnipeItDashboardService(
+            db=db,
+            settings=auth_env.settings,
+            asset_repository=repository,
+            clock=lambda: NOW,
+        ).get_executive_summary()
+
+    assert response.source == "snipe_it"
+    assert response.observed_at == NOW
+    assert response.health.source == "snipe_it"
+    assert response.health.status == "healthy"
+    assert response.is_stale is False
+    assert response.warnings == []
+    assert response.metrics == {
+        "assets_total": 4,
+        "assets_assigned": 2,
+        "assets_unassigned": 2,
+        "assets_missing_serial": 1,
+        "assets_missing_asset_tag": 1,
+        "warranty_expired": 1,
+        "warranty_expiring_soon": 1,
+    }
+
+
+def test_executive_summary_preserves_stale_degraded_state(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    seed_sync_run(auth_env, status="success", minutes_ago=10)
+    seed_sync_run(auth_env, status="failed", minutes_ago=1)
+
+    with auth_env.session_factory() as db:
+        response = SnipeItDashboardService(
+            db=db,
+            settings=auth_env.settings,
+            asset_repository=FakeAssetRepository([asset(101)]),
+            clock=lambda: NOW,
+        ).get_executive_summary()
+
+    assert response.source == "snipe_it"
+    assert response.is_stale is True
+    assert response.health.status == "degraded"
+    assert response.health.is_stale is True
+    assert response.metrics["assets_total"] == 1
+    assert response.warnings
+
+
 def test_dashboard_marks_previous_data_stale_when_latest_sync_failed(auth_env) -> None:
     configure_snipe_it(auth_env)
     seed_sync_run(auth_env, status="success", minutes_ago=10)
