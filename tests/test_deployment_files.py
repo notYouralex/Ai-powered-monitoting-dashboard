@@ -125,6 +125,13 @@ def test_background_worker_receives_zabbix_settings() -> None:
         assert f"{setting}: ${{{setting}" in worker
 
 
+def test_background_worker_mounts_runtime_certificates_read_only() -> None:
+    compose = read("compose.yaml")
+    worker = compose.split("background-worker:", 1)[1]
+
+    assert "./.runtime-certs:/run/wazuh-certs:ro" in worker
+
+
 def test_entrypoint_applies_migrations_before_starting_application() -> None:
     entrypoint = read("docker/entrypoint.sh")
 

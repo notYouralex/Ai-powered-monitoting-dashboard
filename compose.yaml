@@ -104,6 +104,8 @@ services:
       FRESHSERVICE_CA_BUNDLE: ${FRESHSERVICE_CA_BUNDLE:-}
       FRESHSERVICE_TIMEOUT_SECONDS: ${FRESHSERVICE_TIMEOUT_SECONDS:-10}
       FRESHSERVICE_SYNC_INTERVAL_SECONDS: ${FRESHSERVICE_SYNC_INTERVAL_SECONDS:-600}
+    volumes:
+      - ./.runtime-certs:/run/wazuh-certs:ro
     command: ["python", "-m", "app.worker"]
     read_only: true
     tmpfs:
