@@ -237,6 +237,63 @@ def test_dashboard_historical_metrics_use_six_month_created_date_scope(
     assert all(item["name"] != "Legacy" for item in body["category_distribution"])
 
 
+def test_pending_summary_includes_all_pending_variants_with_six_month_scope(
+    auth_env, monkeypatch
+) -> None:
+    seed_user_and_tickets(auth_env)
+    auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
+    auth_env.settings.freshservice_api_key = "fake-key"
+    cutoff = datetime(2026, 2, 9, 16, 0, tzinfo=timezone.utc)
+
+    with auth_env.session_factory() as db:
+        db.add_all(
+            [
+                Ticket(
+                    source_ticket_id=109,
+                    subject="Waiting for external resolver",
+                    status_code=7,
+                    status="pending",
+                    priority_code=2,
+                    priority="medium",
+                    source_created_at=cutoff,
+                    source_updated_at=NOW - timedelta(minutes=12),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=110,
+                    subject="Old pending ticket",
+                    status_code=3,
+                    status="pending",
+                    priority_code=2,
+                    priority="medium",
+                    source_created_at=cutoff - timedelta(seconds=1),
+                    source_updated_at=NOW - timedelta(minutes=13),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=111,
+                    subject="Old pending customer ticket",
+                    status_code=6,
+                    status="pending",
+                    priority_code=2,
+                    priority="medium",
+                    source_created_at=cutoff - timedelta(seconds=1),
+                    source_updated_at=NOW - timedelta(minutes=14),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+            ]
+        )
+        db.commit()
+
+    login(auth_env)
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: NOW)
+
+    response = auth_env.client.get("/api/dashboard/freshservice")
+
+    assert response.status_code == 200
+    assert response.json()["summary"]["tickets_pending"] == 3
+
+
 def test_dashboard_response_allows_six_month_resolution_trend(auth_env, monkeypatch) -> None:
     seed_user_and_tickets(auth_env)
     auth_env.settings.freshservice_base_url = "https://company.freshservice.com"

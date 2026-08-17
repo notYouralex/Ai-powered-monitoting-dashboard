@@ -119,6 +119,29 @@ def test_list_tickets_uses_api_key_basic_auth_and_normalizes_ticket() -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("status_code", [6, 7])
+def test_list_tickets_normalizes_pending_variants(status_code: int) -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                headers={"X-RateLimit-Remaining": "99"},
+                json={"tickets": [ticket_payload(status=status_code)]},
+            )
+
+        client = FreshserviceClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        tickets = await client.list_tickets()
+
+        assert len(tickets) == 1
+        assert tickets[0].status_code == status_code
+        assert tickets[0].status == "pending"
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize(
     "base_url",
     [

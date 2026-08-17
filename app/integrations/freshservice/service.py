@@ -19,7 +19,7 @@ from app.integrations.freshservice.models import (
 
 
 OPEN_STATUS_CODES = (2,)
-PENDING_STATUS_CODES = (3, 6)
+PENDING_STATUS_CODES = (3, 6, 7)
 RESOLVED_STATUS_CODES = (4,)
 CLOSED_STATUS_CODES = (5,)
 ACTIVE_STATUS_CODES = OPEN_STATUS_CODES + PENDING_STATUS_CODES
@@ -87,7 +87,9 @@ class FreshserviceDashboardService:
         summary = FreshserviceDashboardSummary(
             tickets_total=total,
             tickets_open=self._count(Ticket.status_code.in_(OPEN_STATUS_CODES)),
-            tickets_pending=self._count(Ticket.status_code.in_(PENDING_STATUS_CODES)),
+            tickets_pending=self._count(
+                Ticket.status_code.in_(PENDING_STATUS_CODES), historical_scope
+            ),
             tickets_resolved=self._count(
                 Ticket.status_code.in_(RESOLVED_STATUS_CODES), historical_scope
             ),

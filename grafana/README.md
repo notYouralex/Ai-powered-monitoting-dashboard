@@ -28,7 +28,7 @@ The source-controlled dashboard templates are:
 
 They query only the canonical FastAPI dashboard endpoints and use a Grafana datasource input placeholder instead of a host-specific datasource UID.
 
-Freshservice historical panels use a six-calendar-month ticket creation-date scope in the `Asia/Manila` timezone to match the Freshservice reporting view. This applies to Resolved, Closed, all-ticket status distribution, category distribution, and resolution trend data. Current operational metrics such as Open, Pending, Due Today, Overdue, Escalated, and unresolved distributions remain current-state counts even when an older ticket is still actionable.
+Freshservice historical panels use a six-calendar-month ticket creation-date scope in the `Asia/Manila` timezone to match the Freshservice reporting view. This applies to Pending, Resolved, Closed, all-ticket status distribution, category distribution, and resolution trend data. Current operational metrics such as Open, Due Today, Overdue, Escalated, and unresolved distributions remain current-state counts even when an older ticket is still actionable.
 
 Import each dashboard through the existing Grafana UI:
 
