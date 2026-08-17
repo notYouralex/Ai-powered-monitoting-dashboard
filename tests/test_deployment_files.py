@@ -63,6 +63,7 @@ def test_compose_passes_optional_integration_settings_to_api() -> None:
         "SNIPE_IT_VERIFY_TLS",
         "SNIPE_IT_CA_BUNDLE",
         "SNIPE_IT_TIMEOUT_SECONDS",
+        "SNIPE_IT_SYNC_INTERVAL_SECONDS",
         "FRESHSERVICE_BASE_URL",
         "FRESHSERVICE_API_KEY",
         "FRESHSERVICE_VERIFY_TLS",
@@ -109,7 +110,7 @@ def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
     assert "/health" in api
 
 
-def test_background_worker_receives_zabbix_settings() -> None:
+def test_background_worker_receives_zabbix_and_snipe_it_settings() -> None:
     compose = read("compose.yaml")
     worker = compose.split("background-worker:", 1)[1]
 
@@ -119,6 +120,12 @@ def test_background_worker_receives_zabbix_settings() -> None:
         "ZABBIX_VERIFY_TLS",
         "ZABBIX_CA_BUNDLE",
         "ZABBIX_TIMEOUT_SECONDS",
+        "SNIPE_IT_BASE_URL",
+        "SNIPE_IT_API_TOKEN",
+        "SNIPE_IT_VERIFY_TLS",
+        "SNIPE_IT_CA_BUNDLE",
+        "SNIPE_IT_TIMEOUT_SECONDS",
+        "SNIPE_IT_SYNC_INTERVAL_SECONDS",
     )
 
     for setting in expected_settings:

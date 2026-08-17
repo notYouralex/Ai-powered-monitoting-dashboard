@@ -70,6 +70,7 @@ def test_source_defaults_enable_tls_and_use_ten_second_timeout() -> None:
     assert settings.wazuh_timeout_seconds == 10
     assert settings.wazuh_indexer_timeout_seconds == 10
     assert settings.freshservice_timeout_seconds == 10
+    assert settings.snipe_it_sync_interval_seconds == 900
     assert settings.freshservice_sync_interval_seconds == 600
 
 
@@ -85,6 +86,12 @@ def test_source_timeout_must_be_between_one_and_sixty_seconds(timeout: int) -> N
 def test_freshservice_sync_interval_stays_within_approved_window(interval: int) -> None:
     with pytest.raises(ValidationError):
         make_settings(freshservice_sync_interval_seconds=interval)
+
+
+@pytest.mark.parametrize("interval", [299, 901])
+def test_snipe_it_sync_interval_stays_within_approved_window(interval: int) -> None:
+    with pytest.raises(ValidationError):
+        make_settings(snipe_it_sync_interval_seconds=interval)
 
 
 def test_source_url_rejects_embedded_credentials() -> None:
