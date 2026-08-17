@@ -187,7 +187,7 @@ class SnipeItClient:
             location_id=location_id,
             location=location,
             purchase_date=_optional_date(value.get("purchase_date")),
-            warranty_months=_optional_nonnegative_int(value.get("warranty_months")),
+            warranty_months=_optional_warranty_months(value.get("warranty_months")),
             warranty_expires=_optional_date(value.get("warranty_expires")),
         )
 
@@ -266,6 +266,14 @@ def _optional_nonnegative_int(value: Any) -> int | None:
     if parsed < 0:
         raise ValueError("Snipe-IT integer is invalid")
     return parsed
+
+
+def _optional_warranty_months(value: Any) -> int | None:
+    if isinstance(value, str):
+        parts = value.strip().split()
+        if len(parts) == 2 and parts[1].casefold() == "months":
+            value = parts[0]
+    return _optional_nonnegative_int(value)
 
 
 def _optional_string(value: Any) -> str | None:

@@ -105,6 +105,47 @@ def test_list_assets_uses_bearer_auth_and_normalizes_reporting_fields() -> None:
     asyncio.run(run())
 
 
+def test_list_assets_normalizes_warranty_month_display_string() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"total": 1, "rows": [asset_payload(warranty_months="36 months")]},
+            )
+
+        client = SnipeItClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        assets = await client.list_assets()
+
+        assert assets[0].warranty_months == 36
+
+    asyncio.run(run())
+
+
+def test_list_assets_rejects_unknown_warranty_month_unit() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"total": 1, "rows": [asset_payload(warranty_months="3 years")]},
+            )
+
+        client = SnipeItClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_assets()
+
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
 def test_list_assets_pages_with_bounded_limit_and_offset() -> None:
     async def run() -> None:
         offsets: list[int] = []
