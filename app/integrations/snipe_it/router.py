@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth.dependencies import get_current_user
+from app.grafana.dependencies import require_dashboard_access
 from app.integrations.snipe_it.dashboard_models import SnipeItDashboardResponse
 from app.integrations.snipe_it.dashboard_service import (
     SnipeItDashboardService,
@@ -11,7 +11,7 @@ from app.integrations.snipe_it.dashboard_service import (
 router = APIRouter(
     prefix="/api/dashboard/snipe-it",
     tags=["dashboard", "snipe-it"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_dashboard_access)],
 )
 
 
