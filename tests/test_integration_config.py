@@ -126,6 +126,7 @@ def test_production_rejects_disabled_tls_for_configured_source() -> None:
         make_settings(
             app_env="production",
             app_secret_key="p" * 48,
+            cookie_secure=True,
             wazuh_base_url="https://wazuh.internal:55000",
             wazuh_username="reader",
             wazuh_password="fake-wazuh-password",
@@ -138,6 +139,7 @@ def test_production_rejects_disabled_tls_for_configured_wazuh_indexer() -> None:
         make_settings(
             app_env="production",
             app_secret_key="p" * 48,
+            cookie_secure=True,
             wazuh_indexer_base_url="https://wazuh-indexer.internal:9200",
             wazuh_indexer_username="reader",
             wazuh_indexer_password="fake-indexer-password",
@@ -149,6 +151,7 @@ def test_production_allows_disabled_tls_on_unconfigured_source() -> None:
     settings = make_settings(
         app_env="production",
         app_secret_key="p" * 48,
+        cookie_secure=True,
         wazuh_verify_tls=False,
     )
 

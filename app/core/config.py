@@ -144,6 +144,9 @@ class Settings(BaseSettings):
             )
 
         if self.app_env == "production":
+            if not self.cookie_secure:
+                raise ValueError("COOKIE_SECURE must be true in production")
+
             if (
                 self.grafana_api_token is not None
                 and len(self.grafana_api_token.get_secret_value()) < 32
