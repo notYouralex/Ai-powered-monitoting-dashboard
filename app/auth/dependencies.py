@@ -33,6 +33,5 @@ def get_auth_context(
     return AuthContext(user=auth_session.user, session=auth_session)
 
 
-
 def get_current_user(context: AuthContext = Depends(get_auth_context)) -> User:
     return context.user
