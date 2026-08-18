@@ -1,0 +1,1 @@
+"""Shared Executive dashboard aggregation."""
