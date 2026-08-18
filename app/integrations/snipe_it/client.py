@@ -13,8 +13,8 @@ from app.core.http import create_http_client, request_with_retries
 from app.integrations.snipe_it.models import SnipeItAsset
 
 
-SNIPE_IT_ASSET_PAGE_SIZE = 100
-SNIPE_IT_MAX_ASSET_PAGES = 100
+SNIPE_IT_ASSET_PAGE_SIZE = 200
+SNIPE_IT_MAX_ASSET_PAGES = 50
 SNIPE_IT_MAX_ASSETS = SNIPE_IT_ASSET_PAGE_SIZE * SNIPE_IT_MAX_ASSET_PAGES
 
 

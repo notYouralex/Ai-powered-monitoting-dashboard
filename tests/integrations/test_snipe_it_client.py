@@ -75,7 +75,7 @@ def test_list_assets_uses_bearer_auth_and_normalizes_reporting_fields() -> None:
         assert request.headers["Accept"] == "application/json"
         assert request.headers["Content-Type"] == "application/json"
         assert request.headers["User-Agent"].startswith("ai-powered-monitoring-dashboard/")
-        assert request.url.params["limit"] == "100"
+        assert request.url.params["limit"] == "200"
         assert request.url.params["offset"] == "0"
         assert request.url.params["sort"] == "id"
         assert request.url.params["order"] == "asc"
