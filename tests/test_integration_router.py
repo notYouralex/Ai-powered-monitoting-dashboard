@@ -6,6 +6,7 @@ from app.main import create_app
 
 def test_all_source_routers_exist_and_are_mountable() -> None:
     from app.integrations.freshservice.router import router as freshservice_router
+    from app.integrations.health.router import router as health_router
     from app.integrations.snipe_it.router import router as snipe_it_router
     from app.integrations.wazuh.router import router as wazuh_router
     from app.integrations.zabbix.router import router as zabbix_router
@@ -14,6 +15,7 @@ def test_all_source_routers_exist_and_are_mountable() -> None:
     assert isinstance(zabbix_router, APIRouter)
     assert isinstance(snipe_it_router, APIRouter)
     assert isinstance(freshservice_router, APIRouter)
+    assert isinstance(health_router, APIRouter)
 
 
 def test_shared_router_contains_freshservice_dashboard_route() -> None:
@@ -47,4 +49,4 @@ def test_application_exposes_only_implemented_source_endpoints() -> None:
     assert "/api/dashboard/zabbix" in paths
     assert "/api/dashboard/snipe-it" in paths
     assert "/api/dashboard/freshservice" in set(app.openapi()["paths"])
-    assert "/api/integrations/health" not in paths
+    assert "/api/integrations/health" in paths
