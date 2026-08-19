@@ -1,8 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
 
-import pytest
-
 from app.core.errors import IntegrationError
 from app.integrations.zabbix.models import (
     ZabbixDiskPressure,
@@ -408,7 +406,7 @@ def test_dashboard_service_warns_for_missing_enabled_resource_metrics() -> None:
     asyncio.run(run())
 
 
-def test_dashboard_service_ranks_top_hosts_then_fetches_trends_in_rank_order() -> None:
+def test_dashboard_service_ranks_top_hosts_and_builds_live_resource_samples() -> None:
     async def run() -> None:
         hosts = [
             host("1", enabled=True, availability="available"),
@@ -426,17 +424,33 @@ def test_dashboard_service_ranks_top_hosts_then_fetches_trends_in_rank_order() -
             pressure("3", cpu=90, memory=80, disk=70),
             pressure("4", cpu=99, memory=99, disk=99),
         ]
-        trends = [trend("2", metric="cpu", value=60), trend("1", metric="disk", value=75)]
-        client = FakeZabbixClient(hosts, problems, resources, trends)
+        client = FakeZabbixClient(hosts, problems, resources)
         service = ZabbixDashboardService(client=client)
 
         response = await service.get_dashboard()
 
-        assert client.trend_calls == [["2", "1", "3"]]
+        assert client.trend_calls == []
         assert [row.host_id for row in response.top_affected_hosts] == ["2", "1", "3"]
         assert response.top_affected_hosts[0].highest_problem_severity == "high"
         assert response.top_affected_hosts[2].unavailable_interface_count == 1
-        assert response.resource_trends == trends
+        assert [(row.host_id, row.metric) for row in response.resource_live] == [
+            ("2", "cpu"),
+            ("2", "memory"),
+            ("1", "cpu"),
+            ("1", "memory"),
+            ("3", "cpu"),
+            ("3", "memory"),
+        ]
+        assert [row.points[0].used_percent for row in response.resource_live] == [
+            40,
+            45,
+            70,
+            60,
+            90,
+            80,
+        ]
+        assert all(row.points[0].observed_at == STARTED_AT for row in response.resource_live)
+        assert response.resource_trends == []
         assert response.summary.hosts_total == 4
         assert response.summary.problems_total == 2
         assert response.summary.resource_hosts_total == 4
@@ -445,15 +459,16 @@ def test_dashboard_service_ranks_top_hosts_then_fetches_trends_in_rank_order() -
     asyncio.run(run())
 
 
-def test_dashboard_service_empty_ranking_still_calls_trends_with_empty_host_ids() -> None:
+def test_dashboard_service_empty_ranking_has_no_live_resource_samples() -> None:
     async def run() -> None:
         client = FakeZabbixClient([host("1", enabled=True)])
         service = ZabbixDashboardService(client=client)
 
         response = await service.get_dashboard()
 
-        assert client.trend_calls == [[]]
+        assert client.trend_calls == []
         assert response.top_affected_hosts == []
+        assert response.resource_live == []
         assert response.resource_trends == []
         assert response.warnings == [
             "1 enabled Zabbix host has no current CPU utilization metric.",
@@ -536,7 +551,7 @@ def test_dashboard_service_keeps_core_data_when_topology_read_fails() -> None:
     asyncio.run(run())
 
 
-def test_dashboard_service_propagates_trend_client_failure_without_partial_dashboard() -> None:
+def test_dashboard_service_live_samples_do_not_require_trend_api_access() -> None:
     async def run() -> None:
         error = IntegrationError(
             source="zabbix",
@@ -545,15 +560,17 @@ def test_dashboard_service_propagates_trend_client_failure_without_partial_dashb
         )
         client = FakeZabbixClient(
             [host("1", enabled=True)],
-            resource_pressure=[pressure("1", cpu=50)],
+            resource_pressure=[pressure("1", cpu=50, memory=35)],
             trend_error=error,
         )
         service = ZabbixDashboardService(client=client)
 
-        with pytest.raises(IntegrationError) as exc_info:
-            await service.get_dashboard()
+        response = await service.get_dashboard()
 
-        assert exc_info.value is error
-        assert client.trend_calls == [["1"]]
+        assert client.trend_calls == []
+        assert [(row.metric, row.points[0].used_percent) for row in response.resource_live] == [
+            ("cpu", 50),
+            ("memory", 35),
+        ]
 
     asyncio.run(run())
