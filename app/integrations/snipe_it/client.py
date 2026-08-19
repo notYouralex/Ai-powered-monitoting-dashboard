@@ -10,16 +10,17 @@ from pydantic import SecretStr, ValidationError
 from app.core.config import Settings
 from app.core.errors import IntegrationError, IntegrationErrorCode
 from app.core.http import create_http_client, request_with_retries
-from app.integrations.snipe_it.models import SnipeItAsset
+from app.integrations.snipe_it.models import SnipeItActivity, SnipeItAsset
 
 
 SNIPE_IT_ASSET_PAGE_SIZE = 200
 SNIPE_IT_MAX_ASSET_PAGES = 50
 SNIPE_IT_MAX_ASSETS = SNIPE_IT_ASSET_PAGE_SIZE * SNIPE_IT_MAX_ASSET_PAGES
+SNIPE_IT_RECENT_ACTIVITY_LIMIT = 10
 
 
 class SnipeItClient:
-    """Read-only Snipe-IT API client for bounded hardware inventory retrieval."""
+    """Read-only Snipe-IT API client for bounded inventory and activity retrieval."""
 
     def __init__(
         self,
@@ -114,6 +115,46 @@ class SnipeItClient:
 
         raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
 
+    async def list_recent_activity(self) -> list[SnipeItActivity]:
+        async with create_http_client(
+            timeout_seconds=self._timeout_seconds,
+            verify_tls=self._verify_tls,
+            ca_bundle=self._ca_bundle,
+            transport=self._transport,
+        ) as client:
+            try:
+                response = await request_with_retries(
+                    client,
+                    "GET",
+                    f"{self._base_url}/api/v1/reports/activity",
+                    retry_safe=False,
+                    headers={
+                        "Authorization": f"Bearer {self._api_token.get_secret_value()}",
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                    },
+                    params={
+                        "limit": SNIPE_IT_RECENT_ACTIVITY_LIMIT,
+                        "offset": 0,
+                        "item_type": "asset",
+                        "sort": "created_at",
+                        "order": "desc",
+                    },
+                )
+            except httpx.RequestError as exc:
+                raise self._source_error("SOURCE_UNAVAILABLE", retryable=True) from exc
+
+        self._raise_for_status(response)
+        payload = self._parse_json_object(response)
+        rows = payload.get("rows")
+        if not isinstance(rows, list) or len(rows) > SNIPE_IT_RECENT_ACTIVITY_LIMIT:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            return [self._normalize_activity(row) for row in rows]
+        except (TypeError, ValueError, ValidationError) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
     async def _get_asset_page(
         self,
         client: httpx.AsyncClient,
@@ -189,6 +230,29 @@ class SnipeItClient:
             purchase_date=_optional_date(value.get("purchase_date")),
             warranty_months=_optional_warranty_months(value.get("warranty_months")),
             warranty_expires=_optional_date(value.get("warranty_expires")),
+        )
+
+    @staticmethod
+    def _normalize_activity(value: Any) -> SnipeItActivity:
+        if not isinstance(value, dict):
+            raise TypeError("Snipe-IT activity must be an object")
+
+        performed_by = _optional_relation_name(value.get("created_by"))
+        if performed_by is None:
+            performed_by = _optional_relation_name(value.get("admin"))
+
+        occurred_at = value.get("action_date")
+        if occurred_at is None:
+            occurred_at = value.get("created_at")
+
+        return SnipeItActivity(
+            activity_id=_required_positive_int(value.get("id")),
+            action=_required_string(value.get("action_type")),
+            asset=_optional_relation_name(value.get("item")),
+            target=_optional_relation_name(value.get("target")),
+            performed_by=performed_by,
+            location=_optional_relation_name(value.get("location")),
+            occurred_at=_required_activity_datetime(occurred_at),
         )
 
     @staticmethod
@@ -276,6 +340,13 @@ def _optional_warranty_months(value: Any) -> int | None:
     return _optional_nonnegative_int(value)
 
 
+def _required_string(value: Any) -> str:
+    parsed = _optional_string(value)
+    if parsed is None:
+        raise ValueError("required Snipe-IT string is invalid")
+    return parsed
+
+
 def _optional_string(value: Any) -> str | None:
     if value is None:
         return None
@@ -283,6 +354,24 @@ def _optional_string(value: Any) -> str | None:
         raise ValueError("Snipe-IT string is invalid")
     text = value.strip()
     return text or None
+
+
+def _optional_relation_name(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("Snipe-IT relation is invalid")
+    return _optional_string(value.get("name"))
+
+
+def _required_activity_datetime(value: Any) -> str:
+    raw = value
+    if isinstance(value, dict):
+        raw = value.get("datetime") or value.get("formatted")
+    parsed = _optional_string(raw)
+    if parsed is None:
+        raise ValueError("required Snipe-IT activity timestamp is invalid")
+    return parsed
 
 
 def _optional_relation(value: Any) -> tuple[int | None, str | None]:

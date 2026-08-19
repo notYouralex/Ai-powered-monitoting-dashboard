@@ -28,3 +28,17 @@ class SnipeItAsset(BaseModel):
     purchase_date: date | None = None
     warranty_months: int | None = Field(default=None, ge=0, le=1200)
     warranty_expires: date | None = None
+
+
+class SnipeItActivity(BaseModel):
+    """Normalized read-only Snipe-IT asset activity used by the Grafana activity panel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    activity_id: int = Field(gt=0)
+    action: str = Field(min_length=1, max_length=128)
+    asset: str | None = Field(default=None, max_length=512)
+    target: str | None = Field(default=None, max_length=512)
+    performed_by: str | None = Field(default=None, max_length=256)
+    location: str | None = Field(default=None, max_length=255)
+    occurred_at: str = Field(min_length=1, max_length=128)

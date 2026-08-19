@@ -4,6 +4,7 @@ from argon2 import PasswordHasher, Type
 from pydantic import SecretStr
 from sqlalchemy import text
 
+from app.core.errors import IntegrationError
 from app.db.models import SyncRun, User
 from app.integrations.snipe_it.dashboard_service import (
     SnipeItAssetStoreUnavailable,
@@ -11,6 +12,8 @@ from app.integrations.snipe_it.dashboard_service import (
     SnipeItDashboardService,
     get_snipe_it_dashboard_service,
 )
+from app.integrations.snipe_it.models import SnipeItActivity
+from app.integrations.snipe_it.router import get_snipe_it_client
 
 
 NOW = datetime(2026, 8, 17, 1, 0, tzinfo=timezone.utc)
@@ -89,6 +92,12 @@ def test_snipe_it_dashboard_requires_authentication(auth_env) -> None:
     assert response.status_code == 401
 
 
+def test_snipe_it_recent_activity_requires_authentication(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    response = auth_env.client.get("/api/dashboard/snipe-it/recent-activity")
+    assert response.status_code == 401
+
+
 def test_snipe_it_dashboard_accepts_configured_grafana_api_token(auth_env) -> None:
     auth_env.settings.grafana_api_token = SecretStr("g" * 48)
     expected = None
@@ -164,6 +173,10 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
         "assets_total": 4,
         "assets_assigned": 2,
         "assets_unassigned": 2,
+        "assets_deployed": 2,
+        "assets_available": 1,
+        "assets_maintenance": 0,
+        "assets_retired": 0,
         "assets_missing_serial": 1,
         "assets_missing_asset_tag": 1,
         "warranty_expired": 1,
@@ -184,7 +197,36 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
         "Branch Office": 1,
         "Unknown": 1,
     }
+    assert "recent_activity" not in response.model_dump()
     assert "assigned_to" not in response.model_dump_json()
+
+
+def test_dashboard_builds_requested_asset_state_summary_cards(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    seed_sync_run(auth_env)
+    repository = FakeAssetRepository(
+        [
+            asset(101, status_label="In Use", assigned_to_id=10),
+            asset(102, status_label="Available"),
+            asset(103, status_label="In repair"),
+            asset(104, status_label="Retired"),
+            asset(105, status_label="Onhold"),
+        ]
+    )
+
+    with auth_env.session_factory() as db:
+        response = SnipeItDashboardService(
+            db=db,
+            settings=auth_env.settings,
+            asset_repository=repository,
+            clock=lambda: NOW,
+        ).get_dashboard()
+
+    assert response.summary.assets_total == 5
+    assert response.summary.assets_deployed == 1
+    assert response.summary.assets_available == 1
+    assert response.summary.assets_maintenance == 1
+    assert response.summary.assets_retired == 1
 
 
 def test_executive_summary_uses_normalized_dashboard_metrics(auth_env) -> None:
@@ -341,6 +383,73 @@ def test_sqlalchemy_adapter_reads_committed_asset_schema(auth_env) -> None:
     assert response.summary.assets_assigned == 1
     assert response.summary.warranty_expiring_soon == 1
     assert response.status_distribution[0].name == "Deployed"
+
+
+def test_recent_activity_route_returns_live_normalized_asset_activity(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    login(auth_env)
+
+    class FakeActivityClient:
+        async def list_recent_activity(self):
+            return [
+                SnipeItActivity(
+                    activity_id=501,
+                    action="Checkout",
+                    asset="LT-101 - Engineering Laptop",
+                    target="Example User",
+                    performed_by="Asset Admin",
+                    location="Main Office",
+                    occurred_at="2026-08-18 05:10:00",
+                )
+            ]
+
+    auth_env.client.app.dependency_overrides[get_snipe_it_client] = lambda: FakeActivityClient()
+    try:
+        response = auth_env.client.get("/api/dashboard/snipe-it/recent-activity")
+    finally:
+        auth_env.client.app.dependency_overrides.pop(get_snipe_it_client, None)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "source": "snipe_it",
+        "activity": [
+            {
+                "activity_id": 501,
+                "action": "Checkout",
+                "asset": "LT-101 - Engineering Laptop",
+                "target": "Example User",
+                "performed_by": "Asset Admin",
+                "location": "Main Office",
+                "occurred_at": "2026-08-18 05:10:00",
+            }
+        ],
+    }
+
+
+def test_recent_activity_route_returns_structured_unavailable_error(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    login(auth_env)
+
+    class UnavailableActivityClient:
+        async def list_recent_activity(self):
+            raise IntegrationError(
+                source="snipe_it",
+                code="SOURCE_UNAVAILABLE",
+                retryable=True,
+            )
+
+    auth_env.client.app.dependency_overrides[get_snipe_it_client] = lambda: UnavailableActivityClient()
+    try:
+        response = auth_env.client.get("/api/dashboard/snipe-it/recent-activity")
+    finally:
+        auth_env.client.app.dependency_overrides.pop(get_snipe_it_client, None)
+
+    assert response.status_code == 503
+    payload = response.json()["error"]
+    assert payload["code"] == "SOURCE_UNAVAILABLE"
+    assert payload["source"] == "snipe_it"
+    assert payload["retryable"] is True
+    assert "temporarily unavailable" in payload["message"]
 
 
 def test_authenticated_route_uses_dashboard_service_dependency(auth_env) -> None:
