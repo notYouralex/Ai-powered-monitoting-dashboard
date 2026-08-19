@@ -1,7 +1,17 @@
 from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UTCDateTime
@@ -70,6 +80,67 @@ class LoginAttempt(Base):
 
     __table_args__ = (
         Index("ix_login_attempts_username_created", "username", "created_at"),
+    )
+
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    hostname: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    serial: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    asset_tag: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    os: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    device_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    correlation_confidence: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    source_links: Mapped[list["DeviceSourceLink"]] = relationship(
+        back_populates="device",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        Index("ix_devices_hostname", "hostname"),
+        Index("ix_devices_ip", "ip"),
+        Index("ix_devices_serial", "serial"),
+        Index("ix_devices_asset_tag", "asset_tag"),
+    )
+
+
+class DeviceSourceLink(Base):
+    __tablename__ = "device_source_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    device_id: Mapped[int] = mapped_column(
+        ForeignKey("devices.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_record_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    identifiers: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    match_method: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[int] = mapped_column(Integer, nullable=False)
+    manual_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now, nullable=False)
+
+    device: Mapped[Device] = relationship(back_populates="source_links")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "source",
+            "source_record_id",
+            name="uq_device_source_links_source_record",
+        ),
+        Index("ix_device_source_links_device_source", "device_id", "source"),
+        Index("ix_device_source_links_last_seen_at", "last_seen_at"),
     )
 
 
