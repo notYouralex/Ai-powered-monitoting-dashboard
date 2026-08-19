@@ -236,6 +236,19 @@ def test_integration_health_requires_authentication(auth_env) -> None:
     assert response.json() == {"detail": "Not authenticated"}
 
 
+def test_integration_health_reports_unconfigured_wazuh_without_breaking_endpoint(auth_env) -> None:
+    create_user(auth_env)
+    login(auth_env)
+
+    response = auth_env.client.get("/api/integrations/health")
+
+    assert response.status_code == 200
+    by_source = {item["source"]: item for item in response.json()["integrations"]}
+    assert by_source["wazuh"]["status"] == "not_configured"
+    assert by_source["wazuh"]["warnings"] == ["Wazuh is not configured."]
+    assert set(by_source) == {"wazuh", "zabbix", "snipe_it", "freshservice"}
+
+
 def test_integration_health_returns_aggregated_response(auth_env) -> None:
     create_user(auth_env)
     login(auth_env)
