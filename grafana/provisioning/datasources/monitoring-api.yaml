@@ -1,5 +1,6 @@
 apiVersion: 1
 
-# The existing host Grafana datasource is configured manually so its bearer
-# token is stored by Grafana and never committed to this repository.
+# Host-installed Grafana uses a manually configured Monitoring API datasource.
+# Keep repository provisioning inert so local datasource UIDs and credentials
+# remain in Grafana's secure configuration instead of source control.
 datasources: []

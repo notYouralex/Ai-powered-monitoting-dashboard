@@ -160,27 +160,21 @@ def test_zabbix_dashboard_exposes_health_and_stale_state() -> None:
     assert selectors == {"health.status", "is_stale"}
 
 
-def test_zabbix_dashboard_file_provisioning_is_stable_and_read_only() -> None:
+def test_zabbix_dashboard_file_provisioning_is_inert_for_host_grafana() -> None:
     provider = PROVIDER_PATH.read_text(encoding="utf-8")
 
     assert "apiVersion: 1" in provider
-    assert "name: Zabbix Infrastructure" in provider
-    assert "folder: Infrastructure" in provider
-    assert "type: file" in provider
-    assert "allowUiUpdates: false" in provider
-    assert "updateIntervalSeconds: 30" in provider
-    assert "path: /var/lib/grafana/dashboards/zabbix" in provider
+    assert "providers: []" in provider
+    assert "/var/lib/grafana/" not in provider
+    assert "allowUiUpdates" not in provider
 
 
-def test_zabbix_fastapi_datasource_uses_environment_backed_bearer_auth() -> None:
+def test_zabbix_specific_datasource_provisioning_is_inert_and_secret_free() -> None:
     datasource = DATASOURCE_PATH.read_text(encoding="utf-8")
 
-    assert "name: Zabbix FastAPI" in datasource
-    assert "uid: zabbix-fastapi" in datasource
-    assert "type: yesoreyeram-infinity-datasource" in datasource
-    assert "url: http://127.0.0.1:$APP_PORT" in datasource
-    assert "auth_method: bearerToken" in datasource
-    assert "allowDangerousHTTPMethods: false" in datasource
-    assert "bearerToken: $GRAFANA_API_TOKEN" in datasource
-    assert "Bearer " not in datasource
-    assert "replace-" not in datasource
+    assert "apiVersion: 1" in datasource
+    assert "datasources: []" in datasource
+    assert "uid:" not in datasource
+    assert "secureJsonData" not in datasource
+    assert "bearerToken" not in datasource
+    assert "$GRAFANA_API_TOKEN" not in datasource
