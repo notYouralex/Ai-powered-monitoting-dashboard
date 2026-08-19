@@ -113,6 +113,20 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _status_label_is(value: str | None, *labels: str) -> bool:
+    if not _has_text(value):
+        return False
+    normalized = value.strip().casefold()
+    return normalized in {label.casefold() for label in labels}
+
+
+def _status_label_contains(value: str | None, *terms: str) -> bool:
+    if not _has_text(value):
+        return False
+    normalized = value.casefold()
+    return any(term.casefold() in normalized for term in terms)
+
+
 class SnipeItDashboardService:
     """Build Grafana-facing Snipe-IT metrics exclusively from normalized local data."""
 
@@ -154,6 +168,19 @@ class SnipeItDashboardService:
             assets_total=len(assets),
             assets_assigned=sum(asset.assigned_to_id is not None for asset in assets),
             assets_unassigned=sum(asset.assigned_to_id is None for asset in assets),
+            assets_deployed=sum(asset.assigned_to_id is not None for asset in assets),
+            assets_available=sum(
+                asset.assigned_to_id is None
+                and _status_label_is(asset.status_label, "available", "ready to deploy")
+                for asset in assets
+            ),
+            assets_maintenance=sum(
+                _status_label_contains(asset.status_label, "maintenance", "repair")
+                for asset in assets
+            ),
+            assets_retired=sum(
+                _status_label_contains(asset.status_label, "retired") for asset in assets
+            ),
             assets_missing_serial=sum(not _has_text(asset.serial) for asset in assets),
             assets_missing_asset_tag=sum(not _has_text(asset.asset_tag) for asset in assets),
             warranty_expired=sum(

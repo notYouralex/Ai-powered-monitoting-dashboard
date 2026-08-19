@@ -42,62 +42,107 @@ def test_executive_dashboard_uses_only_shared_executive_api() -> None:
         assert "/api/dashboard/freshservice" not in target["url"]
 
 
-def test_executive_dashboard_surfaces_available_executive_contract_fields() -> None:
+def test_executive_dashboard_matches_approved_summary_layout() -> None:
     dashboard = load_dashboard()
     panels = {panel["title"]: panel for panel in dashboard["panels"]}
 
-    expected_titles = {
-        "Critical Security Alerts",
-        "High Security Alerts",
-        "Disaster Problems",
-        "Unavailable Interfaces",
-        "High-Priority Open Tickets",
-        "Expired Warranties",
-        "Wazuh Health",
-        "Zabbix Health",
-        "Snipe-IT Health",
-        "Freshservice Health",
-        "Observed At",
+    assert set(panels) == {
+        "Overall Health",
+        "Active Alerts",
+        "Open Tickets",
+        "Overdue Tickets",
+        "Assets",
+        "Infrastructure Health",
+        "Top Alert by Category",
+        "Tickets by Status",
         "Source Health & Freshness",
-        "Source Warnings",
+        "Attention Required",
     }
-    assert expected_titles.issubset(panels)
+    assert "AI Insight (Summary)" not in panels
+    assert "Observed At" not in panels
 
-    expected_metrics = {
-        "Critical Security Alerts": ("wazuh", "alerts_critical"),
-        "High Security Alerts": ("wazuh", "alerts_high"),
-        "Disaster Problems": ("zabbix", "problems_disaster"),
-        "Unavailable Interfaces": ("zabbix", "interfaces_unavailable"),
-        "High-Priority Open Tickets": ("freshservice", "high_priority_open"),
-        "Expired Warranties": ("snipe_it", "warranty_expired"),
+    expected_layout = {
+        "Overall Health": {"x": 0, "y": 0, "w": 5, "h": 4},
+        "Active Alerts": {"x": 5, "y": 0, "w": 5, "h": 4},
+        "Open Tickets": {"x": 10, "y": 0, "w": 5, "h": 4},
+        "Overdue Tickets": {"x": 15, "y": 0, "w": 5, "h": 4},
+        "Assets": {"x": 20, "y": 0, "w": 4, "h": 4},
+        "Infrastructure Health": {"x": 0, "y": 4, "w": 8, "h": 8},
+        "Top Alert by Category": {"x": 8, "y": 4, "w": 8, "h": 8},
+        "Tickets by Status": {"x": 16, "y": 4, "w": 8, "h": 8},
+        "Source Health & Freshness": {"x": 0, "y": 12, "w": 12, "h": 8},
+        "Attention Required": {"x": 12, "y": 12, "w": 12, "h": 8},
     }
-    for title, (source, metric) in expected_metrics.items():
-        target = panels[title]["targets"][0]
-        assert source in target["root_selector"]
-        assert target["columns"] == [{"selector": metric, "text": metric, "type": "number"}]
+    for title, grid_pos in expected_layout.items():
+        assert panels[title]["gridPos"] == grid_pos
 
-    for title, source in {
-        "Wazuh Health": "wazuh",
-        "Zabbix Health": "zabbix",
-        "Snipe-IT Health": "snipe_it",
-        "Freshservice Health": "freshservice",
-    }.items():
-        target = panels[title]["targets"][0]
-        assert source in target["root_selector"]
-        assert target["columns"] == [{"selector": "status", "text": "status", "type": "string"}]
+    for title in ("Overall Health", "Active Alerts", "Open Tickets", "Overdue Tickets", "Assets"):
+        assert panels[title]["type"] == "stat"
+    for title in ("Infrastructure Health", "Top Alert by Category", "Tickets by Status"):
+        assert panels[title]["type"] == "piechart"
+    for title in ("Source Health & Freshness", "Attention Required"):
+        assert panels[title]["type"] == "table"
+
+    query_text = json.dumps(
+        [target for panel in dashboard["panels"] for target in panel.get("targets", [])]
+    )
+    for field in {
+        "overall_health_percent",
+        "active_alerts",
+        "tickets_open",
+        "overdue_open",
+        "assets_total",
+        "health_distribution",
+        "alert_category_distribution",
+        "ticket_status_distribution",
+        "attention_required",
+    }:
+        assert field in query_text
 
     freshness_target = panels["Source Health & Freshness"]["targets"][0]
-    assert "$.sources" in freshness_target["root_selector"]
+    assert freshness_target["root_selector"] == "$.sources"
     assert {column["selector"] for column in freshness_target["columns"]} == {
         "source",
-        "status",
+        "health.status",
         "is_stale",
-        "last_success_at",
+        "health.last_success_at",
     }
 
-    warnings_target = panels["Source Warnings"]["targets"][0]
-    assert "$.sources" in warnings_target["root_selector"]
-    assert {column["selector"] for column in warnings_target["columns"]} == {"source", "warnings"}
+    attention_target = panels["Attention Required"]["targets"][0]
+    assert {column["selector"] for column in attention_target["columns"]} == {
+        "source",
+        "issue",
+        "count",
+    }
+
+
+def test_executive_dashboard_uses_render_ready_backend_rows() -> None:
+    dashboard = load_dashboard()
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
+
+    for title in ("Overall Health", "Active Alerts", "Open Tickets", "Overdue Tickets", "Assets"):
+        assert panels[title]["targets"][0]["root_selector"] == "$append([], $.summary)"
+
+    assert panels["Infrastructure Health"]["targets"][0]["root_selector"] == "$.health_distribution"
+    assert (
+        panels["Top Alert by Category"]["targets"][0]["root_selector"]
+        == "$.alert_category_distribution"
+    )
+    assert (
+        panels["Tickets by Status"]["targets"][0]["root_selector"]
+        == "$.ticket_status_distribution"
+    )
+    assert panels["Source Health & Freshness"]["targets"][0]["root_selector"] == "$.sources"
+    assert panels["Attention Required"]["targets"][0]["root_selector"] == "$.attention_required"
+
+    root_selectors = [
+        target["root_selector"]
+        for panel in dashboard["panels"]
+        for target in panel.get("targets", [])
+    ]
+    assert all("$sum(" not in selector for selector in root_selectors)
+    assert all("$count(" not in selector for selector in root_selectors)
+    assert all("$map(" not in selector for selector in root_selectors)
 
 
 def test_executive_dashboard_does_not_query_unmerged_backend_fields() -> None:

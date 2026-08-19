@@ -31,7 +31,7 @@ The source-controlled dashboard templates are:
 
 They query only the canonical FastAPI dashboard endpoints. Wazuh, Freshservice, Snipe-IT, and the Executive dashboard use a Grafana datasource input placeholder; the Zabbix reference dashboard uses an Infinity datasource variable. Point every dashboard at the same securely configured `Monitoring API` datasource when imported.
 
-The Executive dashboard queries only `/api/dashboard/executive`. It visualizes the normalized Executive metrics currently exposed by that API together with per-source health, freshness, and safe warnings. It does not synthesize an overall health state or invent trend, top-risk, unavailable-host, or AI fields that are not present in the merged backend contract.
+The Executive dashboard queries only `/api/dashboard/executive`. The backend derives render-ready headline metrics, health/category/status distributions, and attention counts from the four normalized source summaries; Grafana only selects those returned rows and fields. `Overall Health` is the percentage of canonical integrations currently reporting healthy. The dashboard does not invent SLA, trend, recent-alert, unavailable-host, or AI fields that are not present in the merged backend contract.
 
 Freshservice historical panels use a six-calendar-month ticket creation-date scope in the `Asia/Manila` timezone to match the Freshservice reporting view. This applies to Pending, Resolved, Closed, all-ticket status distribution, category distribution, and resolution trend data. Current operational metrics such as Open, Due Today, Overdue, Escalated, and unresolved distributions remain current-state counts even when an older ticket is still actionable.
 

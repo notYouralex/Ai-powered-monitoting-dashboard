@@ -336,7 +336,117 @@ def test_transient_server_failure_is_retried_bounded_then_unavailable(monkeypatc
     asyncio.run(run())
 
 
+def test_list_recent_activity_reads_bounded_asset_activity() -> None:
+    async def run() -> None:
+        requests: list[httpx.Request] = []
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(
+                200,
+                json={
+                    "total": 1,
+                    "rows": [
+                        {
+                            "id": 501,
+                            "action_type": "Checkout",
+                            "item": {
+                                "id": 101,
+                                "name": "LT-101 - Engineering Laptop",
+                                "type": "asset",
+                                "serial": "SERIAL-101",
+                            },
+                            "target": {"id": 15, "name": "Example User", "type": "user"},
+                            "created_by": {"id": 1, "name": "Asset Admin"},
+                            "location": {"id": 16, "name": "Main Office"},
+                            "action_date": {
+                                "datetime": "2026-08-18 05:10:00",
+                                "formatted": "Aug 18, 2026 5:10 AM",
+                            },
+                        }
+                    ],
+                },
+            )
+
+        client = SnipeItClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        activity = await client.list_recent_activity()
+
+        assert len(requests) == 1
+        request = requests[0]
+        assert request.method == "GET"
+        assert request.url.path == "/api/v1/reports/activity"
+        assert request.url.params["limit"] == "10"
+        assert request.url.params["offset"] == "0"
+        assert request.url.params["item_type"] == "asset"
+        assert request.url.params["sort"] == "created_at"
+        assert request.url.params["order"] == "desc"
+
+        assert len(activity) == 1
+        item = activity[0]
+        assert item.activity_id == 501
+        assert item.action == "Checkout"
+        assert item.asset == "LT-101 - Engineering Laptop"
+        assert item.target == "Example User"
+        assert item.performed_by == "Asset Admin"
+        assert item.location == "Main Office"
+        assert item.occurred_at == "2026-08-18 05:10:00"
+
+    asyncio.run(run())
+
+
+def test_list_recent_activity_fails_fast_on_transient_source_failure() -> None:
+    async def run() -> None:
+        attempts = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            return httpx.Response(503, json={"message": "unavailable"})
+
+        client = SnipeItClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_recent_activity()
+
+        assert attempts == 1
+        assert exc_info.value.code == "SOURCE_UNAVAILABLE"
+        assert exc_info.value.retryable is True
+
+    asyncio.run(run())
+
+
+def test_list_recent_activity_rejects_oversized_response() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            row = {
+                "id": 1,
+                "action_type": "Update",
+                "action_date": {"datetime": "2026-08-18 05:10:00"},
+            }
+            return httpx.Response(200, json={"total": 11, "rows": [row] * 11})
+
+        client = SnipeItClient.from_settings(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_recent_activity()
+
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
+
+
 def test_client_public_surface_remains_read_only() -> None:
     assert hasattr(SnipeItClient, "list_assets")
+    assert hasattr(SnipeItClient, "list_recent_activity")
     for method in ("create", "update", "delete", "checkout", "checkin"):
         assert not hasattr(SnipeItClient, method)

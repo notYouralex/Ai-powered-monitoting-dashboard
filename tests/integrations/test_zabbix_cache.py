@@ -50,6 +50,7 @@ def host(host_id: str) -> ZabbixHost:
 class FakeZabbixClient:
     def __init__(self) -> None:
         self.hosts = [host("1")]
+        self.resource_pressure: list[ZabbixResourcePressure] | None = None
         self.error: IntegrationError | None = None
 
     async def list_hosts(self):
@@ -61,6 +62,8 @@ class FakeZabbixClient:
         return []
 
     async def list_resource_pressure(self):
+        if self.resource_pressure is not None:
+            return self.resource_pressure
         return [ZabbixResourcePressure(host_id=row.host_id) for row in self.hosts]
 
     async def list_resource_trends(self, host_ids: list[str]):
@@ -112,6 +115,89 @@ def test_refresh_replaces_singleton_snapshot_without_adding_cache_rows() -> None
         assert cached.refreshed_at == T3
         assert db.scalar(select(func.count()).select_from(ZabbixDashboardCache)) == 1
         assert db.scalar(select(func.count()).select_from(SyncRun).where(SyncRun.source == "zabbix")) == 2
+        db.close()
+
+    asyncio.run(run())
+
+
+def test_refresh_accumulates_live_cpu_and_memory_samples_in_singleton_cache() -> None:
+    async def run() -> None:
+        db = make_db()
+        client = FakeZabbixClient()
+        client.resource_pressure = [
+            ZabbixResourcePressure(
+                host_id="1",
+                cpu_used_percent=20,
+                cpu_observed_at=T0,
+                memory_used_percent=40,
+                memory_observed_at=T0,
+            )
+        ]
+        clock_values = iter([T0, T1, T2, T3])
+        service = ZabbixCacheRefreshService(client, clock=lambda: next(clock_values))
+
+        await service.refresh(db)
+        client.resource_pressure = [
+            ZabbixResourcePressure(
+                host_id="1",
+                cpu_used_percent=30,
+                cpu_observed_at=T2,
+                memory_used_percent=50,
+                memory_observed_at=T2,
+            )
+        ]
+        await service.refresh(db)
+
+        cached = db.get(ZabbixDashboardCache, 1)
+        assert cached is not None
+        live = cached.snapshot["resource_live"]
+        assert [(row["host_id"], row["metric"]) for row in live] == [
+            ("1", "cpu"),
+            ("1", "memory"),
+        ]
+        assert live[0]["points"] == [
+            {"observed_at": T0.isoformat().replace("+00:00", "Z"), "used_percent": 20.0},
+            {"observed_at": T2.isoformat().replace("+00:00", "Z"), "used_percent": 30.0},
+        ]
+        assert live[1]["points"] == [
+            {"observed_at": T0.isoformat().replace("+00:00", "Z"), "used_percent": 40.0},
+            {"observed_at": T2.isoformat().replace("+00:00", "Z"), "used_percent": 50.0},
+        ]
+        db.close()
+
+    asyncio.run(run())
+
+
+def test_refresh_prunes_live_resource_samples_older_than_one_hour() -> None:
+    async def run() -> None:
+        db = make_db()
+        client = FakeZabbixClient()
+        client.resource_pressure = [
+            ZabbixResourcePressure(
+                host_id="1",
+                cpu_used_percent=20,
+                cpu_observed_at=T0,
+            )
+        ]
+        later = T0 + timedelta(minutes=61)
+        clock_values = iter([T0, T1, later, later + timedelta(seconds=1)])
+        service = ZabbixCacheRefreshService(client, clock=lambda: next(clock_values))
+
+        await service.refresh(db)
+        client.resource_pressure = [
+            ZabbixResourcePressure(
+                host_id="1",
+                cpu_used_percent=30,
+                cpu_observed_at=later,
+            )
+        ]
+        await service.refresh(db)
+
+        cached = db.get(ZabbixDashboardCache, 1)
+        assert cached is not None
+        assert cached.snapshot["resource_live"][0]["points"] == [
+            {"observed_at": later.isoformat().replace("+00:00", "Z"), "used_percent": 30.0}
+        ]
         db.close()
 
     asyncio.run(run())

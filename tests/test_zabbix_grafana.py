@@ -47,30 +47,83 @@ def test_zabbix_dashboard_uses_an_infinity_datasource_variable() -> None:
             assert target["url_options"]["method"] == "GET"
 
 
-def test_zabbix_dashboard_covers_the_approved_infrastructure_views() -> None:
+def test_zabbix_dashboard_uses_global_view_layout() -> None:
     dashboard = load_dashboard()
-    panel_titles = {panel["title"] for panel in dashboard["panels"]}
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
 
-    assert {
+    expected_titles = {
+        "Hosts",
+        "Problems",
+        "Unreachable",
+        "Avg CPU Usage",
+        "Critical Problems",
+        "Availability Map",
+        "System Information",
+        "CPU Load",
+        "Memory Usage",
         "Integration Health",
-        "Host Availability",
-        "Interface Availability",
-        "Active Problems",
-        "Active Problems by Severity",
-        "Resource Pressure",
-        "Top Affected Hosts",
-        "Network Topology",
-        "CPU Trend",
-        "Memory Trend",
-        "Disk Trend",
         "Warnings",
-        "AI Infrastructure Summary",
-    }.issubset(panel_titles)
+    }
+    assert set(panels) == expected_titles
+
+    for title, x, width in [
+        ("Hosts", 0, 5),
+        ("Problems", 5, 5),
+        ("Unreachable", 10, 5),
+        ("Avg CPU Usage", 15, 5),
+        ("Critical Problems", 20, 4),
+    ]:
+        panel = panels[title]
+        assert panel["type"] == "stat"
+        assert panel["gridPos"] == {"h": 4, "w": width, "x": x, "y": 0}
+
+    expected_summary_metrics = {
+        "Hosts": "hosts_enabled",
+        "Problems": "problems_total",
+        "Unreachable": "interfaces_unavailable",
+        "Critical Problems": "problems_disaster",
+    }
+    for title, selector in expected_summary_metrics.items():
+        target = panels[title]["targets"][0]
+        assert target["root_selector"] == "$append([], $.summary)"
+        assert target["columns"] == [{"selector": selector, "text": selector, "type": "number"}]
+
+    cpu_stat = panels["Avg CPU Usage"]
+    assert cpu_stat["fieldConfig"]["defaults"]["unit"] == "percent"
+    assert cpu_stat["options"]["reduceOptions"]["calcs"] == ["mean"]
+    assert cpu_stat["targets"][0]["root_selector"] == "$.resource_pressure"
+    assert cpu_stat["targets"][0]["columns"] == [
+        {"selector": "cpu_used_percent", "text": "cpu_used_percent", "type": "number"}
+    ]
+
+    assert panels["Availability Map"]["gridPos"] == {"h": 10, "w": 13, "x": 0, "y": 4}
+    assert panels["System Information"]["gridPos"] == {"h": 10, "w": 11, "x": 13, "y": 4}
+    assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 14}
+    assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 14}
+    assert dashboard["time"] == {"from": "now-1h", "to": "now"}
+
+    for title, metric in [("CPU Load", "cpu"), ("Memory Usage", "memory")]:
+        target = panels[title]["targets"][0]
+        assert target["root_selector"] == (
+            "$map($.resource_live[metric='" + metric + "'], function($s) { "
+            "$map($s.points, function($p) { {'time': $p.observed_at, "
+            "'value': $p.used_percent, 'host': $s.host_id} }) }).*"
+        )
+    assert panels["Integration Health"]["gridPos"] == {"h": 4, "w": 6, "x": 0, "y": 22}
+    assert panels["Warnings"]["gridPos"] == {"h": 4, "w": 18, "x": 6, "y": 22}
+
+    system_target = panels["System Information"]["targets"][0]
+    assert system_target["root_selector"] == "$.topology_maps[0].nodes"
+    assert system_target["columns"] == [
+        {"selector": "title", "text": "Host", "type": "string"},
+        {"selector": "status", "text": "Status", "type": "string"},
+        {"selector": "active_problem_count", "text": "Problems", "type": "number"},
+    ]
 
 
-def test_zabbix_dashboard_network_topology_uses_node_graph_frames() -> None:
+def test_zabbix_dashboard_availability_map_uses_node_graph_frames() -> None:
     dashboard = load_dashboard()
-    panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Network Topology")
+    panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Availability Map")
 
     assert panel["type"] == "nodeGraph"
     targets = {target["refId"]: target for target in panel["targets"]}
@@ -95,7 +148,7 @@ def test_zabbix_dashboard_uses_only_normalized_fastapi_contract() -> None:
     assert '"method": "DELETE"' not in serialized
 
 
-def test_zabbix_dashboard_exposes_freshness_and_stale_state() -> None:
+def test_zabbix_dashboard_exposes_health_and_stale_state() -> None:
     dashboard = load_dashboard()
     health_panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Integration Health")
     selectors = {
@@ -104,7 +157,7 @@ def test_zabbix_dashboard_exposes_freshness_and_stale_state() -> None:
         for column in target.get("columns", [])
     }
 
-    assert {"health.status", "is_stale", "health.last_success_at", "observed_at"}.issubset(selectors)
+    assert selectors == {"health.status", "is_stale"}
 
 
 def test_zabbix_dashboard_file_provisioning_is_stable_and_read_only() -> None:

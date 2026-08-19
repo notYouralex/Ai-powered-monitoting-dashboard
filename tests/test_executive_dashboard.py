@@ -134,6 +134,85 @@ def test_executive_service_combines_four_normalized_source_summaries() -> None:
     asyncio.run(run())
 
 
+def test_executive_service_builds_render_ready_summary_fields() -> None:
+    async def run() -> None:
+        service = make_service(
+            wazuh=FakeWazuhService(
+                result=make_summary(
+                    "wazuh",
+                    metrics={"alerts_high": 3, "alerts_critical": 2},
+                )
+            ),
+            zabbix=FakeSyncService(
+                make_summary(
+                    "zabbix",
+                    status="degraded",
+                    metrics={
+                        "problems_high": 4,
+                        "problems_disaster": 1,
+                        "interfaces_unavailable": 2,
+                    },
+                )
+            ),
+            snipe_it=FakeSyncService(
+                make_summary(
+                    "snipe_it",
+                    status="unavailable",
+                    metrics={"assets_total": 700, "warranty_expired": 249},
+                )
+            ),
+            freshservice=FakeSyncService(
+                make_summary(
+                    "freshservice",
+                    metrics={
+                        "tickets_open": 14,
+                        "tickets_pending": 10,
+                        "high_priority_open": 3,
+                        "overdue_open": 4,
+                    },
+                )
+            ),
+        )
+
+        response = await service.get_dashboard(START, NOW)
+
+        assert response.summary.model_dump() == {
+            "overall_health_percent": 50,
+            "active_alerts": 10,
+            "tickets_open": 14,
+            "overdue_open": 4,
+            "assets_total": 700,
+        }
+        assert [item.model_dump() for item in response.health_distribution] == [
+            {"name": "Healthy", "count": 2},
+            {"name": "Degraded", "count": 1},
+            {"name": "Unavailable", "count": 1},
+            {"name": "Not configured", "count": 0},
+        ]
+        assert [item.model_dump() for item in response.alert_category_distribution] == [
+            {"name": "Security", "count": 5},
+            {"name": "Infrastructure", "count": 5},
+        ]
+        assert [item.model_dump() for item in response.ticket_status_distribution] == [
+            {"name": "Open", "count": 14},
+            {"name": "Pending", "count": 10},
+        ]
+        assert [item.model_dump() for item in response.attention_required] == [
+            {"source": "Wazuh", "issue": "Critical Security Alerts", "count": 2},
+            {"source": "Zabbix", "issue": "Disaster Problems", "count": 1},
+            {"source": "Zabbix", "issue": "Unavailable Interfaces", "count": 2},
+            {
+                "source": "Freshservice",
+                "issue": "High-Priority Open Tickets",
+                "count": 3,
+            },
+            {"source": "Freshservice", "issue": "Overdue Tickets", "count": 4},
+            {"source": "Snipe-IT", "issue": "Expired Warranties", "count": 249},
+        ]
+
+    asyncio.run(run())
+
+
 def test_executive_service_preserves_empty_source_without_hiding_other_summaries() -> None:
     async def run() -> None:
         snipe_it = FakeSyncService(make_summary("snipe_it"))

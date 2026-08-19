@@ -11,12 +11,18 @@ from app.core.config import Settings
 from app.core.errors import IntegrationError
 from app.db.models import SyncRun, ZabbixDashboardCache
 from app.integrations.zabbix.client import ZabbixClient
-from app.integrations.zabbix.models import ZabbixDashboardResponse
+from app.integrations.zabbix.models import (
+    ZabbixDashboardResponse,
+    ZabbixResourceLivePoint,
+    ZabbixResourceLiveSeries,
+)
 from app.integrations.zabbix.service import ZabbixDashboardService
 
 
 ZABBIX_CACHE_REFRESH_INTERVAL_SECONDS = 60
 ZABBIX_CACHE_STALE_AFTER_SECONDS = ZABBIX_CACHE_REFRESH_INTERVAL_SECONDS * 2
+ZABBIX_LIVE_WINDOW_SECONDS = 60 * 60
+ZABBIX_LIVE_MAX_POINTS = 60
 ZABBIX_CACHE_ROW_ID = 1
 
 
@@ -58,6 +64,24 @@ class ZabbixCacheRefreshService:
         completed_at = self._clock()
         try:
             cached = db.get(ZabbixDashboardCache, ZABBIX_CACHE_ROW_ID)
+            previous_live: list[ZabbixResourceLiveSeries] = []
+            if cached is not None:
+                try:
+                    previous = ZabbixDashboardResponse.model_validate(cached.snapshot)
+                except ValidationError:
+                    previous = None
+                if previous is not None:
+                    previous_live = previous.resource_live
+
+            dashboard = dashboard.model_copy(
+                update={
+                    "resource_live": _merge_resource_live(
+                        previous_live,
+                        dashboard.resource_live,
+                        observed_at=completed_at,
+                    )
+                }
+            )
             if cached is None:
                 cached = ZabbixDashboardCache(
                     id=ZABBIX_CACHE_ROW_ID,
@@ -226,6 +250,36 @@ class ZabbixCachedDashboardService:
             .order_by(SyncRun.completed_at.desc(), SyncRun.id.desc())
             .limit(1)
         )
+
+
+def _merge_resource_live(
+    previous: list[ZabbixResourceLiveSeries],
+    current: list[ZabbixResourceLiveSeries],
+    *,
+    observed_at: datetime,
+) -> list[ZabbixResourceLiveSeries]:
+    cutoff = observed_at - timedelta(seconds=ZABBIX_LIVE_WINDOW_SECONDS)
+    previous_by_key = {(row.host_id, row.metric): row for row in previous}
+    merged: list[ZabbixResourceLiveSeries] = []
+
+    for current_series in current:
+        key = (current_series.host_id, current_series.metric)
+        points_by_time: dict[datetime, ZabbixResourceLivePoint] = {}
+        previous_series = previous_by_key.get(key)
+        if previous_series is not None:
+            for point in previous_series.points:
+                if point.observed_at >= cutoff:
+                    points_by_time[point.observed_at] = point
+        for point in current_series.points:
+            if point.observed_at >= cutoff:
+                points_by_time[point.observed_at] = point
+
+        points = sorted(points_by_time.values(), key=lambda point: point.observed_at)
+        points = points[-ZABBIX_LIVE_MAX_POINTS:]
+        if points:
+            merged.append(current_series.model_copy(update={"points": points}))
+
+    return merged
 
 
 def _merge_warnings(existing: list[str], state_warnings: list[str]) -> list[str]:

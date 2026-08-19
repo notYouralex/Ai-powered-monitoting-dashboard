@@ -176,7 +176,7 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
         assert "Authorization" not in json.dumps(target)
 
 
-def test_snipe_it_dashboard_uses_only_canonical_snipe_it_api() -> None:
+def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
     dashboard = load_dashboard("snipe-it.json")
 
     assert dashboard["uid"] == "monitoring-snipe-it"
@@ -191,32 +191,72 @@ def test_snipe_it_dashboard_uses_only_canonical_snipe_it_api() -> None:
             "pluginName": "Infinity",
         }
     ]
-    titles = {panel["title"] for panel in dashboard["panels"]}
-    assert {
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
+    assert set(panels) == {
         "Total Assets",
-        "Assigned Assets",
-        "Unassigned Assets",
-        "Missing Serial",
-        "Missing Asset Tag",
-        "Warranty Expired",
-        "Warranty Expiring Soon",
-        "Integration Health",
-        "Stale Data",
-        "Observed At",
-        "Last Successful Sync",
+        "Deployed",
+        "Available",
+        "Maintenance",
+        "Retired",
+        "Assets by Type / Category",
         "Assets by Status",
-        "Assets by Category",
         "Assets by Location",
-        "Warnings",
-    }.issubset(titles)
+        "Recent Activity",
+    }
+
+    for title, x, width in [
+        ("Total Assets", 0, 5),
+        ("Deployed", 5, 5),
+        ("Available", 10, 5),
+        ("Maintenance", 15, 5),
+        ("Retired", 20, 4),
+    ]:
+        assert panels[title]["gridPos"] == {"x": x, "y": 0, "w": width, "h": 4}
+
+    assert panels["Assets by Type / Category"]["gridPos"] == {
+        "x": 0,
+        "y": 4,
+        "w": 8,
+        "h": 8,
+    }
+    assert panels["Assets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
+    assert panels["Assets by Location"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
+    assert panels["Recent Activity"]["gridPos"] == {"x": 0, "y": 12, "w": 24, "h": 8}
+
+    summary_selectors = {
+        title: panel["targets"][0]["columns"][0]["selector"]
+        for title, panel in panels.items()
+        if title in {"Total Assets", "Deployed", "Available", "Maintenance", "Retired"}
+    }
+    assert summary_selectors == {
+        "Total Assets": "summary.assets_total",
+        "Deployed": "summary.assets_deployed",
+        "Available": "summary.assets_available",
+        "Maintenance": "summary.assets_maintenance",
+        "Retired": "summary.assets_retired",
+    }
 
     targets = list(iter_targets(dashboard))
     assert targets
     for target in targets:
         assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
-        assert target["url"] == "/api/dashboard/snipe-it"
         assert target["url_options"]["method"] == "GET"
         assert "Authorization" not in json.dumps(target)
+
+    activity_target = panels["Recent Activity"]["targets"][0]
+    assert activity_target["root_selector"] == "$.activity"
+    assert activity_target["url"] == "/api/dashboard/snipe-it/recent-activity"
+    assert [column["selector"] for column in activity_target["columns"]] == [
+        "action",
+        "asset",
+        "target",
+        "performed_by",
+        "location",
+        "occurred_at",
+    ]
+    for title, panel in panels.items():
+        if title != "Recent Activity":
+            assert panel["targets"][0]["url"] == "/api/dashboard/snipe-it"
 
 
 def test_compose_reuses_host_grafana_instead_of_defining_duplicate_service() -> None:

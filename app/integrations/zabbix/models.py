@@ -18,6 +18,7 @@ ZabbixProblemSeverity = Literal[
     "unknown",
 ]
 ResourceTrendMetric = Literal["cpu", "memory", "disk"]
+ResourceLiveMetric = Literal["cpu", "memory"]
 ZabbixTopologyStatus = Literal[
     "available",
     "unavailable",
@@ -118,6 +119,21 @@ class ZabbixResourceTrend(BaseModel):
     points: list[ZabbixResourceTrendPoint] = Field(default_factory=list, max_length=24)
 
 
+class ZabbixResourceLivePoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    observed_at: datetime
+    used_percent: float = Field(ge=0, le=100)
+
+
+class ZabbixResourceLiveSeries(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    host_id: str = Field(min_length=1, max_length=64)
+    metric: ResourceLiveMetric
+    points: list[ZabbixResourceLivePoint] = Field(default_factory=list, max_length=60)
+
+
 class ZabbixTopologyNode(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -189,5 +205,6 @@ class ZabbixDashboardResponse(BaseModel):
     resource_pressure: list[ZabbixResourcePressure] = Field(default_factory=list, max_length=5000)
     top_affected_hosts: list[ZabbixTopAffectedHost] = Field(default_factory=list, max_length=10)
     resource_trends: list[ZabbixResourceTrend] = Field(default_factory=list, max_length=30)
+    resource_live: list[ZabbixResourceLiveSeries] = Field(default_factory=list, max_length=20)
     topology_maps: list[ZabbixTopologyMap] = Field(default_factory=list, max_length=100)
     warnings: list[str] = Field(default_factory=list, max_length=20)

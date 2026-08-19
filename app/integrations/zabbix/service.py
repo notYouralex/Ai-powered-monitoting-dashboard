@@ -10,7 +10,10 @@ from app.integrations.zabbix.models import (
     ZabbixDashboardSummary,
     ZabbixHost,
     ZabbixProblem,
+    ZabbixResourceLivePoint,
+    ZabbixResourceLiveSeries,
     ZabbixResourcePressure,
+    ZabbixTopAffectedHost,
     ZabbixTopologyMap,
     ZabbixTopologyNode,
 )
@@ -35,9 +38,7 @@ class ZabbixDashboardService:
             active_problems,
             resource_pressure,
         )
-        resource_trends = await self._client.list_resource_trends(
-            [row.host_id for row in top_affected_hosts]
-        )
+        resource_live = _build_resource_live(top_affected_hosts, resource_pressure)
         topology_warning: str | None = None
         try:
             topology_maps = await self._client.list_topology_maps()
@@ -67,7 +68,7 @@ class ZabbixDashboardService:
             active_problems=active_problems,
             resource_pressure=resource_pressure,
             top_affected_hosts=top_affected_hosts,
-            resource_trends=resource_trends,
+            resource_live=resource_live,
             topology_maps=topology_maps,
             warnings=_build_warnings(
                 hosts,
@@ -76,6 +77,48 @@ class ZabbixDashboardService:
                 topology_warning=topology_warning,
             ),
         )
+
+
+def _build_resource_live(
+    top_affected_hosts: list[ZabbixTopAffectedHost],
+    resource_pressure: list[ZabbixResourcePressure],
+) -> list[ZabbixResourceLiveSeries]:
+    by_host = {pressure.host_id: pressure for pressure in resource_pressure}
+    series: list[ZabbixResourceLiveSeries] = []
+    for host in top_affected_hosts:
+        pressure = by_host.get(host.host_id)
+        if pressure is None:
+            continue
+        if pressure.cpu_used_percent is not None and pressure.cpu_observed_at is not None:
+            series.append(
+                ZabbixResourceLiveSeries(
+                    host_id=host.host_id,
+                    metric="cpu",
+                    points=[
+                        ZabbixResourceLivePoint(
+                            observed_at=pressure.cpu_observed_at,
+                            used_percent=pressure.cpu_used_percent,
+                        )
+                    ],
+                )
+            )
+        if (
+            pressure.memory_used_percent is not None
+            and pressure.memory_observed_at is not None
+        ):
+            series.append(
+                ZabbixResourceLiveSeries(
+                    host_id=host.host_id,
+                    metric="memory",
+                    points=[
+                        ZabbixResourceLivePoint(
+                            observed_at=pressure.memory_observed_at,
+                            used_percent=pressure.memory_used_percent,
+                        )
+                    ],
+                )
+            )
+    return series
 
 
 def _enrich_topology_maps(
