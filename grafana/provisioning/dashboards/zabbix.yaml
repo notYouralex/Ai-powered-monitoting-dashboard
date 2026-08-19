@@ -1,12 +1,6 @@
 apiVersion: 1
 
-providers:
-  - name: Zabbix Infrastructure
-    orgId: 1
-    folder: Infrastructure
-    type: file
-    disableDeletion: true
-    allowUiUpdates: false
-    updateIntervalSeconds: 30
-    options:
-      path: /var/lib/grafana/dashboards/zabbix
+# Legacy Zabbix-specific file provisioning is intentionally inert.
+# Import zabbix-infrastructure.json through the existing Grafana UI and select
+# the securely configured Monitoring API datasource.
+providers: []

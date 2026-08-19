@@ -17,7 +17,7 @@ Create one Infinity datasource in the existing Grafana instance with these setti
 
 Use the same `GRAFANA_API_TOKEN` value configured for the FastAPI container. Enter it only in Grafana's secure bearer token field. Do not place the real token in dashboard JSON, provisioning YAML, documentation, or Git.
 
-The repository intentionally does not provision the datasource secret. `grafana/provisioning/datasources/monitoring-api.yaml` is an inert placeholder so copying the repository does not overwrite securely stored datasource credentials.
+The repository intentionally does not provision datasource credentials. All files under `grafana/provisioning/` are inert reference placeholders for the current host-installed deployment: datasource files declare `datasources: []` and dashboard-provider files declare `providers: []`. The legacy Zabbix-specific provisioning filenames are retained only as reference placeholders; they do not create a separate datasource or file provider. This prevents stale local datasource UIDs, host-specific dashboard paths, and bearer-token configuration from being committed or applied accidentally.
 
 ## Dashboards
 
@@ -43,7 +43,7 @@ Import each dashboard through the existing Grafana UI:
 4. When Grafana asks for the `Monitoring API` datasource, select the Infinity datasource created above.
 5. Import the dashboard.
 
-This UI-import approach keeps the bearer token in Grafana's secure datasource configuration and avoids coupling the repository to the locally generated datasource UID. The dashboard provisioning file is intentionally inert for this deployment.
+This UI-import approach keeps the bearer token in Grafana's secure datasource configuration and avoids coupling the repository to locally generated datasource UIDs or host-specific dashboard paths. All repository provisioning files are intentionally inert for this deployment.
 
 ## Runtime sequence
 

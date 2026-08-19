@@ -1,5 +1,5 @@
 apiVersion: 1
 
-# The existing host Grafana dashboards are imported through the UI so the
-# local Infinity datasource can be selected without hard-coding its UID.
+# Host-installed Grafana dashboards are imported through the UI so the local
+# Monitoring API datasource can be selected without hard-coding its UID.
 providers: []
