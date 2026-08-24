@@ -20,6 +20,8 @@ from app.integrations.snipe_it.dashboard_models import (
     SnipeItDashboardResponse,
     SnipeItDashboardSummary,
     SnipeItNamedCount,
+    SnipeItWarrantyExpiryItem,
+    SnipeItWarrantyExpiryResponse,
 )
 
 
@@ -219,6 +221,26 @@ class SnipeItDashboardService:
                 limit=10,
             ),
             warnings=warnings,
+        )
+
+    def get_warranty_expiry(self) -> SnipeItWarrantyExpiryResponse:
+        assets = self._asset_repository.list_assets()
+        now = self._clock().astimezone(SNIPE_IT_DASHBOARD_TIMEZONE).date()
+        warranty_limit = now + timedelta(days=SNIPE_IT_WARRANTY_EXPIRING_DAYS)
+
+        return SnipeItWarrantyExpiryResponse(
+            warranty_expiry=[
+                SnipeItWarrantyExpiryItem(
+                    asset_tag=asset.asset_tag,
+                    serial=asset.serial,
+                    category=asset.category,
+                    location=asset.location,
+                    warranty_expires=asset.warranty_expires.isoformat(),
+                )
+                for asset in assets
+                if asset.warranty_expires is not None
+                and now <= asset.warranty_expires <= warranty_limit
+            ][:10]
         )
 
     def get_executive_summary(self) -> ExecutiveSourceSummary:

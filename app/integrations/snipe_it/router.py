@@ -6,6 +6,7 @@ from app.integrations.snipe_it.client import SnipeItClient
 from app.integrations.snipe_it.dashboard_models import (
     SnipeItDashboardResponse,
     SnipeItRecentActivityResponse,
+    SnipeItWarrantyExpiryResponse,
 )
 from app.integrations.snipe_it.dashboard_service import (
     SnipeItDashboardService,
@@ -38,3 +39,10 @@ async def get_snipe_it_recent_activity(
     client: SnipeItClient = Depends(get_snipe_it_client),
 ) -> SnipeItRecentActivityResponse:
     return SnipeItRecentActivityResponse(activity=await client.list_recent_activity())
+
+
+@router.get("/warranty-expiry", response_model=SnipeItWarrantyExpiryResponse)
+def get_snipe_it_warranty_expiry(
+    service: SnipeItDashboardService = Depends(get_snipe_it_dashboard_service),
+) -> SnipeItWarrantyExpiryResponse:
+    return service.get_warranty_expiry()

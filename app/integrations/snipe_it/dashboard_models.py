@@ -49,3 +49,20 @@ class SnipeItRecentActivityResponse(BaseModel):
 
     source: Literal["snipe_it"] = "snipe_it"
     activity: list[SnipeItActivity] = Field(default_factory=list, max_length=10)
+
+
+class SnipeItWarrantyExpiryItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    asset_tag: str | None = None
+    serial: str | None = None
+    category: str | None = None
+    location: str | None = None
+    warranty_expires: str
+
+
+class SnipeItWarrantyExpiryResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["snipe_it"] = "snipe_it"
+    warranty_expiry: list[SnipeItWarrantyExpiryItem] = Field(default_factory=list, max_length=10)

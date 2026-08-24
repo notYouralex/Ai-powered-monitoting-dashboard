@@ -687,6 +687,76 @@
                 }
             ],
             "description": "Recent asset activity read from Snipe-IT through the authenticated monitoring API."
+        },
+        {
+            "id": 15,
+            "type": "table",
+            "title": "Upcoming Warranty Expiry",
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "${DS_MONITORING_API}"
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 20,
+                "w": 24,
+                "h": 8
+            },
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "options": {
+                "showHeader": true,
+                "cellHeight": "sm"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "${DS_MONITORING_API}"
+                    },
+                    "type": "json",
+                    "source": "url",
+                    "format": "table",
+                    "parser": "backend",
+                    "url": "/api/dashboard/snipe-it/warranty-expiry",
+                    "url_options": {
+                        "method": "GET",
+                        "data": ""
+                    },
+                    "root_selector": "$.warranty_expiry",
+                    "columns": [
+                        {
+                            "selector": "asset_tag",
+                            "text": "Asset Tag",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "serial",
+                            "text": "Serial",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "category",
+                            "text": "Category",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "location",
+                            "text": "Location",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "warranty_expires",
+                            "text": "Warranty Expires",
+                            "type": "string"
+                        }
+                    ]
+                }
+            ],
+            "description": "Assets with warranties expiring within the next 90 days."
         }
     ]
 }
