@@ -181,6 +181,7 @@ class FreshserviceDashboardService:
                 "due_today": summary.due_today,
                 "overdue_open": summary.overdue_open,
                 "escalated_open": summary.escalated_open,
+                "resolution_sla_compliance_percent": summary.resolution_sla_compliance_percent,
             },
             warnings=dashboard.warnings,
         )

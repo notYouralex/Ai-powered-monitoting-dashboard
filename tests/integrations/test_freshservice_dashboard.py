@@ -318,6 +318,10 @@ def test_dashboard_calculates_resolution_sla_compliance_for_six_month_scope(
     assert summary["resolution_sla_met"] == 1
     assert summary["resolution_sla_compliance_percent"] == 50.0
 
+    with auth_env.session_factory() as db:
+        executive = FreshserviceDashboardService(db, auth_env.settings).get_executive_summary()
+    assert executive.metrics["resolution_sla_compliance_percent"] == 50.0
+
 
 def test_pending_summary_includes_all_pending_variants_with_six_month_scope(
     auth_env, monkeypatch
@@ -432,6 +436,7 @@ def test_dashboard_service_builds_bounded_executive_summary(auth_env, monkeypatc
         "due_today": 1,
         "overdue_open": 1,
         "escalated_open": 1,
+        "resolution_sla_compliance_percent": None,
     }
 
 
