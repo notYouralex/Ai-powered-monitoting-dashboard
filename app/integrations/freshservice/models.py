@@ -70,6 +70,9 @@ class FreshserviceDashboardSummary(BaseModel):
     due_today: int = Field(ge=0)
     overdue_open: int = Field(ge=0)
     escalated_open: int = Field(ge=0)
+    resolution_sla_eligible: int = Field(ge=0)
+    resolution_sla_met: int = Field(ge=0)
+    resolution_sla_compliance_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 class FreshserviceDashboardResponse(BaseModel):

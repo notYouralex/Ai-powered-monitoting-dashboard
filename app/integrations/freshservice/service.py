@@ -84,6 +84,23 @@ class FreshserviceDashboardService:
             select(Ticket).order_by(Ticket.source_updated_at.desc()).limit(50)
         ).all()
 
+        resolution_sla_criteria = (
+            historical_scope,
+            Ticket.status_code.in_(TERMINAL_STATUS_CODES),
+            Ticket.due_by.is_not(None),
+            Ticket.resolved_at.is_not(None),
+        )
+        resolution_sla_eligible = self._count(*resolution_sla_criteria)
+        resolution_sla_met = self._count(
+            *resolution_sla_criteria,
+            Ticket.resolved_at <= Ticket.due_by,
+        )
+        resolution_sla_compliance_percent = (
+            round((resolution_sla_met / resolution_sla_eligible) * 100, 1)
+            if resolution_sla_eligible
+            else None
+        )
+
         summary = FreshserviceDashboardSummary(
             tickets_total=total,
             tickets_open=self._count(Ticket.status_code.in_(OPEN_STATUS_CODES)),
@@ -116,6 +133,9 @@ class FreshserviceDashboardService:
                 Ticket.status_code.in_(ACTIVE_STATUS_CODES),
                 or_(Ticket.is_escalated.is_(True), Ticket.first_response_escalated.is_(True)),
             ),
+            resolution_sla_eligible=resolution_sla_eligible,
+            resolution_sla_met=resolution_sla_met,
+            resolution_sla_compliance_percent=resolution_sla_compliance_percent,
         )
 
         health = IntegrationHealthSummary(

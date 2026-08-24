@@ -140,6 +140,9 @@ def test_dashboard_reads_synchronized_reporting_data(auth_env, monkeypatch) -> N
         "due_today": 1,
         "overdue_open": 1,
         "escalated_open": 1,
+        "resolution_sla_eligible": 0,
+        "resolution_sla_met": 0,
+        "resolution_sla_compliance_percent": None,
     }
     assert {item["name"]: item["count"] for item in body["status_distribution"]} == {
         "Open": 2,
@@ -235,6 +238,85 @@ def test_dashboard_historical_metrics_use_six_month_created_date_scope(
         "Closed": 1,
     }
     assert all(item["name"] != "Legacy" for item in body["category_distribution"])
+
+
+def test_dashboard_calculates_resolution_sla_compliance_for_six_month_scope(
+    auth_env, monkeypatch
+) -> None:
+    seed_user_and_tickets(auth_env)
+    auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
+    auth_env.settings.freshservice_api_key = "fake-key"
+    cutoff = datetime(2026, 2, 9, 16, 0, tzinfo=timezone.utc)
+
+    with auth_env.session_factory() as db:
+        db.add_all(
+            [
+                Ticket(
+                    source_ticket_id=112,
+                    subject="Resolved within SLA",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=NOW - timedelta(days=2),
+                    source_created_at=NOW - timedelta(days=10),
+                    source_updated_at=NOW - timedelta(days=3),
+                    resolved_at=NOW - timedelta(days=3),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=113,
+                    subject="Closed after SLA",
+                    status_code=5,
+                    status="closed",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=NOW - timedelta(days=4),
+                    source_created_at=NOW - timedelta(days=12),
+                    source_updated_at=NOW - timedelta(days=2),
+                    resolved_at=NOW - timedelta(days=3),
+                    closed_at=NOW - timedelta(days=2),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=114,
+                    subject="Resolved without SLA deadline",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    source_created_at=NOW - timedelta(days=8),
+                    source_updated_at=NOW - timedelta(days=1),
+                    resolved_at=NOW - timedelta(days=1),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=115,
+                    subject="Old resolved ticket outside reporting scope",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=NOW - timedelta(days=5),
+                    source_created_at=cutoff - timedelta(seconds=1),
+                    source_updated_at=NOW - timedelta(days=4),
+                    resolved_at=NOW - timedelta(days=6),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+            ]
+        )
+        db.commit()
+
+    login(auth_env)
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: NOW)
+
+    response = auth_env.client.get("/api/dashboard/freshservice")
+
+    assert response.status_code == 200
+    summary = response.json()["summary"]
+    assert summary["resolution_sla_eligible"] == 2
+    assert summary["resolution_sla_met"] == 1
+    assert summary["resolution_sla_compliance_percent"] == 50.0
 
 
 def test_pending_summary_includes_all_pending_variants_with_six_month_scope(

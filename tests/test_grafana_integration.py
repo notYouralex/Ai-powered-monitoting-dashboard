@@ -153,20 +153,40 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
             "pluginName": "Infinity",
         }
     ]
-    titles = {panel["title"] for panel in dashboard["panels"]}
-    assert {
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
+    assert set(panels) == {
         "Open Tickets",
         "Pending Tickets",
         "Due Today",
         "Overdue",
-        "Resolved - Last 6 Months",
-        "Closed - Last 6 Months",
+        "Resolution SLA Compliance",
+        "Resolved Tickets",
+        "Closed Tickets",
         "Unresolved Tickets by Priority",
         "Unresolved Tickets by Status",
-        "All Tickets by Status - Last 6 Months",
-        "Resolution Trend - Last 6 Months",
+        "All Tickets by Status",
+        "Resolution Trend",
+        "Tickets by Category",
         "Recent Tickets",
-    }.issubset(titles)
+    }
+
+    for title, x, width in [
+        ("Due Today", 0, 3),
+        ("Overdue", 3, 3),
+        ("Open Tickets", 6, 3),
+        ("Pending Tickets", 9, 3),
+        ("Resolved Tickets", 12, 3),
+        ("Closed Tickets", 15, 3),
+        ("Resolution SLA Compliance", 18, 6),
+    ]:
+        assert panels[title]["gridPos"] == {"x": x, "y": 0, "w": width, "h": 4}
+
+    assert panels["Unresolved Tickets by Priority"]["gridPos"] == {"x": 0, "y": 4, "w": 8, "h": 8}
+    assert panels["Unresolved Tickets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
+    assert panels["All Tickets by Status"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
+    assert panels["Resolution Trend"]["gridPos"] == {"x": 0, "y": 12, "w": 8, "h": 8}
+    assert panels["Tickets by Category"]["gridPos"] == {"x": 8, "y": 12, "w": 6, "h": 8}
+    assert panels["Recent Tickets"]["gridPos"] == {"x": 14, "y": 12, "w": 10, "h": 8}
 
     targets = list(iter_targets(dashboard))
     assert targets
@@ -174,6 +194,7 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
         assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
         assert target["url"] == "/api/dashboard/freshservice"
         assert "Authorization" not in json.dumps(target)
+
 
 
 def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
