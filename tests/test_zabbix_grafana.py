@@ -15,7 +15,7 @@ def load_dashboard() -> dict:
 def test_zabbix_dashboard_is_source_controlled_and_refreshes_frequently() -> None:
     dashboard = load_dashboard()
 
-    assert dashboard["uid"] == "zabbix-infrastructure"
+    assert dashboard["uid"] == "monitoring-zabbix"
     assert dashboard["title"] == "Zabbix Infrastructure"
     assert dashboard["refresh"] == "30s"
     assert dashboard["timezone"] == "browser"
@@ -57,11 +57,10 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
         "Unreachable",
         "Avg CPU Usage",
         "Critical Problems",
-        "Availability Map",
+        "Live Host Topology",
         "System Information",
         "CPU Load",
         "Memory Usage",
-        "Integration Health",
         "Warnings",
     }
     assert set(panels) == expected_titles
@@ -96,7 +95,7 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
         {"selector": "cpu_used_percent", "text": "cpu_used_percent", "type": "number"}
     ]
 
-    assert panels["Availability Map"]["gridPos"] == {"h": 10, "w": 13, "x": 0, "y": 4}
+    assert panels["Live Host Topology"]["gridPos"] == {"h": 10, "w": 13, "x": 0, "y": 4}
     assert panels["System Information"]["gridPos"] == {"h": 10, "w": 11, "x": 13, "y": 4}
     assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 14}
     assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 14}
@@ -109,8 +108,7 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
             "$map($s.points, function($p) { {'time': $p.observed_at, "
             "'value': $p.used_percent, 'host': $s.host_id} }) }).*"
         )
-    assert panels["Integration Health"]["gridPos"] == {"h": 4, "w": 6, "x": 0, "y": 22}
-    assert panels["Warnings"]["gridPos"] == {"h": 4, "w": 18, "x": 6, "y": 22}
+    assert panels["Warnings"]["gridPos"] == {"h": 4, "w": 24, "x": 0, "y": 22}
 
     system_target = panels["System Information"]["targets"][0]
     assert system_target["root_selector"] == "$.topology_maps[0].nodes"
@@ -121,16 +119,107 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
     ]
 
 
-def test_zabbix_dashboard_availability_map_uses_node_graph_frames() -> None:
+def test_zabbix_dashboard_live_topology_uses_network_weathermap() -> None:
     dashboard = load_dashboard()
-    panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Availability Map")
+    panel = next(
+        panel
+        for panel in dashboard["panels"]
+        if panel["title"] == "Live Host Topology"
+    )
 
-    assert panel["type"] == "nodeGraph"
-    targets = {target["refId"]: target for target in panel["targets"]}
-    assert targets["nodes"]["format"] == "node-graph-nodes"
-    assert targets["nodes"]["root_selector"] == "$.topology_maps[0].nodes"
-    assert targets["edges"]["format"] == "node-graph-edges"
-    assert targets["edges"]["root_selector"] == "$.topology_maps[0].edges"
+    assert panel["type"] == "tamirsuliman-weathermap-panel"
+    assert panel["pluginVersion"] == "1.6.12"
+    assert "does not prove physical/interface/circuit health" in panel["description"]
+
+    weathermap = panel["options"]["weathermap"]
+    assert weathermap["version"] == 14
+    assert weathermap["id"] == "zabbix-hijo-network-map"
+    assert len(weathermap["nodes"]) == 25
+    assert len(weathermap["links"]) == 26
+
+    nodes = {node["id"]: node for node in weathermap["nodes"]}
+    assert nodes["4"]["position"] == [261, 177]
+    assert nodes["5"]["position"] == [293, 455]
+    assert nodes["21"]["position"] == [743, 505]
+    assert nodes["26"]["position"] == [1193, 205]
+    assert nodes["4"]["nodeIcon"]["name"] == "networking/firewall"
+    assert nodes["5"]["nodeIcon"]["name"] == "networking/switch"
+    assert nodes["6"]["nodeIcon"]["name"] == "networking/server"
+    assert nodes["9"]["nodeIcon"]["name"] == "networking/radio-tower"
+    assert nodes["7"]["nodeIcon"]["name"] == "cisco/system-controller"
+    assert all(
+        node["nodeIcon"]["src"].startswith(
+            "public/plugins/tamirsuliman-weathermap-panel/icons/"
+        )
+        for node in nodes.values()
+    )
+
+    expected_status_colors = {
+        0: "#d44a3a",
+        1: "#6e6e6e",
+        2: "#8e8e8e",
+        3: "#f2cc0c",
+        4: "#ff9830",
+        5: "#299c46",
+    }
+    for node in nodes.values():
+        assert node["statusQuery"] == f"node_{node['id']}_status"
+        assert node["tooltipMetrics"] == [
+            {
+                "label": "Active problems",
+                "query": f"node_{node['id']}_problems",
+                "units": "none",
+            }
+        ]
+        assert node["nodeStatusColorTarget"] == "both"
+        assert {
+            mapping["value"]: mapping["color"]
+            for mapping in node["statusValueMappings"]
+        } == expected_status_colors
+
+    settings = weathermap["settings"]
+    assert settings["panel"]["panelSize"] == {"width": 1250, "height": 1050}
+    assert settings["panel"]["viewZoomPan"] is True
+    assert settings["link"]["stroke"]["color"] == "#299c46"
+    assert settings["link"]["flowAnimation"]["enabled"] is False
+    assert settings["animation"]["enabled"] is False
+    assert settings["statusLegend"]["enabled"] is True
+    legend_labels = {
+        item["label"] for item in settings["statusLegend"]["items"]
+    }
+    assert "PROBLEM / active host problem" in legend_labels
+    assert any("not physical-link telemetry" in label for label in legend_labels)
+
+    links = weathermap["links"]
+    assert all(link["statusDownColor"] == "#d44a3a" for link in links)
+    assert all(link["statusBlink"] is True for link in links)
+    assert all(link["animation"] == "disabled" for link in links)
+    assert all(
+        "query" not in link["sides"][side]
+        for link in links
+        for side in ("A", "Z")
+    )
+    assert [link["nodes"] for link in links[:4]] == [
+        [{"id": "4"}, {"id": "2"}],
+        [{"id": "3"}, {"id": "4"}],
+        [{"id": "5"}, {"id": "4"}],
+        [{"id": "4"}, {"id": "6"}],
+    ]
+
+    active_targets = [target for target in panel["targets"] if not target.get("hide")]
+    assert [target["refId"] for target in active_targets] == ["status"]
+    status_target = active_targets[0]
+    assert status_target["url"] == "/api/dashboard/zabbix"
+    assert status_target["format"] == "table"
+    assert status_target["parser"] == "backend"
+    assert "topology_maps[map_id='3'][0]" in status_target["root_selector"]
+    assert "active_problem_count" in status_target["root_selector"]
+    assert "unavailable" in status_target["root_selector"]
+
+    fields = {column["text"] for column in status_target["columns"]}
+    assert {f"node_{node_id}_status" for node_id in nodes} <= fields
+    assert {f"node_{node_id}_problems" for node_id in nodes} <= fields
+    assert {link["statusQuery"] for link in links} <= fields
 
 
 def test_zabbix_dashboard_uses_only_normalized_fastapi_contract() -> None:
@@ -148,16 +237,18 @@ def test_zabbix_dashboard_uses_only_normalized_fastapi_contract() -> None:
     assert '"method": "DELETE"' not in serialized
 
 
-def test_zabbix_dashboard_exposes_health_and_stale_state() -> None:
+def test_zabbix_dashboard_exposes_actionable_warnings_without_health_panel() -> None:
     dashboard = load_dashboard()
-    health_panel = next(panel for panel in dashboard["panels"] if panel["title"] == "Integration Health")
-    selectors = {
-        column["selector"]
-        for target in health_panel["targets"]
-        for column in target.get("columns", [])
-    }
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
 
-    assert selectors == {"health.status", "is_stale"}
+    assert "Integration Health" not in panels
+    warning_target = panels["Warnings"]["targets"][0]
+    assert warning_target["root_selector"] == (
+        "$map($.warnings, function($w) { {'warning': $w} })"
+    )
+    assert warning_target["columns"] == [
+        {"selector": "warning", "text": "Warning", "type": "string"}
+    ]
 
 
 def test_zabbix_dashboard_file_provisioning_is_inert_for_host_grafana() -> None:
