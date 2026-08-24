@@ -171,7 +171,6 @@ def test_wazuh_dashboard_uses_only_canonical_wazuh_api() -> None:
         assert "Authorization" not in json.dumps(target)
 
 
-
 def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
     dashboard = load_dashboard("freshservice.json")
 
@@ -228,7 +227,6 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
         assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
         assert target["url"] == "/api/dashboard/freshservice"
         assert "Authorization" not in json.dumps(target)
-
 
 
 def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
