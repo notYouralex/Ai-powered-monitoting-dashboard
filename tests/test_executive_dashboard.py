@@ -169,6 +169,7 @@ def test_executive_service_builds_render_ready_summary_fields() -> None:
                         "tickets_pending": 10,
                         "high_priority_open": 3,
                         "overdue_open": 4,
+                        "resolution_sla_compliance_percent": 75.2,
                     },
                 )
             ),
@@ -179,8 +180,10 @@ def test_executive_service_builds_render_ready_summary_fields() -> None:
         assert response.summary.model_dump() == {
             "overall_health_percent": 50,
             "active_alerts": 10,
+            "security_alerts": 5,
             "tickets_open": 14,
             "overdue_open": 4,
+            "resolution_sla_compliance_percent": 75.2,
             "assets_total": 700,
         }
         assert [item.model_dump() for item in response.health_distribution] == [

@@ -45,6 +45,16 @@ def _metric(summary: ExecutiveSourceSummary, key: str) -> int:
     return max(0, int(value))
 
 
+def _percentage_metric(summary: ExecutiveSourceSummary, key: str) -> float | None:
+    value = summary.metrics.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    percentage = float(value)
+    if not 0 <= percentage <= 100:
+        return None
+    return percentage
+
+
 class ExecutiveDashboardService:
     """Aggregate source-owned normalized summaries without interpreting raw source data."""
 
@@ -90,8 +100,13 @@ class ExecutiveDashboardService:
             summary=ExecutiveDashboardSummary(
                 overall_health_percent=round((healthy_sources / len(sources)) * 100),
                 active_alerts=security_alerts + infrastructure_alerts,
+                security_alerts=security_alerts,
                 tickets_open=_metric(freshservice, "tickets_open"),
                 overdue_open=_metric(freshservice, "overdue_open"),
+                resolution_sla_compliance_percent=_percentage_metric(
+                    freshservice,
+                    "resolution_sla_compliance_percent",
+                ),
                 assets_total=_metric(snipe_it, "assets_total"),
             ),
             health_distribution=[

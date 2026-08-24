@@ -52,7 +52,7 @@
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 5,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -129,16 +129,16 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Active Alerts",
+      "title": "Security Alerts",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "Combined Wazuh high/critical alert events for the selected range and Zabbix high/disaster active problems.",
+      "description": "Wazuh high and critical security alert events for the selected dashboard time range.",
       "gridPos": {
-        "x": 5,
+        "x": 4,
         "y": 0,
-        "w": 5,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -198,8 +198,8 @@
           "root_selector": "$append([], $.summary)",
           "columns": [
             {
-              "selector": "active_alerts",
-              "text": "active_alerts",
+              "selector": "security_alerts",
+              "text": "security_alerts",
               "type": "number"
             }
           ]
@@ -216,9 +216,9 @@
       },
       "description": "Current Freshservice open-ticket count from the normalized Executive summary.",
       "gridPos": {
-        "x": 10,
+        "x": 8,
         "y": 0,
-        "w": 5,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -288,9 +288,9 @@
       },
       "description": "Current overdue Freshservice tickets that remain open.",
       "gridPos": {
-        "x": 15,
+        "x": 12,
         "y": 0,
-        "w": 5,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -428,43 +428,50 @@
     },
     {
       "id": 6,
-      "type": "piechart",
-      "title": "Infrastructure Health",
+      "type": "stat",
+      "title": "SLA Compliance",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "Distribution of canonical integration health states. This reflects monitoring-source health, not device uptime.",
+      "description": "Freshservice resolution SLA compliance for eligible resolved or closed tickets in the six-calendar-month reporting scope.",
       "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 8,
-        "h": 8
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "percent",
+          "mappings": [],
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
-        },
-        "pieType": "donut",
         "reduceOptions": {
-          "values": true,
+          "values": false,
           "calcs": [
             "lastNotNull"
           ],
           "fields": ""
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
       },
       "targets": [
         {
@@ -482,16 +489,11 @@
             "method": "GET",
             "data": ""
           },
-          "root_selector": "$.health_distribution",
+          "root_selector": "$append([], $.summary)",
           "columns": [
             {
-              "selector": "name",
-              "text": "name",
-              "type": "string"
-            },
-            {
-              "selector": "count",
-              "text": "count",
+              "selector": "resolution_sla_compliance_percent",
+              "text": "resolution_sla_compliance_percent",
               "type": "number"
             }
           ]
@@ -501,16 +503,16 @@
     {
       "id": 7,
       "type": "piechart",
-      "title": "Top Alert by Category",
+      "title": "High-Severity Issues by Domain",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "High-severity workload grouped into Security (Wazuh high/critical) and Infrastructure (Zabbix high/disaster).",
+      "description": "High-severity workload by monitoring domain: Security is Wazuh high/critical alert events in the selected range; Infrastructure is Zabbix high/disaster active problems.",
       "gridPos": {
-        "x": 8,
+        "x": 0,
         "y": 4,
-        "w": 8,
+        "w": 12,
         "h": 8
       },
       "fieldConfig": {
@@ -580,9 +582,9 @@
       },
       "description": "Current Freshservice ticket workload by the Open and Pending statuses exposed by the Executive contract.",
       "gridPos": {
-        "x": 16,
+        "x": 12,
         "y": 4,
-        "w": 8,
+        "w": 12,
         "h": 8
       },
       "fieldConfig": {

@@ -20,8 +20,10 @@ class ExecutiveDashboardSummary(BaseModel):
 
     overall_health_percent: int = Field(default=0, ge=0, le=100)
     active_alerts: int = Field(default=0, ge=0)
+    security_alerts: int = Field(default=0, ge=0)
     tickets_open: int = Field(default=0, ge=0)
     overdue_open: int = Field(default=0, ge=0)
+    resolution_sla_compliance_percent: float | None = Field(default=None, ge=0, le=100)
     assets_total: int = Field(default=0, ge=0)
 
 

@@ -48,12 +48,12 @@ def test_executive_dashboard_matches_approved_summary_layout() -> None:
 
     assert set(panels) == {
         "Overall Health",
-        "Active Alerts",
+        "Security Alerts",
         "Open Tickets",
         "Overdue Tickets",
+        "SLA Compliance",
         "Assets",
-        "Infrastructure Health",
-        "Top Alert by Category",
+        "High-Severity Issues by Domain",
         "Tickets by Status",
         "Source Health & Freshness",
         "Attention Required",
@@ -62,23 +62,30 @@ def test_executive_dashboard_matches_approved_summary_layout() -> None:
     assert "Observed At" not in panels
 
     expected_layout = {
-        "Overall Health": {"x": 0, "y": 0, "w": 5, "h": 4},
-        "Active Alerts": {"x": 5, "y": 0, "w": 5, "h": 4},
-        "Open Tickets": {"x": 10, "y": 0, "w": 5, "h": 4},
-        "Overdue Tickets": {"x": 15, "y": 0, "w": 5, "h": 4},
+        "Overall Health": {"x": 0, "y": 0, "w": 4, "h": 4},
+        "Security Alerts": {"x": 4, "y": 0, "w": 4, "h": 4},
+        "Open Tickets": {"x": 8, "y": 0, "w": 4, "h": 4},
+        "Overdue Tickets": {"x": 12, "y": 0, "w": 4, "h": 4},
+        "SLA Compliance": {"x": 16, "y": 0, "w": 4, "h": 4},
         "Assets": {"x": 20, "y": 0, "w": 4, "h": 4},
-        "Infrastructure Health": {"x": 0, "y": 4, "w": 8, "h": 8},
-        "Top Alert by Category": {"x": 8, "y": 4, "w": 8, "h": 8},
-        "Tickets by Status": {"x": 16, "y": 4, "w": 8, "h": 8},
+        "High-Severity Issues by Domain": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "Tickets by Status": {"x": 12, "y": 4, "w": 12, "h": 8},
         "Source Health & Freshness": {"x": 0, "y": 12, "w": 12, "h": 8},
         "Attention Required": {"x": 12, "y": 12, "w": 12, "h": 8},
     }
     for title, grid_pos in expected_layout.items():
         assert panels[title]["gridPos"] == grid_pos
 
-    for title in ("Overall Health", "Active Alerts", "Open Tickets", "Overdue Tickets", "Assets"):
+    for title in (
+        "Overall Health",
+        "Security Alerts",
+        "Open Tickets",
+        "Overdue Tickets",
+        "SLA Compliance",
+        "Assets",
+    ):
         assert panels[title]["type"] == "stat"
-    for title in ("Infrastructure Health", "Top Alert by Category", "Tickets by Status"):
+    for title in ("High-Severity Issues by Domain", "Tickets by Status"):
         assert panels[title]["type"] == "piechart"
     for title in ("Source Health & Freshness", "Attention Required"):
         assert panels[title]["type"] == "table"
@@ -88,11 +95,11 @@ def test_executive_dashboard_matches_approved_summary_layout() -> None:
     )
     for field in {
         "overall_health_percent",
-        "active_alerts",
+        "security_alerts",
         "tickets_open",
         "overdue_open",
+        "resolution_sla_compliance_percent",
         "assets_total",
-        "health_distribution",
         "alert_category_distribution",
         "ticket_status_distribution",
         "attention_required",
@@ -120,12 +127,18 @@ def test_executive_dashboard_uses_render_ready_backend_rows() -> None:
     dashboard = load_dashboard()
     panels = {panel["title"]: panel for panel in dashboard["panels"]}
 
-    for title in ("Overall Health", "Active Alerts", "Open Tickets", "Overdue Tickets", "Assets"):
+    for title in (
+        "Overall Health",
+        "Security Alerts",
+        "Open Tickets",
+        "Overdue Tickets",
+        "SLA Compliance",
+        "Assets",
+    ):
         assert panels[title]["targets"][0]["root_selector"] == "$append([], $.summary)"
 
-    assert panels["Infrastructure Health"]["targets"][0]["root_selector"] == "$.health_distribution"
     assert (
-        panels["Top Alert by Category"]["targets"][0]["root_selector"]
+        panels["High-Severity Issues by Domain"]["targets"][0]["root_selector"]
         == "$.alert_category_distribution"
     )
     assert (
