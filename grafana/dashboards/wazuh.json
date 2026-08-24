@@ -19,7 +19,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": {
     "from": "now-24h",
@@ -48,11 +48,11 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Critical-severity Wazuh alerts in the selected dashboard time range.",
       "gridPos": {
-        "x": 0,
+        "x": 4,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -63,7 +63,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "dark-red",
                 "value": null
               }
             ]
@@ -120,11 +120,11 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "High-severity Wazuh alerts in the selected dashboard time range.",
       "gridPos": {
-        "x": 3,
+        "x": 8,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -135,7 +135,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "yellow",
                 "value": null
               }
             ]
@@ -185,18 +185,18 @@
       ]
     },
     {
-      "id": 3,
+      "id": 15,
       "type": "stat",
-      "title": "Active Agents",
+      "title": "Total Alerts",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Total Wazuh alerts in the selected dashboard time range.",
       "gridPos": {
-        "x": 6,
+        "x": 0,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -207,7 +207,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#0c8496",
                 "value": null
               }
             ]
@@ -226,7 +226,7 @@
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
-        "graphMode": "none",
+        "graphMode": "area",
         "justifyMode": "auto"
       },
       "targets": [
@@ -248,8 +248,8 @@
           "root_selector": "$append([], $.summary)",
           "columns": [
             {
-              "selector": "agents_active",
-              "text": "agents_active",
+              "selector": "alerts_total",
+              "text": "alerts_total",
               "type": "number"
             }
           ]
@@ -257,18 +257,18 @@
       ]
     },
     {
-      "id": 4,
+      "id": 17,
       "type": "stat",
-      "title": "Disconnected Agents",
+      "title": "Total Vulnerabilities",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Current total vulnerabilities reported by Wazuh vulnerability detection.",
       "gridPos": {
-        "x": 9,
+        "x": 12,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -281,6 +281,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 500
               }
             ]
           }
@@ -320,8 +328,8 @@
           "root_selector": "$append([], $.summary)",
           "columns": [
             {
-              "selector": "agents_disconnected",
-              "text": "agents_disconnected",
+              "selector": "vulnerabilities_total",
+              "text": "vulnerabilities_total",
               "type": "number"
             }
           ]
@@ -336,11 +344,11 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Current critical vulnerabilities reported by Wazuh vulnerability detection.",
       "gridPos": {
-        "x": 12,
+        "x": 16,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -353,6 +361,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 500
               }
             ]
           }
@@ -408,11 +424,11 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Current high vulnerabilities reported by Wazuh vulnerability detection.",
       "gridPos": {
-        "x": 15,
+        "x": 20,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -425,6 +441,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 500
+              },
+              {
+                "color": "dark-red",
+                "value": 1000
               }
             ]
           }
@@ -473,37 +497,35 @@
       ]
     },
     {
-      "id": 7,
-      "type": "stat",
-      "title": "Integration Health",
+      "id": 16,
+      "type": "piechart",
+      "title": "Agent Status",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "",
+      "description": "Current Wazuh agent connection states.",
       "gridPos": {
-        "x": 18,
-        "y": 0,
-        "w": 3,
-        "h": 4
+        "x": 10,
+        "y": 11,
+        "w": 5,
+        "h": 6
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
       },
       "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": false
+        },
+        "pieType": "donut",
         "reduceOptions": {
           "values": false,
           "calcs": [
@@ -511,83 +533,10 @@
           ],
           "fields": ""
         },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${DS_MONITORING_API}"
-          },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/wazuh?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.health)",
-          "columns": [
-            {
-              "selector": "status",
-              "text": "status",
-              "type": "string"
-            }
-          ]
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
         }
-      ]
-    },
-    {
-      "id": 8,
-      "type": "stat",
-      "title": "Observed At",
-      "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "${DS_MONITORING_API}"
-      },
-      "description": "",
-      "gridPos": {
-        "x": 21,
-        "y": 0,
-        "w": 3,
-        "h": 4
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
       },
       "targets": [
         {
@@ -605,12 +554,32 @@
             "method": "GET",
             "data": ""
           },
-          "root_selector": "$append([], $)",
+          "root_selector": "$append([], $.summary)",
           "columns": [
             {
-              "selector": "observed_at",
-              "text": "observed_at",
-              "type": "string"
+              "selector": "agents_active",
+              "text": "Active",
+              "type": "number"
+            },
+            {
+              "selector": "agents_disconnected",
+              "text": "Disconnected",
+              "type": "number"
+            },
+            {
+              "selector": "agents_pending",
+              "text": "Pending",
+              "type": "number"
+            },
+            {
+              "selector": "agents_never_connected",
+              "text": "Never Connected",
+              "type": "number"
+            },
+            {
+              "selector": "agents_unknown",
+              "text": "Unknown",
+              "type": "number"
             }
           ]
         }
@@ -626,13 +595,16 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 4,
-        "w": 8,
-        "h": 8
+        "y": 11,
+        "w": 5,
+        "h": 6
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
         },
         "overrides": []
       },
@@ -640,9 +612,9 @@
         "legend": {
           "displayMode": "list",
           "placement": "right",
-          "showLegend": true
+          "showLegend": false
         },
-        "pieType": "pie",
+        "pieType": "donut",
         "reduceOptions": {
           "values": true,
           "calcs": [
@@ -685,11 +657,12 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Current vulnerabilities grouped by severity."
     },
     {
       "id": 10,
-      "type": "piechart",
+      "type": "barchart",
       "title": "MITRE Tactics",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -698,8 +671,8 @@
       "gridPos": {
         "x": 8,
         "y": 4,
-        "w": 8,
-        "h": 8
+        "w": 10,
+        "h": 7
       },
       "fieldConfig": {
         "defaults": {
@@ -708,23 +681,19 @@
         "overrides": []
       },
       "options": {
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "legend": {
           "displayMode": "list",
           "placement": "right",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "values": true,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
           "sort": "none"
-        }
+        },
+        "xField": "name"
       },
       "targets": [
         {
@@ -756,7 +725,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Wazuh alerts grouped by MITRE ATT&CK tactic in the selected dashboard time range."
     },
     {
       "id": 11,
@@ -767,10 +737,10 @@
         "uid": "${DS_MONITORING_API}"
       },
       "gridPos": {
-        "x": 16,
+        "x": 0,
         "y": 4,
         "w": 8,
-        "h": 8
+        "h": 7
       },
       "fieldConfig": {
         "defaults": {
@@ -782,7 +752,7 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -819,29 +789,49 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Alert counts over the selected dashboard time range."
     },
     {
       "id": 12,
-      "type": "table",
+      "type": "piechart",
       "title": "Top Affected Agents",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 12,
-        "w": 8,
-        "h": 7
+        "x": 5,
+        "y": 11,
+        "w": 5,
+        "h": 6
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": []
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": false
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "values": true,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "targets": [
         {
@@ -873,7 +863,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Agents with the most alerts in the selected dashboard time range."
     },
     {
       "id": 13,
@@ -884,9 +875,9 @@
         "uid": "${DS_MONITORING_API}"
       },
       "gridPos": {
-        "x": 8,
-        "y": 12,
-        "w": 8,
+        "x": 18,
+        "y": 4,
+        "w": 6,
         "h": 7
       },
       "fieldConfig": {
@@ -927,7 +918,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Most frequent Wazuh alert rules in the selected dashboard time range."
     },
     {
       "id": 14,
@@ -938,10 +930,10 @@
         "uid": "${DS_MONITORING_API}"
       },
       "gridPos": {
-        "x": 16,
-        "y": 12,
-        "w": 8,
-        "h": 7
+        "x": 15,
+        "y": 11,
+        "w": 9,
+        "h": 6
       },
       "fieldConfig": {
         "defaults": {},
@@ -996,7 +988,8 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Most recent Wazuh alerts in the selected dashboard time range."
     }
   ]
 }

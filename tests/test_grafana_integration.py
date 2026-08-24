@@ -118,17 +118,50 @@ def test_wazuh_dashboard_uses_only_canonical_wazuh_api() -> None:
             "pluginName": "Infinity",
         }
     ]
-    titles = {panel["title"] for panel in dashboard["panels"]}
-    assert {
+    panels = {panel["title"]: panel for panel in dashboard["panels"]}
+    assert set(panels) == {
+        "Total Alerts",
         "Critical Alerts",
         "High Alerts",
-        "Active Agents",
-        "Disconnected Agents",
+        "Total Vulnerabilities",
         "Critical Vulnerabilities",
+        "High Vulnerabilities",
         "Alert Trend",
+        "MITRE Tactics",
+        "Top Alerts",
+        "Vulnerabilities by Severity",
         "Top Affected Agents",
+        "Agent Status",
         "Recent Alerts",
-    }.issubset(titles)
+    }
+
+    for title, x in [
+        ("Total Alerts", 0),
+        ("Critical Alerts", 4),
+        ("High Alerts", 8),
+        ("Total Vulnerabilities", 12),
+        ("Critical Vulnerabilities", 16),
+        ("High Vulnerabilities", 20),
+    ]:
+        assert panels[title]["gridPos"] == {"x": x, "y": 0, "w": 4, "h": 4}
+
+    assert panels["Alert Trend"]["gridPos"] == {"x": 0, "y": 4, "w": 8, "h": 7}
+    assert panels["MITRE Tactics"]["gridPos"] == {"x": 8, "y": 4, "w": 10, "h": 7}
+    assert panels["MITRE Tactics"]["type"] == "barchart"
+    assert panels["Top Alerts"]["gridPos"] == {"x": 18, "y": 4, "w": 6, "h": 7}
+    assert panels["Vulnerabilities by Severity"]["gridPos"] == {"x": 0, "y": 11, "w": 5, "h": 6}
+    assert panels["Top Affected Agents"]["gridPos"] == {"x": 5, "y": 11, "w": 5, "h": 6}
+    assert panels["Top Affected Agents"]["type"] == "piechart"
+    assert panels["Agent Status"]["gridPos"] == {"x": 10, "y": 11, "w": 5, "h": 6}
+    assert panels["Agent Status"]["type"] == "piechart"
+    assert [column["selector"] for column in panels["Agent Status"]["targets"][0]["columns"]] == [
+        "agents_active",
+        "agents_disconnected",
+        "agents_pending",
+        "agents_never_connected",
+        "agents_unknown",
+    ]
+    assert panels["Recent Alerts"]["gridPos"] == {"x": 15, "y": 11, "w": 9, "h": 6}
 
     targets = list(iter_targets(dashboard))
     assert targets
@@ -136,6 +169,7 @@ def test_wazuh_dashboard_uses_only_canonical_wazuh_api() -> None:
         assert target["datasource"]["uid"] == "${DS_MONITORING_API}"
         assert target["url"].startswith("/api/dashboard/wazuh")
         assert "Authorization" not in json.dumps(target)
+
 
 
 def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
