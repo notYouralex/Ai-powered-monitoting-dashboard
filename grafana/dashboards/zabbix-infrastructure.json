@@ -1,37 +1,99 @@
 {
+  "id": null,
+  "uid": "monitoring-zabbix",
+  "title": "Zabbix Infrastructure",
+  "tags": [
+    "zabbix",
+    "infrastructure"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Monitoring API",
+          "value": "monitoring-api"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Monitoring API datasource",
+        "multi": false,
+        "name": "zabbix_ds",
+        "options": [],
+        "query": "yesoreyeram-infinity-datasource",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
+  },
   "annotations": {
     "list": []
   },
-  "description": "Source-controlled Zabbix infrastructure Global View. FastAPI owns canonical metric meaning; Grafana presents the normalized /api/dashboard/zabbix response through the provisioned authenticated Infinity datasource.",
-  "editable": false,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 1,
-  "id": null,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
+      "id": 2,
+      "type": "stat",
+      "title": "Hosts",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Enabled Zabbix hosts from the normalized FastAPI summary.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "text"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 0,
-        "y": 0
-      },
-      "id": 2,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -39,12 +101,17 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "hosts_enabled",
@@ -52,15 +119,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$append([], $.summary)",
           "source": "url",
           "type": "json",
@@ -71,31 +133,47 @@
           }
         }
       ],
-      "title": "Hosts",
-      "type": "stat"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 12,
+      "type": "stat",
+      "title": "Problems",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Total active Zabbix problems from the normalized FastAPI summary.",
+      "gridPos": {
+        "x": 5,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "light-blue"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 5,
-        "y": 0
-      },
-      "id": 12,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -103,12 +181,17 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "problems_total",
@@ -116,15 +199,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$append([], $.summary)",
           "source": "url",
           "type": "json",
@@ -135,31 +213,47 @@
           }
         }
       ],
-      "title": "Problems",
-      "type": "stat"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 3,
+      "type": "stat",
+      "title": "Unreachable",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Unavailable Zabbix interfaces from the normalized FastAPI summary.",
+      "gridPos": {
+        "x": 10,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "semi-dark-red"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 10,
-        "y": 0
-      },
-      "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -167,12 +261,17 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "interfaces_unavailable",
@@ -180,15 +279,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$append([], $.summary)",
           "source": "url",
           "type": "json",
@@ -199,35 +293,50 @@
           }
         }
       ],
-      "title": "Unreachable",
-      "type": "stat"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 14,
+      "type": "stat",
+      "title": "Avg CPU Usage",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Presentation mean of normalized per-host current CPU usage values returned by FastAPI.",
+      "gridPos": {
+        "x": 15,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
       "fieldConfig": {
         "defaults": {
+          "unit": "percent",
           "min": 0,
           "max": 100,
-          "unit": "percent"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "light-blue"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 15,
-        "y": 0
-      },
-      "id": 14,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "mean"
@@ -235,12 +344,17 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "cpu_used_percent",
@@ -248,15 +362,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$.resource_pressure",
           "source": "url",
           "type": "json",
@@ -267,31 +376,47 @@
           }
         }
       ],
-      "title": "Avg CPU Usage",
-      "type": "stat"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 15,
+      "type": "stat",
+      "title": "Critical Problems",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Active Zabbix Disaster-severity problems from the normalized FastAPI summary.",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "semi-dark-red"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "id": 15,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -299,12 +424,17 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "problems_disaster",
@@ -312,15 +442,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$append([], $.summary)",
           "source": "url",
           "type": "json",
@@ -331,152 +456,3862 @@
           }
         }
       ],
-      "title": "Critical Problems",
-      "type": "stat"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 13,
+      "type": "tamirsuliman-weathermap-panel",
+      "title": "Live Host Topology",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Network Weathermap NG view of Zabbix map Hijo network map (map_id 3). Device positions and connections are snapshotted from the normalized Zabbix map; node status and problem counts refresh through /api/dashboard/zabbix. Green nodes are available with no active problems, orange nodes are available with active problems, red nodes are unavailable, yellow is maintenance, and gray is disabled/unknown. Links are endpoint-derived only: green means neither endpoint is unavailable; red blinking means at least one endpoint is unavailable. This does not prove physical/interface/circuit health. Traffic-flow animation is intentionally disabled because the normalized topology contract does not expose traffic telemetry.",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 16,
+        "h": 19
+      },
       "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 13,
-        "x": 0,
-        "y": 4
-      },
-      "id": 13,
       "options": {
         "weathermap": {
-          "version": 14,
           "id": "zabbix-hijo-network-map",
-          "nodes": [
-            {"id":"2","position":[143,49],"label":"Globe Global network","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/cloud.svg","name":"networking/cloud","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_2_problems","units":"none"}],"statusQuery":"node_2_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"3","position":[593,49],"label":"PCTEACH NETWORK","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/cloud.svg","name":"networking/cloud","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_3_problems","units":"none"}],"statusQuery":"node_3_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"4","position":[261,177],"label":"Firewall","anchors":{"0":{"numLinks":4,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/firewall.svg","name":"networking/firewall","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_4_problems","units":"none"}],"statusQuery":"node_4_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"5","position":[293,455],"label":"Coreswitch","anchors":{"0":{"numLinks":7,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_5_problems","units":"none"}],"statusQuery":"node_5_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"6","position":[593,205],"label":"Server Core","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/server.svg","name":"networking/server","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_6_problems","units":"none"}],"statusQuery":"node_6_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"7","position":[93,505],"label":"Admin_Controller5","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/cisco/system-controller.svg","name":"cisco/system-controller","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_7_problems","units":"none"}],"statusQuery":"node_7_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"8","position":[143,355],"label":"Admin_Controller6","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/cisco/system-controller.svg","name":"cisco/system-controller","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_8_problems","units":"none"}],"statusQuery":"node_8_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"9","position":[243,605],"label":"Admin_Radio7","anchors":{"0":{"numLinks":5,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_9_problems","units":"none"}],"statusQuery":"node_9_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"10","position":[43,705],"label":"PH1_Radio","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_10_problems","units":"none"}],"statusQuery":"node_10_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"11","position":[589,627],"label":"MainTower","anchors":{"0":{"numLinks":3,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_11_problems","units":"none"}],"statusQuery":"node_11_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"12","position":[593,455],"label":"Admin_Switch2","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_12_problems","units":"none"}],"statusQuery":"node_12_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"13","position":[43,855],"label":"PH1_Switch","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_13_problems","units":"none"}],"statusQuery":"node_13_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"14","position":[143,855],"label":"PH2_Switch","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_14_problems","units":"none"}],"statusQuery":"node_14_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"15","position":[143,705],"label":"PH2_Radio","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_15_problems","units":"none"}],"statusQuery":"node_15_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"16","position":[243,855],"label":"coopC_Switch","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_16_problems","units":"none"}],"statusQuery":"node_16_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"17","position":[243,705],"label":"coopC_Radio","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_17_problems","units":"none"}],"statusQuery":"node_17_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"18","position":[343,855],"label":"hsF_Switch","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_18_problems","units":"none"}],"statusQuery":"node_18_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"19","position":[343,705],"label":"hsF_Radio","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_19_problems","units":"none"}],"statusQuery":"node_19_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"20","position":[743,205],"label":"Toweer2_Switch","anchors":{"0":{"numLinks":3,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_20_problems","units":"none"}],"statusQuery":"node_20_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"21","position":[743,505],"label":"Tower2_Radio1","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg","name":"networking/radio-tower","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_21_problems","units":"none"}],"statusQuery":"node_21_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"22","position":[893,305],"label":"TouristCenter1","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg","name":"networking/router","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_22_problems","units":"none"}],"statusQuery":"node_22_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"23","position":[1043,405],"label":"Touris Center","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg","name":"networking/router","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_23_problems","units":"none"}],"statusQuery":"node_23_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"24","position":[1043,205],"label":"Lanikai_2","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg","name":"networking/router","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_24_problems","units":"none"}],"statusQuery":"node_24_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"25","position":[893,205],"label":"Lanikai_1","anchors":{"0":{"numLinks":2,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg","name":"networking/router","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_25_problems","units":"none"}],"statusQuery":"node_25_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"},
-            {"id":"26","position":[1193,205],"label":"Lanikai_switch","anchors":{"0":{"numLinks":1,"numFilledLinks":0},"1":{"numLinks":0,"numFilledLinks":0},"2":{"numLinks":0,"numFilledLinks":0},"3":{"numLinks":0,"numFilledLinks":0},"4":{"numLinks":0,"numFilledLinks":0}},"useConstantSpacing":false,"compactVerticalLinks":false,"padding":{"vertical":6,"horizontal":10},"colors":{"font":"#ffffff","background":"#22252b","border":"#5794f2","statusDown":"#d44a3a"},"nodeIcon":{"src":"public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg","name":"networking/switch","size":{"width":34,"height":34},"padding":{"vertical":2,"horizontal":2},"drawInside":true},"isConnection":false,"tooltipMetrics":[{"label":"Active problems","query":"node_26_problems","units":"none"}],"statusQuery":"node_26_status","statusValueMappings":[{"value":0,"color":"#d44a3a"},{"value":1,"color":"#6e6e6e"},{"value":2,"color":"#8e8e8e"},{"value":3,"color":"#f2cc0c"},{"value":4,"color":"#ff9830"},{"value":5,"color":"#299c46"}],"nodeStatusColorTarget":"both"}
-          ],
           "links": [
-            {"id":"edge-1","nodes":[{"id":"4"},{"id":"2"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_1_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-2","nodes":[{"id":"3"},{"id":"4"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_2_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-3","nodes":[{"id":"5"},{"id":"4"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_3_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-4","nodes":[{"id":"4"},{"id":"6"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_4_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-5","nodes":[{"id":"5"},{"id":"8"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_5_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-6","nodes":[{"id":"5"},{"id":"7"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_6_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-7","nodes":[{"id":"12"},{"id":"5"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_7_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-8","nodes":[{"id":"12"},{"id":"6"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_8_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-9","nodes":[{"id":"5"},{"id":"11"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_9_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled","linkOffset":-5},
-            {"id":"edge-10","nodes":[{"id":"5"},{"id":"11"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_10_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled","linkOffset":5},
-            {"id":"edge-11","nodes":[{"id":"5"},{"id":"9"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_11_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-12","nodes":[{"id":"10"},{"id":"9"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_12_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-13","nodes":[{"id":"10"},{"id":"13"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_13_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-14","nodes":[{"id":"15"},{"id":"9"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_14_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-15","nodes":[{"id":"15"},{"id":"14"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_15_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-16","nodes":[{"id":"9"},{"id":"17"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_16_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-17","nodes":[{"id":"17"},{"id":"16"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_17_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-18","nodes":[{"id":"19"},{"id":"9"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_18_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-19","nodes":[{"id":"18"},{"id":"19"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_19_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-20","nodes":[{"id":"11"},{"id":"21"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_20_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-21","nodes":[{"id":"20"},{"id":"21"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_21_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-22","nodes":[{"id":"22"},{"id":"20"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_22_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-23","nodes":[{"id":"25"},{"id":"20"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_23_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-24","nodes":[{"id":"25"},{"id":"24"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_24_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-25","nodes":[{"id":"26"},{"id":"24"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_25_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"},
-            {"id":"edge-26","nodes":[{"id":"23"},{"id":"22"}],"sides":{"A":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""},"Z":{"bandwidth":0,"labelOffset":55,"anchor":0,"dashboardLink":""}},"arrows":{"width":8,"height":10,"offset":2},"stroke":4,"showThroughputPercentage":false,"statusQuery":"edge_26_up","statusDownColor":"#d44a3a","statusBlink":true,"animation":"disabled"}
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-1",
+              "nodes": [
+                {
+                  "id": "4"
+                },
+                {
+                  "id": "2"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_1_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-2",
+              "nodes": [
+                {
+                  "id": "3"
+                },
+                {
+                  "id": "4"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_2_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-3",
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "4"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_3_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-4",
+              "nodes": [
+                {
+                  "id": "4"
+                },
+                {
+                  "id": "6"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_4_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-5",
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "8"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_5_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-6",
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "7"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_6_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-7",
+              "nodes": [
+                {
+                  "id": "12"
+                },
+                {
+                  "id": "5"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_7_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-8",
+              "nodes": [
+                {
+                  "id": "12"
+                },
+                {
+                  "id": "6"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_8_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-9",
+              "linkOffset": -5,
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "11"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_9_up",
+              "stroke": 4,
+              "waypoints": [
+                {
+                  "x": 455,
+                  "y": 416
+                }
+              ]
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-10",
+              "linkOffset": 5,
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "11"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_10_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-11",
+              "nodes": [
+                {
+                  "id": "5"
+                },
+                {
+                  "id": "9"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_11_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-12",
+              "nodes": [
+                {
+                  "id": "10"
+                },
+                {
+                  "id": "9"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_12_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-13",
+              "nodes": [
+                {
+                  "id": "10"
+                },
+                {
+                  "id": "13"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_13_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-14",
+              "nodes": [
+                {
+                  "id": "15"
+                },
+                {
+                  "id": "9"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_14_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-15",
+              "nodes": [
+                {
+                  "id": "15"
+                },
+                {
+                  "id": "14"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_15_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-16",
+              "nodes": [
+                {
+                  "id": "9"
+                },
+                {
+                  "id": "17"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_16_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-17",
+              "nodes": [
+                {
+                  "id": "17"
+                },
+                {
+                  "id": "16"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_17_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-18",
+              "nodes": [
+                {
+                  "id": "19"
+                },
+                {
+                  "id": "9"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_18_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-19",
+              "nodes": [
+                {
+                  "id": "18"
+                },
+                {
+                  "id": "19"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_19_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-20",
+              "nodes": [
+                {
+                  "id": "11"
+                },
+                {
+                  "id": "21"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_20_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-21",
+              "nodes": [
+                {
+                  "id": "20"
+                },
+                {
+                  "id": "21"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_21_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-22",
+              "nodes": [
+                {
+                  "id": "22"
+                },
+                {
+                  "id": "20"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_22_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-23",
+              "nodes": [
+                {
+                  "id": "25"
+                },
+                {
+                  "id": "20"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_23_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-24",
+              "nodes": [
+                {
+                  "id": "25"
+                },
+                {
+                  "id": "24"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_24_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-25",
+              "nodes": [
+                {
+                  "id": "26"
+                },
+                {
+                  "id": "24"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_25_up",
+              "stroke": 4
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-26",
+              "nodes": [
+                {
+                  "id": "23"
+                },
+                {
+                  "id": "22"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_26_up",
+              "stroke": 4
+            }
+          ],
+          "nodes": [
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "2",
+              "isConnection": false,
+              "label": "Globe Global network",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/cloud",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/cloud.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                57,
+                -53
+              ],
+              "statusQuery": "node_2_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_2_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "3",
+              "isConnection": false,
+              "label": "PCTEACH NETWORK",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/cloud",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/cloud.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                402,
+                -64
+              ],
+              "statusQuery": "node_3_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_3_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 4
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "4",
+              "isConnection": false,
+              "label": "Firewall",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/firewall",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/firewall.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                228,
+                127
+              ],
+              "statusQuery": "node_4_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_4_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 7
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "5",
+              "isConnection": false,
+              "label": "Coreswitch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                277,
+                363
+              ],
+              "statusQuery": "node_5_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_5_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "6",
+              "isConnection": false,
+              "label": "Server Core",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/server",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/server.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                800,
+                121
+              ],
+              "statusQuery": "node_6_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_6_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "7",
+              "isConnection": false,
+              "label": "Admin_Controller5",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "cisco/system-controller",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/cisco/system-controller.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                34,
+                488
+              ],
+              "statusQuery": "node_7_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_7_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "8",
+              "isConnection": false,
+              "label": "Admin_Controller6",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "cisco/system-controller",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/cisco/system-controller.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                2,
+                249
+              ],
+              "statusQuery": "node_8_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_8_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 5
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "9",
+              "isConnection": false,
+              "label": "Admin_Radio7",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                376,
+                605
+              ],
+              "statusQuery": "node_9_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_9_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "10",
+              "isConnection": false,
+              "label": "PH1_Radio",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                23,
+                673
+              ],
+              "statusQuery": "node_10_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_10_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 3
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "11",
+              "isConnection": false,
+              "label": "MainTower",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                652,
+                473
+              ],
+              "statusQuery": "node_11_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_11_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "12",
+              "isConnection": false,
+              "label": "Admin_Switch2",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                561,
+                266
+              ],
+              "statusQuery": "node_12_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_12_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "13",
+              "isConnection": false,
+              "label": "PH1_Switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                -90,
+                1060
+              ],
+              "statusQuery": "node_13_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_13_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "14",
+              "isConnection": false,
+              "label": "PH2_Switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                110,
+                1065
+              ],
+              "statusQuery": "node_14_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_14_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "15",
+              "isConnection": false,
+              "label": "PH2_Radio",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                130,
+                798
+              ],
+              "statusQuery": "node_15_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_15_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "16",
+              "isConnection": false,
+              "label": "coopC_Switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                321,
+                1068
+              ],
+              "statusQuery": "node_16_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_16_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "17",
+              "isConnection": false,
+              "label": "coopC_Radio",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                331,
+                834
+              ],
+              "statusQuery": "node_17_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_17_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "18",
+              "isConnection": false,
+              "label": "hsF_Switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                591,
+                1078
+              ],
+              "statusQuery": "node_18_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_18_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "19",
+              "isConnection": false,
+              "label": "hsF_Radio",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                553,
+                800
+              ],
+              "statusQuery": "node_19_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_19_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 3
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "20",
+              "isConnection": false,
+              "label": "Toweer2_Switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                830,
+                895
+              ],
+              "statusQuery": "node_20_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_20_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "21",
+              "isConnection": false,
+              "label": "Tower2_Radio1",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                719,
+                639
+              ],
+              "statusQuery": "node_21_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_21_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "22",
+              "isConnection": false,
+              "label": "TouristCenter1",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/router",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                1166,
+                630
+              ],
+              "statusQuery": "node_22_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_22_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "23",
+              "isConnection": false,
+              "label": "Touris Center",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/router",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                1123,
+                895
+              ],
+              "statusQuery": "node_23_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_23_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "24",
+              "isConnection": false,
+              "label": "Lanikai_2",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/router",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                844,
+                366
+              ],
+              "statusQuery": "node_24_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_24_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 2
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "25",
+              "isConnection": false,
+              "label": "Lanikai_1",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/router",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/router.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                913,
+                520
+              ],
+              "statusQuery": "node_25_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_25_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {
+                  "numFilledLinks": 0,
+                  "numLinks": 1
+                },
+                "1": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "2": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "3": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                },
+                "4": {
+                  "numFilledLinks": 0,
+                  "numLinks": 0
+                }
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "26",
+              "isConnection": false,
+              "label": "Lanikai_switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {
+                  "horizontal": 2,
+                  "vertical": 2
+                },
+                "size": {
+                  "height": 34,
+                  "width": 34
+                },
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {
+                "horizontal": 10,
+                "vertical": 6
+              },
+              "position": [
+                1137,
+                416
+              ],
+              "statusQuery": "node_26_status",
+              "statusValueMappings": [
+                {
+                  "color": "#d44a3a",
+                  "value": 0
+                },
+                {
+                  "color": "#6e6e6e",
+                  "value": 1
+                },
+                {
+                  "color": "#8e8e8e",
+                  "value": 2
+                },
+                {
+                  "color": "#f2cc0c",
+                  "value": 3
+                },
+                {
+                  "color": "#ff9830",
+                  "value": 4
+                },
+                {
+                  "color": "#299c46",
+                  "value": 5
+                }
+              ],
+              "tooltipMetrics": [
+                {
+                  "label": "Active problems",
+                  "query": "node_26_problems",
+                  "units": "none"
+                }
+              ],
+              "useConstantSpacing": false
+            }
           ],
           "scale": [],
           "settings": {
-            "link": {"spacing":{"horizontal":10,"vertical":5},"stroke":{"color":"#299c46"},"label":{"background":"#22252b","border":"#5794f2","font":"#ffffff"},"showAllWithPercentage":false,"defaultUnits":"none","valueMappingMode":"last","flowAnimation":{"enabled":false,"speed":1},"hoverHighlight":true,"labelCollision":true},
-            "animation": {"enabled":false,"respectReducedMotion":true,"maxAnimatedLinks":100,"pauseInEditMode":true,"showLegend":false},
-            "fontSizing": {"node":10,"link":7},
+            "animation": {
+              "enabled": false,
+              "maxAnimatedLinks": 100,
+              "pauseInEditMode": true,
+              "respectReducedMotion": true,
+              "showLegend": false
+            },
             "colorScaleMode": "percent",
-            "panel": {"backgroundColor":"#111217","showTimestamp":true,"panelSize":{"width":1250,"height":1050},"zoomScale":0,"offset":{"x":0,"y":0},"viewZoomPan":true,"grid":{"enabled":false,"size":10,"guidesEnabled":false}},
-            "tooltip": {"fontSize":9,"textColor":"#ffffff","backgroundColor":"#111217","inboundColor":"#299c46","outboundColor":"#299c46","scaleToBandwidth":false},
-            "scale": {"position":{"x":99,"y":99},"size":{"width":0,"height":0},"title":"","fontSizing":{"title":1,"threshold":1}},
-            "statusLegend": {"enabled":true,"position":{"x":1,"y":1},"items":[{"id":"up","color":"#299c46","label":"UP / healthy endpoint"},{"id":"problem","color":"#ff9830","label":"PROBLEM / active host problem"},{"id":"down","color":"#d44a3a","label":"DOWN / unavailable host"},{"id":"maintenance","color":"#f2cc0c","label":"MAINTENANCE"},{"id":"unknown","color":"#6e6e6e","label":"UNKNOWN / DISABLED"},{"id":"link-down","color":"#d44a3a","label":"Blinking link = endpoint unavailable (not physical-link telemetry)"}]}
-          }
+            "fontSizing": {
+              "link": 2,
+              "node": 26
+            },
+            "link": {
+              "defaultUnits": "none",
+              "flowAnimation": {
+                "enabled": false,
+                "speed": 1
+              },
+              "hoverHighlight": true,
+              "label": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff"
+              },
+              "labelCollision": true,
+              "labelHideZoom": 4,
+              "showAllWithPercentage": false,
+              "spacing": {
+                "horizontal": 10,
+                "vertical": 9
+              },
+              "stroke": {
+                "color": "#299c46"
+              },
+              "valueMappingMode": "last"
+            },
+            "panel": {
+              "backgroundColor": "#00000000",
+              "grid": {
+                "enabled": false,
+                "guidesEnabled": false,
+                "size": 10
+              },
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "panelSize": {
+                "height": 1050,
+                "width": 1250
+              },
+              "showTimestamp": true,
+              "viewZoomPan": true,
+              "zoomScale": 1
+            },
+            "scale": {
+              "fontSizing": {
+                "threshold": 1,
+                "title": 2
+              },
+              "position": {
+                "x": 99,
+                "y": 99
+              },
+              "size": {
+                "height": 640,
+                "width": 112
+              },
+              "title": ""
+            },
+            "statusLegend": {
+              "enabled": true,
+              "items": [
+                {
+                  "color": "#299c46",
+                  "id": "up",
+                  "label": "UP / healthy endpoint"
+                },
+                {
+                  "color": "#ff9830",
+                  "id": "problem",
+                  "label": "PROBLEM / active host problem"
+                },
+                {
+                  "color": "#d44a3a",
+                  "id": "down",
+                  "label": "DOWN / unavailable host"
+                },
+                {
+                  "color": "#f2cc0c",
+                  "id": "maintenance",
+                  "label": "MAINTENANCE"
+                },
+                {
+                  "color": "#6e6e6e",
+                  "id": "unknown",
+                  "label": "UNKNOWN / DISABLED"
+                },
+                {
+                  "color": "#d44a3a",
+                  "id": "link-down",
+                  "label": "Blinking link = endpoint unavailable (not physical-link telemetry)"
+                }
+              ],
+              "position": {
+                "x": 75,
+                "y": 0
+              }
+            },
+            "tooltip": {
+              "backgroundColor": "#111217",
+              "fontSize": 8,
+              "inboundColor": "#299c46",
+              "outboundColor": "#299c46",
+              "scaleToBandwidth": false,
+              "textColor": "#ffffff"
+            }
+          },
+          "version": 14
         }
       },
-      "pluginVersion": "1.6.12",
       "targets": [
         {
+          "refId": "status",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
-            {"selector":"node_2_status","text":"node_2_status","type":"number"},{"selector":"node_2_problems","text":"node_2_problems","type":"number"},{"selector":"node_3_status","text":"node_3_status","type":"number"},{"selector":"node_3_problems","text":"node_3_problems","type":"number"},{"selector":"node_4_status","text":"node_4_status","type":"number"},{"selector":"node_4_problems","text":"node_4_problems","type":"number"},{"selector":"node_5_status","text":"node_5_status","type":"number"},{"selector":"node_5_problems","text":"node_5_problems","type":"number"},{"selector":"node_6_status","text":"node_6_status","type":"number"},{"selector":"node_6_problems","text":"node_6_problems","type":"number"},{"selector":"node_7_status","text":"node_7_status","type":"number"},{"selector":"node_7_problems","text":"node_7_problems","type":"number"},{"selector":"node_8_status","text":"node_8_status","type":"number"},{"selector":"node_8_problems","text":"node_8_problems","type":"number"},{"selector":"node_9_status","text":"node_9_status","type":"number"},{"selector":"node_9_problems","text":"node_9_problems","type":"number"},{"selector":"node_10_status","text":"node_10_status","type":"number"},{"selector":"node_10_problems","text":"node_10_problems","type":"number"},{"selector":"node_11_status","text":"node_11_status","type":"number"},{"selector":"node_11_problems","text":"node_11_problems","type":"number"},{"selector":"node_12_status","text":"node_12_status","type":"number"},{"selector":"node_12_problems","text":"node_12_problems","type":"number"},{"selector":"node_13_status","text":"node_13_status","type":"number"},{"selector":"node_13_problems","text":"node_13_problems","type":"number"},{"selector":"node_14_status","text":"node_14_status","type":"number"},{"selector":"node_14_problems","text":"node_14_problems","type":"number"},{"selector":"node_15_status","text":"node_15_status","type":"number"},{"selector":"node_15_problems","text":"node_15_problems","type":"number"},{"selector":"node_16_status","text":"node_16_status","type":"number"},{"selector":"node_16_problems","text":"node_16_problems","type":"number"},{"selector":"node_17_status","text":"node_17_status","type":"number"},{"selector":"node_17_problems","text":"node_17_problems","type":"number"},{"selector":"node_18_status","text":"node_18_status","type":"number"},{"selector":"node_18_problems","text":"node_18_problems","type":"number"},{"selector":"node_19_status","text":"node_19_status","type":"number"},{"selector":"node_19_problems","text":"node_19_problems","type":"number"},{"selector":"node_20_status","text":"node_20_status","type":"number"},{"selector":"node_20_problems","text":"node_20_problems","type":"number"},{"selector":"node_21_status","text":"node_21_status","type":"number"},{"selector":"node_21_problems","text":"node_21_problems","type":"number"},{"selector":"node_22_status","text":"node_22_status","type":"number"},{"selector":"node_22_problems","text":"node_22_problems","type":"number"},{"selector":"node_23_status","text":"node_23_status","type":"number"},{"selector":"node_23_problems","text":"node_23_problems","type":"number"},{"selector":"node_24_status","text":"node_24_status","type":"number"},{"selector":"node_24_problems","text":"node_24_problems","type":"number"},{"selector":"node_25_status","text":"node_25_status","type":"number"},{"selector":"node_25_problems","text":"node_25_problems","type":"number"},{"selector":"node_26_status","text":"node_26_status","type":"number"},{"selector":"node_26_problems","text":"node_26_problems","type":"number"},{"selector":"edge_1_up","text":"edge_1_up","type":"number"},{"selector":"edge_2_up","text":"edge_2_up","type":"number"},{"selector":"edge_3_up","text":"edge_3_up","type":"number"},{"selector":"edge_4_up","text":"edge_4_up","type":"number"},{"selector":"edge_5_up","text":"edge_5_up","type":"number"},{"selector":"edge_6_up","text":"edge_6_up","type":"number"},{"selector":"edge_7_up","text":"edge_7_up","type":"number"},{"selector":"edge_8_up","text":"edge_8_up","type":"number"},{"selector":"edge_9_up","text":"edge_9_up","type":"number"},{"selector":"edge_10_up","text":"edge_10_up","type":"number"},{"selector":"edge_11_up","text":"edge_11_up","type":"number"},{"selector":"edge_12_up","text":"edge_12_up","type":"number"},{"selector":"edge_13_up","text":"edge_13_up","type":"number"},{"selector":"edge_14_up","text":"edge_14_up","type":"number"},{"selector":"edge_15_up","text":"edge_15_up","type":"number"},{"selector":"edge_16_up","text":"edge_16_up","type":"number"},{"selector":"edge_17_up","text":"edge_17_up","type":"number"},{"selector":"edge_18_up","text":"edge_18_up","type":"number"},{"selector":"edge_19_up","text":"edge_19_up","type":"number"},{"selector":"edge_20_up","text":"edge_20_up","type":"number"},{"selector":"edge_21_up","text":"edge_21_up","type":"number"},{"selector":"edge_22_up","text":"edge_22_up","type":"number"},{"selector":"edge_23_up","text":"edge_23_up","type":"number"},{"selector":"edge_24_up","text":"edge_24_up","type":"number"},{"selector":"edge_25_up","text":"edge_25_up","type":"number"},{"selector":"edge_26_up","text":"edge_26_up","type":"number"}
+            {
+              "selector": "node_2_status",
+              "text": "node_2_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_2_problems",
+              "text": "node_2_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_3_status",
+              "text": "node_3_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_3_problems",
+              "text": "node_3_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_4_status",
+              "text": "node_4_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_4_problems",
+              "text": "node_4_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_5_status",
+              "text": "node_5_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_5_problems",
+              "text": "node_5_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_6_status",
+              "text": "node_6_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_6_problems",
+              "text": "node_6_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_7_status",
+              "text": "node_7_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_7_problems",
+              "text": "node_7_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_8_status",
+              "text": "node_8_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_8_problems",
+              "text": "node_8_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_9_status",
+              "text": "node_9_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_9_problems",
+              "text": "node_9_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_10_status",
+              "text": "node_10_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_10_problems",
+              "text": "node_10_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_11_status",
+              "text": "node_11_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_11_problems",
+              "text": "node_11_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_12_status",
+              "text": "node_12_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_12_problems",
+              "text": "node_12_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_13_status",
+              "text": "node_13_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_13_problems",
+              "text": "node_13_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_14_status",
+              "text": "node_14_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_14_problems",
+              "text": "node_14_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_15_status",
+              "text": "node_15_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_15_problems",
+              "text": "node_15_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_16_status",
+              "text": "node_16_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_16_problems",
+              "text": "node_16_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_17_status",
+              "text": "node_17_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_17_problems",
+              "text": "node_17_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_18_status",
+              "text": "node_18_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_18_problems",
+              "text": "node_18_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_19_status",
+              "text": "node_19_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_19_problems",
+              "text": "node_19_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_20_status",
+              "text": "node_20_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_20_problems",
+              "text": "node_20_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_21_status",
+              "text": "node_21_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_21_problems",
+              "text": "node_21_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_22_status",
+              "text": "node_22_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_22_problems",
+              "text": "node_22_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_23_status",
+              "text": "node_23_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_23_problems",
+              "text": "node_23_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_24_status",
+              "text": "node_24_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_24_problems",
+              "text": "node_24_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_25_status",
+              "text": "node_25_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_25_problems",
+              "text": "node_25_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_26_status",
+              "text": "node_26_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_26_problems",
+              "text": "node_26_problems",
+              "type": "number"
+            },
+            {
+              "selector": "edge_1_up",
+              "text": "edge_1_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_2_up",
+              "text": "edge_2_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_3_up",
+              "text": "edge_3_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_4_up",
+              "text": "edge_4_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_5_up",
+              "text": "edge_5_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_6_up",
+              "text": "edge_6_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_7_up",
+              "text": "edge_7_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_8_up",
+              "text": "edge_8_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_9_up",
+              "text": "edge_9_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_10_up",
+              "text": "edge_10_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_11_up",
+              "text": "edge_11_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_12_up",
+              "text": "edge_12_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_13_up",
+              "text": "edge_13_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_14_up",
+              "text": "edge_14_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_15_up",
+              "text": "edge_15_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_16_up",
+              "text": "edge_16_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_17_up",
+              "text": "edge_17_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_18_up",
+              "text": "edge_18_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_19_up",
+              "text": "edge_19_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_20_up",
+              "text": "edge_20_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_21_up",
+              "text": "edge_21_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_22_up",
+              "text": "edge_22_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_23_up",
+              "text": "edge_23_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_24_up",
+              "text": "edge_24_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_25_up",
+              "text": "edge_25_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_26_up",
+              "text": "edge_26_up",
+              "type": "number"
+            }
           ],
-          "datasource": {"type":"yesoreyeram-infinity-datasource","uid":"${zabbix_ds}"},
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "status",
           "root_selector": "($topology := $.topology_maps[map_id='3'][0]; $nodes := $topology.nodes; $n2 := $nodes[node_id='2'][0]; $n3 := $nodes[node_id='3'][0]; $n4 := $nodes[node_id='4'][0]; $n5 := $nodes[node_id='5'][0]; $n6 := $nodes[node_id='6'][0]; $n7 := $nodes[node_id='7'][0]; $n8 := $nodes[node_id='8'][0]; $n9 := $nodes[node_id='9'][0]; $n10 := $nodes[node_id='10'][0]; $n11 := $nodes[node_id='11'][0]; $n12 := $nodes[node_id='12'][0]; $n13 := $nodes[node_id='13'][0]; $n14 := $nodes[node_id='14'][0]; $n15 := $nodes[node_id='15'][0]; $n16 := $nodes[node_id='16'][0]; $n17 := $nodes[node_id='17'][0]; $n18 := $nodes[node_id='18'][0]; $n19 := $nodes[node_id='19'][0]; $n20 := $nodes[node_id='20'][0]; $n21 := $nodes[node_id='21'][0]; $n22 := $nodes[node_id='22'][0]; $n23 := $nodes[node_id='23'][0]; $n24 := $nodes[node_id='24'][0]; $n25 := $nodes[node_id='25'][0]; $n26 := $nodes[node_id='26'][0]; [{'node_2_status': ($n2.status = 'unavailable' ? 0 : ($n2.status = 'available' and $n2.active_problem_count > 0 ? 4 : ($n2.status = 'available' ? 5 : ($n2.status = 'maintenance' ? 3 : ($n2.status = 'disabled' ? 2 : 1))))), 'node_2_problems': $n2.active_problem_count, 'node_3_status': ($n3.status = 'unavailable' ? 0 : ($n3.status = 'available' and $n3.active_problem_count > 0 ? 4 : ($n3.status = 'available' ? 5 : ($n3.status = 'maintenance' ? 3 : ($n3.status = 'disabled' ? 2 : 1))))), 'node_3_problems': $n3.active_problem_count, 'node_4_status': ($n4.status = 'unavailable' ? 0 : ($n4.status = 'available' and $n4.active_problem_count > 0 ? 4 : ($n4.status = 'available' ? 5 : ($n4.status = 'maintenance' ? 3 : ($n4.status = 'disabled' ? 2 : 1))))), 'node_4_problems': $n4.active_problem_count, 'node_5_status': ($n5.status = 'unavailable' ? 0 : ($n5.status = 'available' and $n5.active_problem_count > 0 ? 4 : ($n5.status = 'available' ? 5 : ($n5.status = 'maintenance' ? 3 : ($n5.status = 'disabled' ? 2 : 1))))), 'node_5_problems': $n5.active_problem_count, 'node_6_status': ($n6.status = 'unavailable' ? 0 : ($n6.status = 'available' and $n6.active_problem_count > 0 ? 4 : ($n6.status = 'available' ? 5 : ($n6.status = 'maintenance' ? 3 : ($n6.status = 'disabled' ? 2 : 1))))), 'node_6_problems': $n6.active_problem_count, 'node_7_status': ($n7.status = 'unavailable' ? 0 : ($n7.status = 'available' and $n7.active_problem_count > 0 ? 4 : ($n7.status = 'available' ? 5 : ($n7.status = 'maintenance' ? 3 : ($n7.status = 'disabled' ? 2 : 1))))), 'node_7_problems': $n7.active_problem_count, 'node_8_status': ($n8.status = 'unavailable' ? 0 : ($n8.status = 'available' and $n8.active_problem_count > 0 ? 4 : ($n8.status = 'available' ? 5 : ($n8.status = 'maintenance' ? 3 : ($n8.status = 'disabled' ? 2 : 1))))), 'node_8_problems': $n8.active_problem_count, 'node_9_status': ($n9.status = 'unavailable' ? 0 : ($n9.status = 'available' and $n9.active_problem_count > 0 ? 4 : ($n9.status = 'available' ? 5 : ($n9.status = 'maintenance' ? 3 : ($n9.status = 'disabled' ? 2 : 1))))), 'node_9_problems': $n9.active_problem_count, 'node_10_status': ($n10.status = 'unavailable' ? 0 : ($n10.status = 'available' and $n10.active_problem_count > 0 ? 4 : ($n10.status = 'available' ? 5 : ($n10.status = 'maintenance' ? 3 : ($n10.status = 'disabled' ? 2 : 1))))), 'node_10_problems': $n10.active_problem_count, 'node_11_status': ($n11.status = 'unavailable' ? 0 : ($n11.status = 'available' and $n11.active_problem_count > 0 ? 4 : ($n11.status = 'available' ? 5 : ($n11.status = 'maintenance' ? 3 : ($n11.status = 'disabled' ? 2 : 1))))), 'node_11_problems': $n11.active_problem_count, 'node_12_status': ($n12.status = 'unavailable' ? 0 : ($n12.status = 'available' and $n12.active_problem_count > 0 ? 4 : ($n12.status = 'available' ? 5 : ($n12.status = 'maintenance' ? 3 : ($n12.status = 'disabled' ? 2 : 1))))), 'node_12_problems': $n12.active_problem_count, 'node_13_status': ($n13.status = 'unavailable' ? 0 : ($n13.status = 'available' and $n13.active_problem_count > 0 ? 4 : ($n13.status = 'available' ? 5 : ($n13.status = 'maintenance' ? 3 : ($n13.status = 'disabled' ? 2 : 1))))), 'node_13_problems': $n13.active_problem_count, 'node_14_status': ($n14.status = 'unavailable' ? 0 : ($n14.status = 'available' and $n14.active_problem_count > 0 ? 4 : ($n14.status = 'available' ? 5 : ($n14.status = 'maintenance' ? 3 : ($n14.status = 'disabled' ? 2 : 1))))), 'node_14_problems': $n14.active_problem_count, 'node_15_status': ($n15.status = 'unavailable' ? 0 : ($n15.status = 'available' and $n15.active_problem_count > 0 ? 4 : ($n15.status = 'available' ? 5 : ($n15.status = 'maintenance' ? 3 : ($n15.status = 'disabled' ? 2 : 1))))), 'node_15_problems': $n15.active_problem_count, 'node_16_status': ($n16.status = 'unavailable' ? 0 : ($n16.status = 'available' and $n16.active_problem_count > 0 ? 4 : ($n16.status = 'available' ? 5 : ($n16.status = 'maintenance' ? 3 : ($n16.status = 'disabled' ? 2 : 1))))), 'node_16_problems': $n16.active_problem_count, 'node_17_status': ($n17.status = 'unavailable' ? 0 : ($n17.status = 'available' and $n17.active_problem_count > 0 ? 4 : ($n17.status = 'available' ? 5 : ($n17.status = 'maintenance' ? 3 : ($n17.status = 'disabled' ? 2 : 1))))), 'node_17_problems': $n17.active_problem_count, 'node_18_status': ($n18.status = 'unavailable' ? 0 : ($n18.status = 'available' and $n18.active_problem_count > 0 ? 4 : ($n18.status = 'available' ? 5 : ($n18.status = 'maintenance' ? 3 : ($n18.status = 'disabled' ? 2 : 1))))), 'node_18_problems': $n18.active_problem_count, 'node_19_status': ($n19.status = 'unavailable' ? 0 : ($n19.status = 'available' and $n19.active_problem_count > 0 ? 4 : ($n19.status = 'available' ? 5 : ($n19.status = 'maintenance' ? 3 : ($n19.status = 'disabled' ? 2 : 1))))), 'node_19_problems': $n19.active_problem_count, 'node_20_status': ($n20.status = 'unavailable' ? 0 : ($n20.status = 'available' and $n20.active_problem_count > 0 ? 4 : ($n20.status = 'available' ? 5 : ($n20.status = 'maintenance' ? 3 : ($n20.status = 'disabled' ? 2 : 1))))), 'node_20_problems': $n20.active_problem_count, 'node_21_status': ($n21.status = 'unavailable' ? 0 : ($n21.status = 'available' and $n21.active_problem_count > 0 ? 4 : ($n21.status = 'available' ? 5 : ($n21.status = 'maintenance' ? 3 : ($n21.status = 'disabled' ? 2 : 1))))), 'node_21_problems': $n21.active_problem_count, 'node_22_status': ($n22.status = 'unavailable' ? 0 : ($n22.status = 'available' and $n22.active_problem_count > 0 ? 4 : ($n22.status = 'available' ? 5 : ($n22.status = 'maintenance' ? 3 : ($n22.status = 'disabled' ? 2 : 1))))), 'node_22_problems': $n22.active_problem_count, 'node_23_status': ($n23.status = 'unavailable' ? 0 : ($n23.status = 'available' and $n23.active_problem_count > 0 ? 4 : ($n23.status = 'available' ? 5 : ($n23.status = 'maintenance' ? 3 : ($n23.status = 'disabled' ? 2 : 1))))), 'node_23_problems': $n23.active_problem_count, 'node_24_status': ($n24.status = 'unavailable' ? 0 : ($n24.status = 'available' and $n24.active_problem_count > 0 ? 4 : ($n24.status = 'available' ? 5 : ($n24.status = 'maintenance' ? 3 : ($n24.status = 'disabled' ? 2 : 1))))), 'node_24_problems': $n24.active_problem_count, 'node_25_status': ($n25.status = 'unavailable' ? 0 : ($n25.status = 'available' and $n25.active_problem_count > 0 ? 4 : ($n25.status = 'available' ? 5 : ($n25.status = 'maintenance' ? 3 : ($n25.status = 'disabled' ? 2 : 1))))), 'node_25_problems': $n25.active_problem_count, 'node_26_status': ($n26.status = 'unavailable' ? 0 : ($n26.status = 'available' and $n26.active_problem_count > 0 ? 4 : ($n26.status = 'available' ? 5 : ($n26.status = 'maintenance' ? 3 : ($n26.status = 'disabled' ? 2 : 1))))), 'node_26_problems': $n26.active_problem_count, 'edge_1_up': ($n4.status = 'unavailable' or $n2.status = 'unavailable' ? 0 : 1), 'edge_2_up': ($n3.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_3_up': ($n5.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_4_up': ($n4.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_5_up': ($n5.status = 'unavailable' or $n8.status = 'unavailable' ? 0 : 1), 'edge_6_up': ($n5.status = 'unavailable' or $n7.status = 'unavailable' ? 0 : 1), 'edge_7_up': ($n12.status = 'unavailable' or $n5.status = 'unavailable' ? 0 : 1), 'edge_8_up': ($n12.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_9_up': ($n5.status = 'unavailable' or $n11.status = 'unavailable' ? 0 : 1), 'edge_10_up': ($n5.status = 'unavailable' or $n11.status = 'unavailable' ? 0 : 1), 'edge_11_up': ($n5.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_12_up': ($n10.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_13_up': ($n10.status = 'unavailable' or $n13.status = 'unavailable' ? 0 : 1), 'edge_14_up': ($n15.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_15_up': ($n15.status = 'unavailable' or $n14.status = 'unavailable' ? 0 : 1), 'edge_16_up': ($n9.status = 'unavailable' or $n17.status = 'unavailable' ? 0 : 1), 'edge_17_up': ($n17.status = 'unavailable' or $n16.status = 'unavailable' ? 0 : 1), 'edge_18_up': ($n19.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_19_up': ($n18.status = 'unavailable' or $n19.status = 'unavailable' ? 0 : 1), 'edge_20_up': ($n11.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_21_up': ($n20.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_22_up': ($n22.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_23_up': ($n25.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_24_up': ($n25.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_25_up': ($n26.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_26_up': ($n23.status = 'unavailable' or $n22.status = 'unavailable' ? 0 : 1)}])",
           "source": "url",
           "type": "json",
           "url": "/api/dashboard/zabbix",
-          "url_options": {"data":"","method":"GET"}
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
       ],
-      "title": "Live Host Topology",
-      "type": "tamirsuliman-weathermap-panel"
+      "pluginVersion": "1.6.12"
     },
     {
+      "id": 7,
+      "type": "table",
+      "title": "System Information",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Host status and active-problem counts from the first visible normalized Zabbix topology map.",
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
       "gridPos": {
-        "h": 10,
-        "w": 11,
-        "x": 13,
-        "y": 4
+        "x": 16,
+        "y": 4,
+        "w": 8,
+        "h": 8
       },
-      "id": 7,
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Problems"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 103
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Host"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 142
+              }
+            ]
+          }
+        ]
+      },
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "showHeader": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "title",
@@ -494,15 +4329,10 @@
               "type": "number"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$.topology_maps[0].nodes",
           "source": "url",
           "type": "json",
@@ -513,45 +4343,111 @@
           }
         }
       ],
-      "title": "System Information",
-      "type": "table"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 8,
+      "type": "timeseries",
+      "title": "CPU Load",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Near-live CPU utilization sampled from current Zabbix item values on each 60-second cache refresh for ranked hosts.",
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
+          "unit": "percent",
           "min": 0,
           "max": 100,
-          "unit": "percent"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 17,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 11,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 14
-      },
-      "id": 8,
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
         "legend": {
           "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "displayMode": "table",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "right",
+          "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "time",
@@ -569,15 +4465,10 @@
               "type": "string"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "timeseries",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$map($.resource_live[metric='cpu'], function($s) { $map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.used_percent, 'host': $s.host_id} }) }).*",
           "source": "url",
           "type": "json",
@@ -588,45 +4479,111 @@
           }
         }
       ],
-      "title": "CPU Load",
-      "type": "timeseries"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Memory Usage",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Near-live memory utilization sampled from current Zabbix item values on each 60-second cache refresh for ranked hosts.",
+      "gridPos": {
+        "x": 16,
+        "y": 20,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
+          "unit": "percent",
           "min": 0,
           "max": 100,
-          "unit": "percent"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 57,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 14
-      },
-      "id": 9,
       "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
         "legend": {
           "calcs": [],
           "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "time",
@@ -644,15 +4601,10 @@
               "type": "string"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "timeseries",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$map($.resource_live[metric='memory'], function($s) { $map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.used_percent, 'host': $s.host_id} }) }).*",
           "source": "url",
           "type": "json",
@@ -663,41 +4615,62 @@
           }
         }
       ],
-      "title": "Memory Usage",
-      "type": "timeseries"
+      "pluginVersion": "13.1.1"
     },
     {
+      "id": 11,
+      "type": "table",
+      "title": "Warnings",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
       "description": "Bounded source and staleness warnings returned by FastAPI.",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 16,
+        "h": 5
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 22
-      },
-      "id": 11,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "showHeader": true
       },
-      "pluginVersion": "12.0.0",
       "targets": [
         {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
           "columns": [
             {
               "selector": "warning",
@@ -705,15 +4678,10 @@
               "type": "string"
             }
           ],
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${zabbix_ds}"
-          },
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "refId": "A",
           "root_selector": "$map($.warnings, function($w) { {'warning': $w} })",
           "source": "url",
           "type": "json",
@@ -724,46 +4692,7 @@
           }
         }
       ],
-      "title": "Warnings",
-      "type": "table"
+      "pluginVersion": "13.1.1"
     }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "tags": [
-    "zabbix",
-    "infrastructure"
-  ],
-  "templating": {
-    "list": [
-      {
-        "current": {
-          "selected": true,
-          "text": "Zabbix FastAPI",
-          "value": "zabbix-fastapi"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Zabbix FastAPI datasource",
-        "multi": false,
-        "name": "zabbix_ds",
-        "options": [],
-        "query": "yesoreyeram-infinity-datasource",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      }
-    ]
-  },
-  "time": {
-    "from": "now-1h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "Zabbix Infrastructure",
-  "uid": "monitoring-zabbix",
-  "version": 2,
-  "weekStart": ""
+  ]
 }

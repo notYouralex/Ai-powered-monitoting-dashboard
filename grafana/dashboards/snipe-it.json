@@ -1,762 +1,880 @@
 {
-    "id": null,
-    "uid": "monitoring-snipe-it",
-    "title": "Snipe-IT Asset Management",
-    "__inputs": [
-        {
-            "name": "DS_MONITORING_API",
-            "label": "Monitoring API",
-            "description": "",
-            "type": "datasource",
-            "pluginId": "yesoreyeram-infinity-datasource",
-            "pluginName": "Infinity"
-        }
-    ],
-    "tags": [
-        "monitoring",
-        "snipe-it",
-        "assets"
-    ],
-    "timezone": "browser",
-    "schemaVersion": 41,
-    "version": 1,
-    "refresh": "5m",
-    "time": {
-        "from": "now-24h",
-        "to": "now"
-    },
-    "timepicker": {
-        "refresh_intervals": [
-            "1m",
-            "5m",
-            "10m",
-            "15m"
-        ]
-    },
-    "templating": {
-        "list": []
-    },
-    "annotations": {
-        "list": []
-    },
-    "panels": [
-        {
-            "id": 1,
-            "type": "stat",
-            "title": "Total Assets",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "description": "",
-            "gridPos": {
-                "x": 0,
-                "y": 0,
-                "w": 5,
-                "h": 4
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short",
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "options": {
-                "reduceOptions": {
-                    "values": false,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "orientation": "auto",
-                "textMode": "auto",
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$append([], $)",
-                    "columns": [
-                        {
-                            "selector": "summary.assets_total",
-                            "text": "summary.assets_total",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "type": "stat",
-            "title": "Deployed",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "description": "",
-            "gridPos": {
-                "x": 5,
-                "y": 0,
-                "w": 5,
-                "h": 4
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short",
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "options": {
-                "reduceOptions": {
-                    "values": false,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "orientation": "auto",
-                "textMode": "auto",
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$append([], $)",
-                    "columns": [
-                        {
-                            "selector": "summary.assets_deployed",
-                            "text": "summary.assets_deployed",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 3,
-            "type": "stat",
-            "title": "Available",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "description": "",
-            "gridPos": {
-                "x": 10,
-                "y": 0,
-                "w": 5,
-                "h": 4
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short",
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "options": {
-                "reduceOptions": {
-                    "values": false,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "orientation": "auto",
-                "textMode": "auto",
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$append([], $)",
-                    "columns": [
-                        {
-                            "selector": "summary.assets_available",
-                            "text": "summary.assets_available",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 4,
-            "type": "stat",
-            "title": "Maintenance",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "description": "",
-            "gridPos": {
-                "x": 15,
-                "y": 0,
-                "w": 5,
-                "h": 4
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short",
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "options": {
-                "reduceOptions": {
-                    "values": false,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "orientation": "auto",
-                "textMode": "auto",
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$append([], $)",
-                    "columns": [
-                        {
-                            "selector": "summary.assets_maintenance",
-                            "text": "summary.assets_maintenance",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 5,
-            "type": "stat",
-            "title": "Retired",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "description": "",
-            "gridPos": {
-                "x": 20,
-                "y": 0,
-                "w": 4,
-                "h": 4
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short",
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "options": {
-                "reduceOptions": {
-                    "values": false,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "orientation": "auto",
-                "textMode": "auto",
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$append([], $)",
-                    "columns": [
-                        {
-                            "selector": "summary.assets_retired",
-                            "text": "summary.assets_retired",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 12,
-            "type": "piechart",
-            "title": "Assets by Type / Category",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "gridPos": {
-                "x": 0,
-                "y": 4,
-                "w": 8,
-                "h": 8
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "options": {
-                "legend": {
-                    "displayMode": "list",
-                    "placement": "right",
-                    "showLegend": true
-                },
-                "pieType": "donut",
-                "reduceOptions": {
-                    "values": true,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$.category_distribution",
-                    "columns": [
-                        {
-                            "selector": "name",
-                            "text": "name",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "count",
-                            "text": "count",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 11,
-            "type": "piechart",
-            "title": "Assets by Status",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "gridPos": {
-                "x": 8,
-                "y": 4,
-                "w": 8,
-                "h": 8
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "options": {
-                "legend": {
-                    "displayMode": "list",
-                    "placement": "right",
-                    "showLegend": true
-                },
-                "pieType": "donut",
-                "reduceOptions": {
-                    "values": true,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$.status_distribution",
-                    "columns": [
-                        {
-                            "selector": "name",
-                            "text": "name",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "count",
-                            "text": "count",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 13,
-            "type": "piechart",
-            "title": "Assets by Location",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "gridPos": {
-                "x": 16,
-                "y": 4,
-                "w": 8,
-                "h": 8
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "unit": "short"
-                },
-                "overrides": []
-            },
-            "options": {
-                "legend": {
-                    "displayMode": "list",
-                    "placement": "right",
-                    "showLegend": true
-                },
-                "pieType": "donut",
-                "reduceOptions": {
-                    "values": true,
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": ""
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$.location_distribution",
-                    "columns": [
-                        {
-                            "selector": "name",
-                            "text": "name",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "count",
-                            "text": "count",
-                            "type": "number"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 14,
-            "type": "table",
-            "title": "Recent Activity",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "gridPos": {
-                "x": 0,
-                "y": 12,
-                "w": 24,
-                "h": 8
-            },
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "options": {
-                "showHeader": true,
-                "cellHeight": "sm"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it/recent-activity",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$.activity",
-                    "columns": [
-                        {
-                            "selector": "action",
-                            "text": "Action",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "asset",
-                            "text": "Asset",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "target",
-                            "text": "Target",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "performed_by",
-                            "text": "Performed By",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "location",
-                            "text": "Location",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "occurred_at",
-                            "text": "Time",
-                            "type": "string"
-                        }
-                    ]
-                }
-            ],
-            "description": "Recent asset activity read from Snipe-IT through the authenticated monitoring API."
-        },
-        {
-            "id": 15,
-            "type": "table",
-            "title": "Upcoming Warranty Expiry",
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "${DS_MONITORING_API}"
-            },
-            "gridPos": {
-                "x": 0,
-                "y": 20,
-                "w": 24,
-                "h": 8
-            },
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "options": {
-                "showHeader": true,
-                "cellHeight": "sm"
-            },
-            "targets": [
-                {
-                    "refId": "A",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "${DS_MONITORING_API}"
-                    },
-                    "type": "json",
-                    "source": "url",
-                    "format": "table",
-                    "parser": "backend",
-                    "url": "/api/dashboard/snipe-it/warranty-expiry",
-                    "url_options": {
-                        "method": "GET",
-                        "data": ""
-                    },
-                    "root_selector": "$.warranty_expiry",
-                    "columns": [
-                        {
-                            "selector": "asset_tag",
-                            "text": "Asset Tag",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "serial",
-                            "text": "Serial",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "category",
-                            "text": "Category",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "location",
-                            "text": "Location",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "warranty_expires",
-                            "text": "Warranty Expires",
-                            "type": "string"
-                        }
-                    ]
-                }
-            ],
-            "description": "Assets with warranties expiring within the next 90 days."
-        }
+  "id": null,
+  "uid": "monitoring-snipe-it",
+  "title": "Snipe-IT Asset Management",
+  "__inputs": [
+    {
+      "name": "DS_MONITORING_API",
+      "label": "Monitoring API",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "yesoreyeram-infinity-datasource",
+      "pluginName": "Infinity"
+    }
+  ],
+  "tags": [
+    "monitoring",
+    "snipe-it",
+    "assets"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "5m",
+      "10m",
+      "15m"
     ]
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Assets",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              }
+            ]
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": false
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "summary.assets_total",
+              "text": "summary.assets_total",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Deployed",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 5,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "semi-dark-blue"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "summary.assets_deployed",
+              "text": "summary.assets_deployed",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Available",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 10,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "summary.assets_available",
+              "text": "summary.assets_available",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Maintenance",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 15,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "#ac1426"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "summary.assets_maintenance",
+              "text": "summary.assets_maintenance",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Retired",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "red"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "summary.assets_retired",
+              "text": "summary.assets_retired",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 12,
+      "type": "piechart",
+      "title": "Assets by Type / Category",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic",
+            "fixedColor": "#73BF69"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "overflow": "ellipsis",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "name",
+              "text": "name",
+              "type": "string"
+            },
+            {
+              "selector": "count",
+              "text": "count",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.category_distribution",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 11,
+      "type": "piechart",
+      "title": "Assets by Status",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 8,
+        "y": 4,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic",
+            "fixedColor": "#73BF69"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "overflow": "ellipsis",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "name",
+              "text": "name",
+              "type": "string"
+            },
+            {
+              "selector": "count",
+              "text": "count",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.status_distribution",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 13,
+      "type": "piechart",
+      "title": "Assets by Location",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 16,
+        "y": 4,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic",
+            "fixedColor": "#73BF69"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "overflow": "ellipsis",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "name",
+              "text": "name",
+              "type": "string"
+            },
+            {
+              "selector": "count",
+              "text": "count",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.location_distribution",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Recent Activity",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "Recent asset activity read from Snipe-IT through the authenticated monitoring API.",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 14,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "action",
+              "text": "Action",
+              "type": "string"
+            },
+            {
+              "selector": "asset",
+              "text": "Asset",
+              "type": "string"
+            },
+            {
+              "selector": "target",
+              "text": "Target",
+              "type": "string"
+            },
+            {
+              "selector": "performed_by",
+              "text": "Performed By",
+              "type": "string"
+            },
+            {
+              "selector": "location",
+              "text": "Location",
+              "type": "string"
+            },
+            {
+              "selector": "occurred_at",
+              "text": "Time",
+              "type": "string"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.activity",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it/recent-activity",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Upcoming Warranty Expiry",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "Assets with warranties expiring within the next 90 days.",
+      "gridPos": {
+        "x": 14,
+        "y": 12,
+        "w": 10,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "asset_tag",
+              "text": "Asset Tag",
+              "type": "string"
+            },
+            {
+              "selector": "serial",
+              "text": "Serial",
+              "type": "string"
+            },
+            {
+              "selector": "category",
+              "text": "Category",
+              "type": "string"
+            },
+            {
+              "selector": "location",
+              "text": "Location",
+              "type": "string"
+            },
+            {
+              "selector": "warranty_expires",
+              "text": "Warranty Expires",
+              "type": "string"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.warranty_expiry",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/snipe-it/warranty-expiry",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    }
+  ]
 }

@@ -199,13 +199,12 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
         "Unresolved Tickets by Status",
         "All Tickets by Status",
         "Resolution Trend",
-        "Tickets by Category",
         "Recent Tickets",
     }
 
     for title, x, width in [
-        ("Due Today", 0, 3),
-        ("Overdue", 3, 3),
+        ("Overdue", 0, 3),
+        ("Due Today", 3, 3),
         ("Open Tickets", 6, 3),
         ("Pending Tickets", 9, 3),
         ("Resolved Tickets", 12, 3),
@@ -218,8 +217,7 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
     assert panels["Unresolved Tickets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
     assert panels["All Tickets by Status"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
     assert panels["Resolution Trend"]["gridPos"] == {"x": 0, "y": 12, "w": 8, "h": 8}
-    assert panels["Tickets by Category"]["gridPos"] == {"x": 8, "y": 12, "w": 6, "h": 8}
-    assert panels["Recent Tickets"]["gridPos"] == {"x": 14, "y": 12, "w": 10, "h": 8}
+    assert panels["Recent Tickets"]["gridPos"] == {"x": 8, "y": 12, "w": 16, "h": 8}
 
     targets = list(iter_targets(dashboard))
     assert targets
@@ -255,6 +253,7 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
         "Assets by Status",
         "Assets by Location",
         "Recent Activity",
+        "Upcoming Warranty Expiry",
     }
 
     for title, x, width in [
@@ -274,7 +273,13 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
     }
     assert panels["Assets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
     assert panels["Assets by Location"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
-    assert panels["Recent Activity"]["gridPos"] == {"x": 0, "y": 12, "w": 24, "h": 8}
+    assert panels["Recent Activity"]["gridPos"] == {"x": 0, "y": 12, "w": 14, "h": 9}
+    assert panels["Upcoming Warranty Expiry"]["gridPos"] == {
+        "x": 14,
+        "y": 12,
+        "w": 10,
+        "h": 9,
+    }
 
     summary_selectors = {
         title: panel["targets"][0]["columns"][0]["selector"]
@@ -307,8 +312,13 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
         "location",
         "occurred_at",
     ]
+
+    warranty_target = panels["Upcoming Warranty Expiry"]["targets"][0]
+    assert warranty_target["root_selector"] == "$.warranty_expiry"
+    assert warranty_target["url"] == "/api/dashboard/snipe-it/warranty-expiry"
+
     for title, panel in panels.items():
-        if title != "Recent Activity":
+        if title not in {"Recent Activity", "Upcoming Warranty Expiry"}:
             assert panel["targets"][0]["url"] == "/api/dashboard/snipe-it"
 
 

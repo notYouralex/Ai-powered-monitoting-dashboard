@@ -39,6 +39,7 @@
   "annotations": {
     "list": []
   },
+  "links": [],
   "panels": [
     {
       "id": 1,
@@ -58,27 +59,26 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "mappings": [],
           "min": 0,
           "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "value": 0,
+                "color": "red"
               },
               {
-                "color": "orange",
-                "value": 50
+                "value": 50,
+                "color": "orange"
               },
               {
-                "color": "yellow",
-                "value": 75
+                "value": 75,
+                "color": "yellow"
               },
               {
-                "color": "green",
-                "value": 90
+                "value": 90,
+                "color": "green"
               }
             ]
           }
@@ -86,18 +86,21 @@
         "overrides": []
       },
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "auto",
+        "showPercentChange": false,
         "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "wideLayout": true
       },
       "targets": [
         {
@@ -106,25 +109,26 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
           "columns": [
             {
               "selector": "overall_health_percent",
               "text": "overall_health_percent",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 2,
@@ -144,21 +148,20 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "value": 0,
+                "color": "green"
               },
               {
-                "color": "orange",
-                "value": 1
+                "value": 1,
+                "color": "orange"
               },
               {
-                "color": "red",
-                "value": 10
+                "value": 10,
+                "color": "red"
               }
             ]
           }
@@ -166,18 +169,21 @@
         "overrides": []
       },
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "auto",
+        "showPercentChange": false,
         "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "wideLayout": true
       },
       "targets": [
         {
@@ -186,25 +192,26 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
           "columns": [
             {
               "selector": "security_alerts",
               "text": "security_alerts",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 3,
@@ -224,13 +231,12 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "value": 0,
+                "color": "yellow"
               }
             ]
           }
@@ -238,18 +244,21 @@
         "overrides": []
       },
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "auto",
+        "showPercentChange": false,
         "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "wideLayout": true
       },
       "targets": [
         {
@@ -258,25 +267,26 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
           "columns": [
             {
               "selector": "tickets_open",
               "text": "tickets_open",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 4,
@@ -296,17 +306,16 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "value": 0,
+                "color": "green"
               },
               {
-                "color": "red",
-                "value": 1
+                "value": 1,
+                "color": "red"
               }
             ]
           }
@@ -314,18 +323,21 @@
         "overrides": []
       },
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "auto",
+        "showPercentChange": false,
         "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "wideLayout": true
       },
       "targets": [
         {
@@ -334,97 +346,26 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
           "columns": [
             {
               "selector": "overdue_open",
               "text": "overdue_open",
               "type": "number"
             }
-          ]
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "type": "stat",
-      "title": "Assets",
-      "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "${DS_MONITORING_API}"
-      },
-      "description": "Total assets tracked by Snipe-IT.",
-      "gridPos": {
-        "x": 20,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
           ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "${DS_MONITORING_API}"
-          },
-          "type": "json",
-          "source": "url",
           "format": "table",
           "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
           "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
           "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
-          "columns": [
-            {
-              "selector": "assets_total",
-              "text": "assets_total",
-              "type": "number"
-            }
-          ]
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 6,
@@ -444,15 +385,14 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "mappings": [],
           "min": 0,
           "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "value": 0,
+                "color": "blue"
               }
             ]
           }
@@ -460,18 +400,21 @@
         "overrides": []
       },
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "auto",
+        "showPercentChange": false,
         "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "wideLayout": true
       },
       "targets": [
         {
@@ -480,25 +423,101 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$append([], $.summary)",
           "columns": [
             {
               "selector": "resolution_sla_compliance_percent",
               "text": "resolution_sla_compliance_percent",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Assets",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "Total assets tracked by Snipe-IT.",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "#f3f4f7"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "assets_total",
+              "text": "assets_total",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$append([], $.summary)",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 7,
@@ -517,25 +536,70 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic",
+            "fixedColor": "#73BF69"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Infrastructure"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Security"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
+          "overflow": "ellipsis",
           "placement": "right",
           "showLegend": true
         },
         "pieType": "donut",
         "reduceOptions": {
-          "values": true,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": true
         },
+        "sort": "desc",
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
@@ -547,16 +611,6 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$.alert_category_distribution",
           "columns": [
             {
               "selector": "name",
@@ -568,9 +622,20 @@
               "text": "count",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.alert_category_distribution",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 8,
@@ -589,25 +654,70 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic",
+            "fixedColor": "#73BF69"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pending"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
+          "overflow": "ellipsis",
           "placement": "right",
           "showLegend": true
         },
         "pieType": "donut",
         "reduceOptions": {
-          "values": true,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": ""
+          "fields": "",
+          "values": true
         },
+        "sort": "desc",
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
@@ -619,16 +729,6 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$.ticket_status_distribution",
           "columns": [
             {
               "selector": "name",
@@ -640,9 +740,20 @@
               "text": "count",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.ticket_status_distribution",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 9,
@@ -660,12 +771,36 @@
         "h": 8
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
         "overrides": []
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
+        "cellHeight": "sm",
+        "showHeader": true
       },
       "targets": [
         {
@@ -674,16 +809,6 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$.sources",
           "columns": [
             {
               "selector": "source",
@@ -705,9 +830,20 @@
               "text": "Last Success",
               "type": "string"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.sources",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     },
     {
       "id": 10,
@@ -725,12 +861,36 @@
         "h": 8
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 80,
+                "color": "red"
+              }
+            ]
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
         "overrides": []
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm"
+        "cellHeight": "sm",
+        "showHeader": true
       },
       "targets": [
         {
@@ -739,16 +899,6 @@
             "type": "yesoreyeram-infinity-datasource",
             "uid": "${DS_MONITORING_API}"
           },
-          "type": "json",
-          "source": "url",
-          "format": "table",
-          "parser": "backend",
-          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
-          "url_options": {
-            "method": "GET",
-            "data": ""
-          },
-          "root_selector": "$.attention_required",
           "columns": [
             {
               "selector": "source",
@@ -765,9 +915,20 @@
               "text": "Count",
               "type": "number"
             }
-          ]
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.attention_required",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/executive?from=${__from:date:iso}&to=${__to:date:iso}",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
         }
-      ]
+      ],
+      "pluginVersion": "13.1.1"
     }
   ]
 }
