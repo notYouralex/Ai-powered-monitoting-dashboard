@@ -32,6 +32,17 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     grafana_api_token: SecretStr | None = None
 
+    ai_enabled: bool = False
+    ai_provider: Literal["ollama"] = "ollama"
+    ai_ollama_base_url: AnyHttpUrl = "http://127.0.0.1:11434"
+    ai_summary_model: str = Field(default="gemma3:1b-it-qat", min_length=1, max_length=128)
+    ai_investigation_model: str = Field(default="qwen3:1.7b", min_length=1, max_length=128)
+    ai_context_size: int = Field(default=1024, ge=512, le=8192)
+    ai_max_output_tokens: int = Field(default=256, ge=64, le=1024)
+    ai_timeout_seconds: int = Field(default=120, ge=10, le=300)
+    ai_keep_alive_seconds: int = Field(default=0, ge=0, le=300)
+    ai_summary_cache_seconds: int = Field(default=300, ge=30, le=3600)
+
     wazuh_base_url: AnyHttpUrl | None = None
     wazuh_username: str | None = None
     wazuh_password: SecretStr | None = None
@@ -91,6 +102,20 @@ class Settings(BaseSettings):
     def empty_string_to_none(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator("ai_summary_model", "ai_investigation_model", mode="before")
+    @classmethod
+    def strip_ai_model_name(cls, value: Any) -> Any:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("ai_ollama_base_url")
+    @classmethod
+    def require_local_ollama_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
+        if value.username is not None or value.password is not None:
+            raise ValueError("AI_OLLAMA_BASE_URL must not contain userinfo")
+        if value.host not in {"localhost", "127.0.0.1", "::1"}:
+            raise ValueError("AI_OLLAMA_BASE_URL must use a loopback host")
         return value
 
     @field_validator(
