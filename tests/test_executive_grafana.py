@@ -114,6 +114,26 @@ def test_executive_dashboard_matches_approved_summary_layout() -> None:
         "is_stale",
         "health.last_success_at",
     }
+    assert [column["text"] for column in freshness_target["columns"]] == [
+        "Last Success",
+        "Source",
+        "Freshness",
+        "Status",
+    ]
+    freshness_transform = panels["Source Health & Freshness"]["transformations"][0]
+    assert freshness_transform["id"] == "organize"
+    assert freshness_transform["options"]["indexByName"] == {
+        "Last Success": 0,
+        "Source": 1,
+        "Freshness": 2,
+        "Status": 3,
+    }
+    freshness_override = panels["Source Health & Freshness"]["fieldConfig"]["overrides"][0]
+    assert freshness_override["matcher"] == {"id": "byName", "options": "Freshness"}
+    assert freshness_target["columns"][2]["type"] == "boolean"
+    freshness_mapping = freshness_override["properties"][0]["value"][0]["options"]
+    assert freshness_mapping["false"]["text"] == "Fresh"
+    assert freshness_mapping["true"]["text"] == "Stale"
 
     attention_target = panels["Attention Required"]["targets"][0]
     assert {column["selector"] for column in attention_target["columns"]} == {

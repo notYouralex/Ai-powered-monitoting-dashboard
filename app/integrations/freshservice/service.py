@@ -1,6 +1,6 @@
 from calendar import monthrange
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select
@@ -14,6 +14,7 @@ from app.integrations.freshservice.models import (
     FreshserviceDashboardSummary,
     FreshserviceNamedCount,
     FreshserviceTicket,
+    FreshserviceSlaTrendPoint,
     FreshserviceTrendPoint,
 )
 
@@ -57,6 +58,11 @@ class FreshserviceDashboardService:
         total = self._count()
         six_month_start = _dashboard_month_start(now, months=6)
         historical_scope = Ticket.source_created_at >= six_month_start
+        current_month_start, next_month_start = _dashboard_month_bounds(now)
+        current_month_resolution_scope = (
+            Ticket.resolved_at >= current_month_start,
+            Ticket.resolved_at < next_month_start,
+        )
         unresolved = Ticket.status_code.notin_(TERMINAL_STATUS_CODES)
         status_counts = self._status_distribution(historical_scope)
         priority_counts = self._distribution(Ticket.priority, historical_scope)
@@ -73,6 +79,8 @@ class FreshserviceDashboardService:
             last_success=last_success,
         )
 
+        resolution_sla_trend = self._resolution_sla_trend(now)
+
         resolved_values = self._db.scalars(
             select(Ticket.resolved_at)
             .where(Ticket.resolved_at.is_not(None), historical_scope)
@@ -85,7 +93,7 @@ class FreshserviceDashboardService:
         ).all()
 
         resolution_sla_criteria = (
-            historical_scope,
+            *current_month_resolution_scope,
             Ticket.status_code.in_(TERMINAL_STATUS_CODES),
             Ticket.due_by.is_not(None),
             Ticket.resolved_at.is_not(None),
@@ -160,6 +168,7 @@ class FreshserviceDashboardService:
                 FreshserviceTrendPoint(date=day, count=count)
                 for day, count in sorted(resolved_by_date.items())
             ],
+            resolution_sla_trend=resolution_sla_trend,
             recent_tickets=[_ticket_from_record(record) for record in recent_records],
             warnings=warnings,
         )
@@ -185,6 +194,48 @@ class FreshserviceDashboardService:
             },
             warnings=dashboard.warnings,
         )
+
+    def _resolution_sla_trend(self, now: datetime) -> list[FreshserviceSlaTrendPoint]:
+        local_now = now.astimezone(FRESHSERVICE_DASHBOARD_TIMEZONE)
+        current_month_index = local_now.year * 12 + local_now.month - 1
+        months = []
+        for offset in range(5, -1, -1):
+            year, zero_based_month = divmod(current_month_index - offset, 12)
+            months.append(date(year, zero_based_month + 1, 1))
+
+        first_month = months[0]
+        first_month_start = datetime(
+            first_month.year,
+            first_month.month,
+            1,
+            tzinfo=FRESHSERVICE_DASHBOARD_TIMEZONE,
+        ).astimezone(timezone.utc)
+        _, next_month_start = _dashboard_month_bounds(now)
+        rows = self._db.scalars(
+            select(Ticket)
+            .where(
+                Ticket.status_code.in_(TERMINAL_STATUS_CODES),
+                Ticket.due_by.is_not(None),
+                Ticket.resolved_at.is_not(None),
+                Ticket.resolved_at >= first_month_start,
+                Ticket.resolved_at < next_month_start,
+            )
+        ).all()
+        buckets: dict[date, list[bool]] = {month: [] for month in months}
+        for ticket in rows:
+            month = ticket.resolved_at.astimezone(FRESHSERVICE_DASHBOARD_TIMEZONE).date().replace(day=1)
+            buckets[month].append(ticket.resolved_at <= ticket.due_by)
+        return [
+            FreshserviceSlaTrendPoint(
+                month=month,
+                compliance_percent=(
+                    round((sum(values) / len(values)) * 100, 1)
+                    if values
+                    else None
+                ),
+            )
+            for month, values in buckets.items()
+        ]
 
     def _count(self, *criteria) -> int:
         statement = select(func.count()).select_from(Ticket)
@@ -295,6 +346,30 @@ def _dashboard_month_start(now: datetime, *, months: int) -> datetime:
         microsecond=0,
     )
     return start_local.astimezone(timezone.utc)
+
+
+def _dashboard_month_bounds(now: datetime) -> tuple[datetime, datetime]:
+    local_now = now.astimezone(FRESHSERVICE_DASHBOARD_TIMEZONE)
+    month_start_local = local_now.replace(
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    if month_start_local.month == 12:
+        next_month_start_local = month_start_local.replace(
+            year=month_start_local.year + 1,
+            month=1,
+        )
+    else:
+        next_month_start_local = month_start_local.replace(
+            month=month_start_local.month + 1
+        )
+    return (
+        month_start_local.astimezone(timezone.utc),
+        next_month_start_local.astimezone(timezone.utc),
+    )
 
 
 def _dashboard_day_bounds(now: datetime) -> tuple[datetime, datetime]:

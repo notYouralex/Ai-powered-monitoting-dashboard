@@ -240,26 +240,27 @@ def test_dashboard_historical_metrics_use_six_month_created_date_scope(
     assert all(item["name"] != "Legacy" for item in body["category_distribution"])
 
 
-def test_dashboard_calculates_resolution_sla_compliance_for_six_month_scope(
+def test_dashboard_calculates_current_month_resolution_sla_compliance(
     auth_env, monkeypatch
 ) -> None:
     seed_user_and_tickets(auth_env)
     auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
     auth_env.settings.freshservice_api_key = "fake-key"
-    cutoff = datetime(2026, 2, 9, 16, 0, tzinfo=timezone.utc)
+    month_start = datetime(2026, 7, 31, 16, 0, tzinfo=timezone.utc)
+    next_month_start = datetime(2026, 8, 31, 16, 0, tzinfo=timezone.utc)
 
     with auth_env.session_factory() as db:
         db.add_all(
             [
                 Ticket(
                     source_ticket_id=112,
-                    subject="Resolved within SLA",
+                    subject="Resolved within SLA from earlier creation month",
                     status_code=4,
                     status="resolved",
                     priority_code=2,
                     priority="medium",
                     due_by=NOW - timedelta(days=2),
-                    source_created_at=NOW - timedelta(days=10),
+                    source_created_at=month_start - timedelta(days=10),
                     source_updated_at=NOW - timedelta(days=3),
                     resolved_at=NOW - timedelta(days=3),
                     synced_at=NOW - timedelta(minutes=2),
@@ -292,15 +293,53 @@ def test_dashboard_calculates_resolution_sla_compliance_for_six_month_scope(
                 ),
                 Ticket(
                     source_ticket_id=115,
-                    subject="Old resolved ticket outside reporting scope",
+                    subject="Created this month but resolved before current month",
                     status_code=4,
                     status="resolved",
                     priority_code=2,
                     priority="medium",
-                    due_by=NOW - timedelta(days=5),
-                    source_created_at=cutoff - timedelta(seconds=1),
+                    due_by=month_start - timedelta(hours=1),
+                    source_created_at=month_start + timedelta(days=1),
                     source_updated_at=NOW - timedelta(days=4),
-                    resolved_at=NOW - timedelta(days=6),
+                    resolved_at=month_start - timedelta(seconds=1),
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=116,
+                    subject="Resolved exactly at current month start",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=month_start + timedelta(hours=1),
+                    source_created_at=month_start - timedelta(days=20),
+                    source_updated_at=NOW,
+                    resolved_at=month_start,
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=117,
+                    subject="Resolved exactly at next month start",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=next_month_start + timedelta(hours=1),
+                    source_created_at=NOW,
+                    source_updated_at=NOW,
+                    resolved_at=next_month_start,
+                    synced_at=NOW - timedelta(minutes=2),
+                ),
+                Ticket(
+                    source_ticket_id=118,
+                    subject="Closed without resolved timestamp",
+                    status_code=5,
+                    status="closed",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=NOW + timedelta(days=1),
+                    source_created_at=NOW,
+                    source_updated_at=NOW,
                     synced_at=NOW - timedelta(minutes=2),
                 ),
             ]
@@ -314,13 +353,138 @@ def test_dashboard_calculates_resolution_sla_compliance_for_six_month_scope(
 
     assert response.status_code == 200
     summary = response.json()["summary"]
-    assert summary["resolution_sla_eligible"] == 2
-    assert summary["resolution_sla_met"] == 1
-    assert summary["resolution_sla_compliance_percent"] == 50.0
+    assert summary["resolution_sla_eligible"] == 3
+    assert summary["resolution_sla_met"] == 2
+    assert summary["resolution_sla_compliance_percent"] == 66.7
 
     with auth_env.session_factory() as db:
         executive = FreshserviceDashboardService(db, auth_env.settings).get_executive_summary()
-    assert executive.metrics["resolution_sla_compliance_percent"] == 50.0
+    assert executive.metrics["resolution_sla_compliance_percent"] == 66.7
+
+
+def test_dashboard_resolution_sla_trend_is_limited_to_six_calendar_months(
+    auth_env, monkeypatch
+) -> None:
+    seed_user_and_tickets(auth_env)
+    auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
+    auth_env.settings.freshservice_api_key = "fake-key"
+
+    monthly_resolutions = [
+        (120, datetime(2026, 2, 15, 4, 0, tzinfo=timezone.utc), True),
+        (121, datetime(2026, 3, 15, 4, 0, tzinfo=timezone.utc), True),
+        (122, datetime(2026, 4, 15, 4, 0, tzinfo=timezone.utc), True),
+        (123, datetime(2026, 5, 15, 4, 0, tzinfo=timezone.utc), True),
+        (124, datetime(2026, 6, 15, 4, 0, tzinfo=timezone.utc), True),
+        (125, datetime(2026, 7, 15, 4, 0, tzinfo=timezone.utc), False),
+        (126, datetime(2026, 8, 5, 4, 0, tzinfo=timezone.utc), True),
+    ]
+    with auth_env.session_factory() as db:
+        db.add_all(
+            [
+                Ticket(
+                    source_ticket_id=ticket_id,
+                    subject=f"SLA trend {resolved_at:%Y-%m}",
+                    status_code=4,
+                    status="resolved",
+                    priority_code=2,
+                    priority="medium",
+                    due_by=(
+                        resolved_at + timedelta(hours=1)
+                        if met_sla
+                        else resolved_at - timedelta(hours=1)
+                    ),
+                    source_created_at=resolved_at - timedelta(days=5),
+                    source_updated_at=resolved_at,
+                    resolved_at=resolved_at,
+                    synced_at=NOW - timedelta(minutes=2),
+                )
+                for ticket_id, resolved_at, met_sla in monthly_resolutions
+            ]
+        )
+        db.commit()
+
+    login(auth_env)
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: NOW)
+
+    response = auth_env.client.get("/api/dashboard/freshservice")
+
+    assert response.status_code == 200
+    trend = response.json()["resolution_sla_trend"]
+    assert [point["month"] for point in trend] == [
+        "2026-03-01",
+        "2026-04-01",
+        "2026-05-01",
+        "2026-06-01",
+        "2026-07-01",
+        "2026-08-01",
+    ]
+    assert [point["compliance_percent"] for point in trend] == [
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        0.0,
+        100.0,
+    ]
+
+    september_now = datetime(2026, 9, 15, 4, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: september_now)
+
+    september_response = auth_env.client.get("/api/dashboard/freshservice")
+
+    assert september_response.status_code == 200
+    september_trend = september_response.json()["resolution_sla_trend"]
+    assert [point["month"] for point in september_trend] == [
+        "2026-04-01",
+        "2026-05-01",
+        "2026-06-01",
+        "2026-07-01",
+        "2026-08-01",
+        "2026-09-01",
+    ]
+
+
+def test_dashboard_resolution_sla_is_not_controlled_by_request_time_range(
+    auth_env, monkeypatch
+) -> None:
+    seed_user_and_tickets(auth_env)
+    auth_env.settings.freshservice_base_url = "https://company.freshservice.com"
+    auth_env.settings.freshservice_api_key = "fake-key"
+
+    with auth_env.session_factory() as db:
+        db.add(
+            Ticket(
+                source_ticket_id=119,
+                subject="Current-month SLA met",
+                status_code=4,
+                status="resolved",
+                priority_code=2,
+                priority="medium",
+                due_by=NOW + timedelta(hours=1),
+                source_created_at=NOW - timedelta(days=1),
+                source_updated_at=NOW,
+                resolved_at=NOW,
+                synced_at=NOW - timedelta(minutes=2),
+            )
+        )
+        db.commit()
+
+    login(auth_env)
+    monkeypatch.setattr("app.integrations.freshservice.service.utc_now", lambda: NOW)
+
+    response = auth_env.client.get(
+        "/api/dashboard/freshservice",
+        params={
+            "from": datetime(2026, 1, 1, tzinfo=timezone.utc).isoformat(),
+            "to": datetime(2026, 1, 2, tzinfo=timezone.utc).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    summary = response.json()["summary"]
+    assert summary["resolution_sla_eligible"] == 1
+    assert summary["resolution_sla_met"] == 1
+    assert summary["resolution_sla_compliance_percent"] == 100.0
 
 
 def test_pending_summary_includes_all_pending_variants_with_six_month_scope(

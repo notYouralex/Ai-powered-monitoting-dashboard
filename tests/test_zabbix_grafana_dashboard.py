@@ -31,7 +31,7 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
     topology = panels["Live Host Topology"]
     assert topology["type"] == "tamirsuliman-weathermap-panel"
     assert topology["pluginVersion"] == "1.6.12"
-    assert topology["gridPos"] == {"x": 0, "y": 4, "w": 13, "h": 10}
+    assert topology["gridPos"] == {"x": 0, "y": 4, "w": 16, "h": 19}
 
     weathermap = topology["options"]["weathermap"]
     assert weathermap["version"] == 14
@@ -58,7 +58,7 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
     )
 
     warnings = panels["Warnings"]
-    assert warnings["gridPos"] == {"x": 0, "y": 22, "w": 24, "h": 4}
+    assert warnings["gridPos"] == {"x": 0, "y": 23, "w": 16, "h": 5}
     assert warnings["targets"][0]["root_selector"] == (
         "$map($.warnings, function($w) { {'warning': $w} })"
     )

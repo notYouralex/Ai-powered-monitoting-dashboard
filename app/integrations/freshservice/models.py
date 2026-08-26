@@ -57,6 +57,13 @@ class FreshserviceTrendPoint(BaseModel):
     count: int = Field(ge=0)
 
 
+class FreshserviceSlaTrendPoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    month: date
+    compliance_percent: float | None = Field(default=None, ge=0, le=100)
+
+
 class FreshserviceDashboardSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -93,5 +100,6 @@ class FreshserviceDashboardResponse(BaseModel):
     )
     category_distribution: list[FreshserviceNamedCount] = Field(default_factory=list, max_length=10)
     resolution_trend: list[FreshserviceTrendPoint] = Field(default_factory=list, max_length=186)
+    resolution_sla_trend: list[FreshserviceSlaTrendPoint] = Field(default_factory=list, max_length=6)
     recent_tickets: list[FreshserviceTicket] = Field(default_factory=list, max_length=50)
     warnings: list[str] = Field(default_factory=list, max_length=20)

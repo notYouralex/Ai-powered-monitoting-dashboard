@@ -31,8 +31,8 @@ def test_zabbix_dashboard_uses_an_infinity_datasource_variable() -> None:
     assert datasource["query"] == "yesoreyeram-infinity-datasource"
     assert datasource["current"] == {
         "selected": True,
-        "text": "Zabbix FastAPI",
-        "value": "zabbix-fastapi",
+        "text": "Monitoring API",
+        "value": "monitoring-api",
     }
 
     for panel in dashboard["panels"]:
@@ -95,10 +95,10 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
         {"selector": "cpu_used_percent", "text": "cpu_used_percent", "type": "number"}
     ]
 
-    assert panels["Live Host Topology"]["gridPos"] == {"h": 10, "w": 13, "x": 0, "y": 4}
-    assert panels["System Information"]["gridPos"] == {"h": 10, "w": 11, "x": 13, "y": 4}
-    assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 14}
-    assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 14}
+    assert panels["Live Host Topology"]["gridPos"] == {"h": 19, "w": 16, "x": 0, "y": 4}
+    assert panels["System Information"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 4}
+    assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 12}
+    assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 20}
     assert dashboard["time"] == {"from": "now-1h", "to": "now"}
 
     for title, metric in [("CPU Load", "cpu"), ("Memory Usage", "memory")]:
@@ -108,7 +108,7 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
             "$map($s.points, function($p) { {'time': $p.observed_at, "
             "'value': $p.used_percent, 'host': $s.host_id} }) }).*"
         )
-    assert panels["Warnings"]["gridPos"] == {"h": 4, "w": 24, "x": 0, "y": 22}
+    assert panels["Warnings"]["gridPos"] == {"h": 5, "w": 16, "x": 0, "y": 23}
 
     system_target = panels["System Information"]["targets"][0]
     assert system_target["root_selector"] == "$.topology_maps[0].nodes"
@@ -138,10 +138,10 @@ def test_zabbix_dashboard_live_topology_uses_network_weathermap() -> None:
     assert len(weathermap["links"]) == 26
 
     nodes = {node["id"]: node for node in weathermap["nodes"]}
-    assert nodes["4"]["position"] == [261, 177]
-    assert nodes["5"]["position"] == [293, 455]
-    assert nodes["21"]["position"] == [743, 505]
-    assert nodes["26"]["position"] == [1193, 205]
+    assert nodes["4"]["position"] == [228, 127]
+    assert nodes["5"]["position"] == [277, 363]
+    assert nodes["21"]["position"] == [719, 639]
+    assert nodes["26"]["position"] == [1137, 416]
     assert nodes["4"]["nodeIcon"]["name"] == "networking/firewall"
     assert nodes["5"]["nodeIcon"]["name"] == "networking/switch"
     assert nodes["6"]["nodeIcon"]["name"] == "networking/server"
