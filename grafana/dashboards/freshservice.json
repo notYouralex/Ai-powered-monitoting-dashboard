@@ -20,7 +20,7 @@
   "timezone": "browser",
   "schemaVersion": 41,
   "version": 1,
-  "refresh": "5m",
+  "refresh": "1m",
   "time": {
     "from": "now-30d",
     "to": "now"
@@ -51,9 +51,9 @@
       },
       "description": "Open tickets whose resolution due date is before the current Asia/Manila calendar day.",
       "gridPos": {
-        "x": 0,
+        "x": 4,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -64,7 +64,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "semi-dark-red"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "red"
               }
             ]
           }
@@ -126,9 +130,9 @@
       },
       "description": "Open tickets whose resolution due date falls on the current Asia/Manila calendar day.",
       "gridPos": {
-        "x": 3,
+        "x": 8,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -139,7 +143,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "semi-dark-red"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "#EAB839"
               }
             ]
           }
@@ -201,9 +209,9 @@
       },
       "description": "Current tickets with Freshservice status Open. This metric is not limited to the six-month historical reporting scope.",
       "gridPos": {
-        "x": 6,
+        "x": 0,
         "y": 0,
-        "w": 3,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -214,7 +222,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               }
             ]
           }
@@ -276,9 +284,9 @@
       },
       "description": "Tickets created within the last six calendar months whose Freshservice status is Pending, Pending Customer, or Pending External Resolver.",
       "gridPos": {
-        "x": 9,
-        "y": 0,
-        "w": 3,
+        "x": 0,
+        "y": 4,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -289,7 +297,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "yellow"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "#EAB839"
               }
             ]
           }
@@ -351,9 +363,9 @@
       },
       "description": "Tickets created within the last six calendar months that are currently in Resolved status.",
       "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 3,
+        "x": 4,
+        "y": 4,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -364,7 +376,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               }
             ]
           }
@@ -426,9 +438,9 @@
       },
       "description": "Tickets created within the last six calendar months that are currently in Closed status.",
       "gridPos": {
-        "x": 15,
-        "y": 0,
-        "w": 3,
+        "x": 8,
+        "y": 4,
+        "w": 4,
         "h": 4
       },
       "fieldConfig": {
@@ -499,12 +511,12 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "Resolution SLA compliance for resolved or closed tickets created within the last six calendar months that have both a resolution due time and a resolved time. A ticket is compliant when it was resolved on or before its due time; tickets missing either timestamp are excluded.",
+      "description": "Resolution SLA compliance for resolved or closed tickets resolved during the current Asia/Manila calendar month that have both a resolution due time and a resolved time. A ticket is compliant when it was resolved on or before its due time; tickets missing either timestamp are excluded.",
       "gridPos": {
-        "x": 18,
+        "x": 12,
         "y": 0,
-        "w": 6,
-        "h": 4
+        "w": 5,
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -528,11 +540,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "yellow"
               },
               {
-                "value": 80,
-                "color": "yellow"
+                "value": 50,
+                "color": "green"
               },
               {
                 "value": 90,
@@ -603,7 +615,7 @@
       "description": "Current unresolved tickets grouped by normalized priority across all synchronized Freshservice data.",
       "gridPos": {
         "x": 0,
-        "y": 4,
+        "y": 8,
         "w": 8,
         "h": 8
       },
@@ -642,12 +654,15 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
-        "pieType": "pie",
+        "pieType": "donut",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -706,7 +721,7 @@
       "description": "Current unresolved tickets grouped by Freshservice status across all synchronized data.",
       "gridPos": {
         "x": 8,
-        "y": 4,
+        "y": 8,
         "w": 8,
         "h": 8
       },
@@ -829,12 +844,15 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
-        "pieType": "pie",
+        "pieType": "donut",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -893,7 +911,7 @@
       "description": "Tickets created within the last six calendar months grouped by their current Freshservice status.",
       "gridPos": {
         "x": 16,
-        "y": 4,
+        "y": 8,
         "w": 8,
         "h": 8
       },
@@ -962,12 +980,15 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
-        "pieType": "pie",
+        "pieType": "donut",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1025,9 +1046,9 @@
       },
       "description": "Daily resolution counts for tickets created within the last six calendar months and carrying a resolved timestamp.",
       "gridPos": {
-        "x": 0,
-        "y": 12,
-        "w": 8,
+        "x": 17,
+        "y": 0,
+        "w": 7,
         "h": 8
       },
       "fieldConfig": {
@@ -1098,7 +1119,7 @@
           "enableFacetedFilter": false,
           "overflow": "ellipsis",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "hideZeros": false,
@@ -1149,8 +1170,8 @@
       },
       "description": "The 50 most recently updated synchronized Freshservice tickets, ordered by Freshservice updated time.",
       "gridPos": {
-        "x": 8,
-        "y": 12,
+        "x": 0,
+        "y": 16,
         "w": 16,
         "h": 8
       },
@@ -1277,6 +1298,113 @@
           "format": "table",
           "parser": "backend",
           "root_selector": "$.recent_tickets",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/freshservice",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Historical Resolution SLA Compliance",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_MONITORING_API}"
+      },
+      "description": "Resolution SLA Compliance for the most recent six Asia/Manila calendar months, grouped by the month tickets were resolved. The table rolls forward automatically each month, dropping the oldest month and adding the new current month.",
+      "timeFrom": "6M",
+      "gridPos": {
+        "x": 16,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Month"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:MMMM YYYY"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SLA Compliance"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Month"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_MONITORING_API}"
+          },
+          "columns": [
+            {
+              "selector": "month",
+              "text": "Month",
+              "type": "timestamp"
+            },
+            {
+              "selector": "compliance_percent",
+              "text": "SLA Compliance",
+              "type": "number"
+            }
+          ],
+          "format": "table",
+          "parser": "backend",
+          "root_selector": "$.resolution_sla_trend",
           "source": "url",
           "type": "json",
           "url": "/api/dashboard/freshservice",

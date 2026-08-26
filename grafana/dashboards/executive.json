@@ -69,16 +69,16 @@
                 "color": "red"
               },
               {
+                "value": 25,
+                "color": "#EAB839"
+              },
+              {
                 "value": 50,
-                "color": "orange"
+                "color": "green"
               },
               {
                 "value": 75,
-                "color": "yellow"
-              },
-              {
-                "value": 90,
-                "color": "green"
+                "color": "blue"
               }
             ]
           }
@@ -153,14 +153,10 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               },
               {
                 "value": 1,
-                "color": "orange"
-              },
-              {
-                "value": 10,
                 "color": "red"
               }
             ]
@@ -236,7 +232,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "yellow"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "#EAB839"
               }
             ]
           }
@@ -311,7 +311,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               },
               {
                 "value": 1,
@@ -375,7 +375,7 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
       },
-      "description": "Freshservice resolution SLA compliance for eligible resolved or closed tickets in the six-calendar-month reporting scope.",
+      "description": "Freshservice resolution SLA compliance for eligible resolved or closed tickets resolved during the current Asia/Manila calendar month.",
       "gridPos": {
         "x": 16,
         "y": 0,
@@ -392,6 +392,18 @@
             "steps": [
               {
                 "value": 0,
+                "color": "red"
+              },
+              {
+                "value": 25,
+                "color": "#EAB839"
+              },
+              {
+                "value": 50,
+                "color": "green"
+              },
+              {
+                "value": 75,
                 "color": "blue"
               }
             ]
@@ -467,9 +479,13 @@
             "steps": [
               {
                 "value": 0,
-                "color": "#f3f4f7"
+                "color": "blue"
               }
             ]
+          },
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "#ad46ff"
           }
         },
         "overrides": []
@@ -583,11 +599,15 @@
         ]
       },
       "options": {
+        "displayLabels": [],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -702,10 +722,13 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -796,12 +819,52 @@
             "inspect": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Freshness"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "false": {
+                        "text": "Fresh"
+                      },
+                      "true": {
+                        "text": "Stale"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "cellHeight": "sm",
         "showHeader": true
       },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "Freshness": 2,
+              "Last Success": 0,
+              "Source": 1,
+              "Status": 3
+            },
+            "renameByName": {}
+          }
+        }
+      ],
       "targets": [
         {
           "refId": "A",
@@ -811,23 +874,23 @@
           },
           "columns": [
             {
+              "selector": "health.last_success_at",
+              "text": "Last Success",
+              "type": "string"
+            },
+            {
               "selector": "source",
               "text": "Source",
               "type": "string"
             },
             {
-              "selector": "health.status",
-              "text": "Status",
-              "type": "string"
-            },
-            {
               "selector": "is_stale",
-              "text": "Stale",
+              "text": "Freshness",
               "type": "boolean"
             },
             {
-              "selector": "health.last_success_at",
-              "text": "Last Success",
+              "selector": "health.status",
+              "text": "Status",
               "type": "string"
             }
           ],

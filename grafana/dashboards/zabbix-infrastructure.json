@@ -77,11 +77,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "text"
-              },
-              {
-                "value": 80,
-                "color": "red"
+                "color": "blue"
               }
             ]
           }
@@ -237,11 +233,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "semi-dark-red"
+                "color": "blue"
               },
               {
-                "value": 80,
-                "color": "red"
+                "value": 1,
+                "color": "yellow"
               }
             ]
           }
@@ -400,10 +396,10 @@
             "steps": [
               {
                 "value": 0,
-                "color": "semi-dark-red"
+                "color": "blue"
               },
               {
-                "value": 80,
+                "value": 1,
                 "color": "red"
               }
             ]

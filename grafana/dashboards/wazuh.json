@@ -63,7 +63,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "#0c8496"
+                "color": "blue"
               }
             ]
           }
@@ -138,7 +138,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "dark-red"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "red"
               }
             ]
           }
@@ -213,7 +217,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "yellow"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "red"
               }
             ]
           }
@@ -287,15 +295,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
-              },
-              {
-                "value": 250,
-                "color": "#EAB839"
-              },
-              {
-                "value": 500,
-                "color": "dark-red"
+                "color": "blue"
               }
             ]
           }
@@ -370,14 +370,6 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
-              },
-              {
-                "value": 250,
-                "color": "#EAB839"
-              },
-              {
-                "value": 500,
                 "color": "red"
               }
             ]
@@ -452,15 +444,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               },
               {
                 "value": 500,
                 "color": "#EAB839"
-              },
-              {
-                "value": 1000,
-                "color": "dark-red"
               }
             ]
           }
@@ -765,10 +753,10 @@
       },
       "description": "Most frequent Wazuh alert rules in the selected dashboard time range.",
       "gridPos": {
-        "x": 18,
-        "y": 4,
-        "w": 6,
-        "h": 7
+        "x": 0,
+        "y": 11,
+        "w": 9,
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -807,6 +795,19 @@
               {
                 "id": "custom.width",
                 "value": 82
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Alert"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 397
               }
             ]
           }
@@ -859,10 +860,10 @@
       },
       "description": "Current vulnerabilities grouped by severity.",
       "gridPos": {
-        "x": 0,
+        "x": 9,
         "y": 11,
-        "w": 5,
-        "h": 6
+        "w": 8,
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -882,15 +883,15 @@
         "overrides": []
       },
       "options": {
-        "displayLabels": [
-          "value",
-          "name"
-        ],
+        "displayLabels": [],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -950,10 +951,10 @@
       },
       "description": "Agents with the most alerts in the selected dashboard time range.",
       "gridPos": {
-        "x": 5,
+        "x": 17,
         "y": 11,
-        "w": 5,
-        "h": 6
+        "w": 7,
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -969,18 +970,44 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "Alerts"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": true,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "displayLabels": [
-          "value",
-          "name"
-        ],
+        "displayLabels": [],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true,
+          "values": [
+            "value"
+          ],
+          "width": 150
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -1040,10 +1067,10 @@
       },
       "description": "Current Wazuh agent connection states.",
       "gridPos": {
-        "x": 10,
-        "y": 11,
-        "w": 5,
-        "h": 6
+        "x": 18,
+        "y": 4,
+        "w": 6,
+        "h": 7
       },
       "fieldConfig": {
         "defaults": {
@@ -1067,10 +1094,13 @@
           "name"
         ],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": false
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -1145,10 +1175,10 @@
       },
       "description": "Most recent Wazuh alerts in the selected dashboard time range.",
       "gridPos": {
-        "x": 15,
-        "y": 11,
-        "w": 9,
-        "h": 6
+        "x": 0,
+        "y": 19,
+        "w": 24,
+        "h": 8
       },
       "fieldConfig": {
         "defaults": {
@@ -1176,7 +1206,34 @@
             "inspect": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Description"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 499
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Level"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 133
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "cellHeight": "sm",

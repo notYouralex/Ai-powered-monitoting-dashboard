@@ -148,12 +148,12 @@ def test_wazuh_dashboard_uses_only_canonical_wazuh_api() -> None:
     assert panels["Alert Trend"]["gridPos"] == {"x": 0, "y": 4, "w": 8, "h": 7}
     assert panels["MITRE Tactics"]["gridPos"] == {"x": 8, "y": 4, "w": 10, "h": 7}
     assert panels["MITRE Tactics"]["type"] == "barchart"
-    assert panels["Top Alerts"]["gridPos"] == {"x": 18, "y": 4, "w": 6, "h": 7}
-    assert panels["Vulnerabilities by Severity"]["gridPos"] == {"x": 0, "y": 11, "w": 5, "h": 6}
-    assert panels["Top Affected Agents"]["gridPos"] == {"x": 5, "y": 11, "w": 5, "h": 6}
-    assert panels["Top Affected Agents"]["type"] == "piechart"
-    assert panels["Agent Status"]["gridPos"] == {"x": 10, "y": 11, "w": 5, "h": 6}
+    assert panels["Agent Status"]["gridPos"] == {"x": 18, "y": 4, "w": 6, "h": 7}
     assert panels["Agent Status"]["type"] == "piechart"
+    assert panels["Top Alerts"]["gridPos"] == {"x": 0, "y": 11, "w": 9, "h": 8}
+    assert panels["Vulnerabilities by Severity"]["gridPos"] == {"x": 9, "y": 11, "w": 8, "h": 8}
+    assert panels["Top Affected Agents"]["gridPos"] == {"x": 17, "y": 11, "w": 7, "h": 8}
+    assert panels["Top Affected Agents"]["type"] == "piechart"
     assert [column["selector"] for column in panels["Agent Status"]["targets"][0]["columns"]] == [
         "agents_active",
         "agents_disconnected",
@@ -161,7 +161,7 @@ def test_wazuh_dashboard_uses_only_canonical_wazuh_api() -> None:
         "agents_never_connected",
         "agents_unknown",
     ]
-    assert panels["Recent Alerts"]["gridPos"] == {"x": 15, "y": 11, "w": 9, "h": 6}
+    assert panels["Recent Alerts"]["gridPos"] == {"x": 0, "y": 19, "w": 24, "h": 8}
 
     targets = list(iter_targets(dashboard))
     assert targets
@@ -200,24 +200,43 @@ def test_freshservice_dashboard_uses_only_canonical_freshservice_api() -> None:
         "All Tickets by Status",
         "Resolution Trend",
         "Recent Tickets",
+        "Historical Resolution SLA Compliance",
     }
 
-    for title, x, width in [
-        ("Overdue", 0, 3),
-        ("Due Today", 3, 3),
-        ("Open Tickets", 6, 3),
-        ("Pending Tickets", 9, 3),
-        ("Resolved Tickets", 12, 3),
-        ("Closed Tickets", 15, 3),
-        ("Resolution SLA Compliance", 18, 6),
-    ]:
-        assert panels[title]["gridPos"] == {"x": x, "y": 0, "w": width, "h": 4}
+    for title, expected in {
+        "Open Tickets": {"x": 0, "y": 0, "w": 4, "h": 4},
+        "Overdue": {"x": 4, "y": 0, "w": 4, "h": 4},
+        "Due Today": {"x": 8, "y": 0, "w": 4, "h": 4},
+        "Resolution SLA Compliance": {"x": 12, "y": 0, "w": 5, "h": 8},
+        "Resolution Trend": {"x": 17, "y": 0, "w": 7, "h": 8},
+        "Pending Tickets": {"x": 0, "y": 4, "w": 4, "h": 4},
+        "Resolved Tickets": {"x": 4, "y": 4, "w": 4, "h": 4},
+        "Closed Tickets": {"x": 8, "y": 4, "w": 4, "h": 4},
+        "Unresolved Tickets by Priority": {"x": 0, "y": 8, "w": 8, "h": 8},
+        "Unresolved Tickets by Status": {"x": 8, "y": 8, "w": 8, "h": 8},
+        "All Tickets by Status": {"x": 16, "y": 8, "w": 8, "h": 8},
+        "Recent Tickets": {"x": 0, "y": 16, "w": 16, "h": 8},
+    }.items():
+        assert panels[title]["gridPos"] == expected
 
-    assert panels["Unresolved Tickets by Priority"]["gridPos"] == {"x": 0, "y": 4, "w": 8, "h": 8}
-    assert panels["Unresolved Tickets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
-    assert panels["All Tickets by Status"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
-    assert panels["Resolution Trend"]["gridPos"] == {"x": 0, "y": 12, "w": 8, "h": 8}
-    assert panels["Recent Tickets"]["gridPos"] == {"x": 8, "y": 12, "w": 16, "h": 8}
+    historical_sla = panels["Historical Resolution SLA Compliance"]
+    assert historical_sla["type"] == "table"
+    assert historical_sla["gridPos"] == {"x": 16, "y": 16, "w": 8, "h": 8}
+    assert historical_sla["timeFrom"] == "6M"
+    historical_sla_target = historical_sla["targets"][0]
+    assert historical_sla_target["format"] == "table"
+    assert [column["text"] for column in historical_sla_target["columns"]] == [
+        "Month",
+        "SLA Compliance",
+    ]
+    month_override = next(
+        override
+        for override in historical_sla["fieldConfig"]["overrides"]
+        if override["matcher"] == {"id": "byName", "options": "Month"}
+    )
+    assert {prop["id"]: prop["value"] for prop in month_override["properties"]} == {
+        "unit": "time:MMMM YYYY"
+    }
 
     targets = list(iter_targets(dashboard))
     assert targets

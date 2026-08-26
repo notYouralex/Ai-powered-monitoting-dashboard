@@ -20,7 +20,7 @@
   "timezone": "browser",
   "schemaVersion": 41,
   "version": 1,
-  "refresh": "5m",
+  "refresh": "1m",
   "time": {
     "from": "now-24h",
     "to": "now"
@@ -64,22 +64,22 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               }
             ]
           },
           "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
+            "mode": "thresholds",
+            "fixedColor": "#ad46ff"
           }
         },
         "overrides": []
       },
       "options": {
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "horizontal",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
@@ -89,8 +89,8 @@
           "values": false
         },
         "showPercentChange": false,
-        "textMode": "value",
-        "wideLayout": false
+        "textMode": "auto",
+        "wideLayout": true
       },
       "targets": [
         {
@@ -218,7 +218,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "green"
+                "color": "blue"
               }
             ]
           }
@@ -293,7 +293,11 @@
             "steps": [
               {
                 "value": 0,
-                "color": "#ac1426"
+                "color": "blue"
+              },
+              {
+                "value": 1,
+                "color": "semi-dark-red"
               }
             ]
           }
@@ -368,7 +372,7 @@
             "steps": [
               {
                 "value": 0,
-                "color": "red"
+                "color": "blue"
               }
             ]
           }
@@ -440,7 +444,7 @@
           "unit": "short",
           "color": {
             "mode": "palette-classic",
-            "fixedColor": "#73BF69"
+            "fixedColor": "semi-dark-purple"
           },
           "custom": {
             "hideFrom": {
@@ -453,11 +457,15 @@
         "overrides": []
       },
       "options": {
+        "displayLabels": [],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -527,7 +535,7 @@
           "unit": "short",
           "color": {
             "mode": "palette-classic",
-            "fixedColor": "#73BF69"
+            "fixedColor": "blue"
           },
           "custom": {
             "hideFrom": {
@@ -541,10 +549,13 @@
       },
       "options": {
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -627,11 +638,15 @@
         "overrides": []
       },
       "options": {
+        "displayLabels": [],
         "legend": {
-          "displayMode": "list",
+          "displayMode": "table",
           "overflow": "ellipsis",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
@@ -722,11 +737,44 @@
             "inspect": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Asset"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 314
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "scope": "series",
+              "options": "Location"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "cellHeight": "sm",
-        "showHeader": true
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Location"
+          }
+        ]
       },
       "targets": [
         {
