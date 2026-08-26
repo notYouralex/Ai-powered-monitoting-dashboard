@@ -1,0 +1,205 @@
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.ai.cache import AIExecutiveSummaryCache
+from app.ai.devices import AIDeviceRepository
+from app.ai.errors import AIError
+from app.ai.models import AIInvestigationResponse, AIQueryRequest, AIQueryResponse
+from app.ai.ollama import OllamaProvider
+from app.ai.service import AIService
+from app.auth.dependencies import get_current_user
+from app.contracts import IntegrationSource
+from app.core.config import Settings, get_settings
+from app.dashboard.executive.router import get_executive_dashboard_service
+from app.dashboard.executive.service import ExecutiveDashboardService
+from app.db.session import get_db
+from app.grafana.dependencies import require_dashboard_access
+
+
+AI_DEFAULT_RANGE = timedelta(hours=24)
+AI_MAX_RANGE = timedelta(days=30)
+
+router = APIRouter(prefix="/api/ai", tags=["ai"])
+_executive_summary_cache = AIExecutiveSummaryCache()
+_snipe_it_summary_cache = AIExecutiveSummaryCache()
+_freshservice_summary_cache = AIExecutiveSummaryCache()
+
+
+def get_ai_investigation_service(
+    settings: Settings = Depends(get_settings),
+    executive_service: ExecutiveDashboardService = Depends(get_executive_dashboard_service),
+    db: Session = Depends(get_db),
+) -> AIService:
+    return AIService(
+        provider=OllamaProvider(settings),
+        executive_service=executive_service,
+        device_repository=AIDeviceRepository(db),
+    )
+
+
+def get_ai_summary_cache() -> AIExecutiveSummaryCache:
+    return _executive_summary_cache
+
+
+def get_ai_snipe_it_summary_cache() -> AIExecutiveSummaryCache:
+    return _snipe_it_summary_cache
+
+
+def get_ai_freshservice_summary_cache() -> AIExecutiveSummaryCache:
+    return _freshservice_summary_cache
+
+
+def get_ai_service(
+    settings: Settings = Depends(get_settings),
+    executive_service: ExecutiveDashboardService = Depends(get_executive_dashboard_service),
+) -> AIService:
+    return AIService(
+        provider=OllamaProvider(settings),
+        executive_service=executive_service,
+    )
+
+
+@router.post(
+    "/query",
+    response_model=AIInvestigationResponse,
+    dependencies=[Depends(get_current_user)],
+)
+async def query_ai(
+    request: AIQueryRequest,
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    service: AIService = Depends(get_ai_investigation_service),
+) -> AIInvestigationResponse:
+    if not settings.ai_enabled:
+        raise AIError(code="AI_DISABLED", retryable=False)
+
+    start, end = _resolve_time_range(from_, to)
+    return await service.investigate(request.question, start, end)
+
+
+@router.get(
+    "/insights/executive",
+    response_model=AIQueryResponse,
+    dependencies=[Depends(require_dashboard_access)],
+)
+async def get_executive_ai_insight(
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    service: AIService = Depends(get_ai_service),
+    cache: AIExecutiveSummaryCache = Depends(get_ai_summary_cache),
+) -> AIQueryResponse:
+    if not settings.ai_enabled:
+        raise AIError(code="AI_DISABLED", retryable=False)
+
+    start, end = _resolve_time_range(from_, to)
+    return await cache.get_or_generate(
+        start=start,
+        end=end,
+        ttl_seconds=settings.ai_summary_cache_seconds,
+        generate=service.summarize_executive,
+    )
+
+
+@router.get(
+    "/insights/snipe-it",
+    response_model=AIQueryResponse,
+    dependencies=[Depends(require_dashboard_access)],
+)
+async def get_snipe_it_ai_insight(
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    service: AIService = Depends(get_ai_service),
+    cache: AIExecutiveSummaryCache = Depends(get_ai_snipe_it_summary_cache),
+) -> AIQueryResponse:
+    return await _get_source_ai_insight(
+        source="snipe_it",
+        from_=from_,
+        to=to,
+        settings=settings,
+        service=service,
+        cache=cache,
+    )
+
+
+@router.get(
+    "/insights/freshservice",
+    response_model=AIQueryResponse,
+    dependencies=[Depends(require_dashboard_access)],
+)
+async def get_freshservice_ai_insight(
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    service: AIService = Depends(get_ai_service),
+    cache: AIExecutiveSummaryCache = Depends(get_ai_freshservice_summary_cache),
+) -> AIQueryResponse:
+    return await _get_source_ai_insight(
+        source="freshservice",
+        from_=from_,
+        to=to,
+        settings=settings,
+        service=service,
+        cache=cache,
+    )
+
+
+async def _get_source_ai_insight(
+    *,
+    source: IntegrationSource,
+    from_: datetime | None,
+    to: datetime | None,
+    settings: Settings,
+    service: AIService,
+    cache: AIExecutiveSummaryCache,
+) -> AIQueryResponse:
+    if not settings.ai_enabled:
+        raise AIError(code="AI_DISABLED", retryable=False)
+
+    start, end = _resolve_time_range(from_, to)
+
+    async def generate(range_start: datetime, range_end: datetime) -> AIQueryResponse:
+        return await service.summarize_source(
+            range_start,
+            range_end,
+            source=source,
+        )
+
+    return await cache.get_or_generate(
+        start=start,
+        end=end,
+        ttl_seconds=settings.ai_summary_cache_seconds,
+        generate=generate,
+    )
+
+
+def _resolve_time_range(
+    start: datetime | None,
+    end: datetime | None,
+) -> tuple[datetime, datetime]:
+    resolved_end = end or datetime.now(timezone.utc)
+    resolved_start = start or (resolved_end - AI_DEFAULT_RANGE)
+
+    if resolved_start.tzinfo is None or resolved_end.tzinfo is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="AI time range must include a timezone offset",
+        )
+
+    resolved_start = resolved_start.astimezone(timezone.utc)
+    resolved_end = resolved_end.astimezone(timezone.utc)
+    if resolved_start >= resolved_end:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="AI 'from' must be earlier than 'to'",
+        )
+    if resolved_end - resolved_start > AI_MAX_RANGE:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="AI time range cannot exceed 30 days",
+        )
+    return resolved_start, resolved_end
