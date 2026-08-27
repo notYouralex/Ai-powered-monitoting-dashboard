@@ -61,3 +61,8 @@ def test_device_repository_matches_bounded_identity_and_exposes_only_safe_link_m
     assert "10.20.30.40" not in serialized
     assert "007" not in serialized
     assert "42" not in serialized
+
+    with auth_env.session_factory() as db:
+        repository = AIDeviceRepository(db)
+        assert repository.get_source_record_id(by_name[0].device_id, "zabbix") == "42"
+        assert repository.get_source_record_id(by_name[0].device_id, "freshservice") is None

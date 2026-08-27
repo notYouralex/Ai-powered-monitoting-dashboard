@@ -28,8 +28,11 @@ The source-controlled dashboard templates are:
 - `grafana/dashboards/snipe-it.json`
 - `grafana/dashboards/zabbix-infrastructure.json`
 - `grafana/dashboards/executive.json`
+- `grafana/dashboards/ai-summary.json`
 
-They query only the canonical FastAPI dashboard endpoints. Wazuh, Freshservice, Snipe-IT, and the Executive dashboard use a Grafana datasource input placeholder; the Zabbix reference dashboard uses an Infinity datasource variable. Point every dashboard at the same securely configured `Monitoring API` datasource when imported.
+They query only canonical FastAPI endpoints. Wazuh, Freshservice, Snipe-IT, Executive, and AI Monitoring Summary use a Grafana datasource input placeholder; the Zabbix reference dashboard uses an Infinity datasource variable. Point every dashboard at the same securely configured `Monitoring API` datasource when imported.
+
+The `AI Monitoring Summary` dashboard collects the Executive, Wazuh, Zabbix, Snipe-IT, and Freshservice AI summaries in one view. All five panels query the combined `/api/ai/insights/dashboard` endpoint. Concurrent cold-cache requests are coalesced behind one shared cache entry, and the combined response performs at most one local summary-model generation; source sections reuse application-grounded normalized evidence. The existing individual summary endpoints remain available for compatibility.
 
 The Executive dashboard queries only `/api/dashboard/executive`. The backend derives render-ready headline metrics, health/category/status distributions, and attention counts from the four normalized source summaries; Grafana only selects those returned rows and fields. `Overall Health` is the percentage of canonical integrations currently reporting healthy. The dashboard does not invent SLA, trend, recent-alert, unavailable-host, or AI fields that are not present in the merged backend contract.
 
@@ -50,5 +53,5 @@ This UI-import approach keeps the bearer token in Grafana's secure datasource co
 1. Rebuild/recreate the FastAPI API container so it loads the new `GRAFANA_API_TOKEN` authentication support.
 2. Confirm bearer-token access to `/api/dashboard/wazuh`, `/api/dashboard/freshservice`, `/api/dashboard/snipe-it`, `/api/dashboard/zabbix`, and `/api/dashboard/executive`.
 3. Configure the Infinity datasource in the existing Grafana UI using the secure bearer token field.
-4. Import the Wazuh, Freshservice, Snipe-IT, Zabbix, and Executive dashboard JSON files and point them at the Monitoring API datasource.
+4. Import the Wazuh, Freshservice, Snipe-IT, Zabbix, Executive, and AI Monitoring Summary dashboard JSON files and point them at the Monitoring API datasource.
 5. Validate panel rendering and data freshness in Grafana.

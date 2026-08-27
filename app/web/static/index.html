@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AI Investigation | Monitoring Platform</title>
+  <link rel="stylesheet" href="/ai/assets/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">AI</div>
+        <div>
+          <p class="eyebrow">Internal Monitoring Platform</p>
+          <h1>AI Investigation</h1>
+        </div>
+      </div>
+      <div id="session-controls" class="session-controls" hidden>
+        <span id="current-user" class="user-pill"></span>
+        <button id="logout-button" class="button button-secondary" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="login-view" class="login-view" aria-labelledby="login-title">
+        <div class="login-card">
+          <p class="eyebrow">Authenticated access</p>
+          <h2 id="login-title">Sign in to investigate</h2>
+          <p class="muted">
+            Use your monitoring platform account. Questions and evidence remain inside the local environment.
+          </p>
+          <form id="login-form" class="login-form">
+            <label>
+              <span>Username</span>
+              <input id="username" name="username" type="text" autocomplete="username" maxlength="64" required>
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required>
+            </label>
+            <p id="login-error" class="form-error" role="alert" hidden></p>
+            <button id="login-button" class="button button-primary" type="submit">Sign in</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="chat-view" class="chat-view" aria-labelledby="chat-title" hidden>
+        <div class="chat-heading">
+          <div>
+            <p class="eyebrow">Read-only assistant</p>
+            <h2 id="chat-title">Investigate the monitored environment</h2>
+          </div>
+          <p class="muted chat-note">Answers use bounded normalized monitoring evidence. No remediation is executed.</p>
+        </div>
+
+        <div id="conversation" class="conversation" aria-live="polite" aria-label="Investigation conversation">
+          <article class="message assistant-message welcome-message">
+            <div class="message-label">Monitoring AI</div>
+            <p>Ask about the overall environment, a source such as Wazuh or Freshservice, or a correlated device.</p>
+            <div class="suggestions" aria-label="Suggested questions">
+              <button class="suggestion" type="button">What needs attention in the environment right now?</button>
+              <button class="suggestion" type="button">What Wazuh issues need review?</button>
+              <button class="suggestion" type="button">Which Freshservice tickets need attention?</button>
+              <button class="suggestion" type="button">What Snipe-IT issues need attention?</button>
+            </div>
+          </article>
+        </div>
+
+        <form id="chat-form" class="composer">
+          <label class="composer-label" for="question">Investigation question</label>
+          <div class="composer-row">
+            <textarea
+              id="question"
+              name="question"
+              rows="2"
+              maxlength="1000"
+              placeholder="Ask what needs attention, investigate a source, or name a device..."
+              required
+            ></textarea>
+            <button id="send-button" class="button button-primary send-button" type="submit">Ask AI</button>
+          </div>
+          <div class="composer-meta">
+            <span id="request-status" role="status">Ready</span>
+            <span><span id="character-count">0</span>/1000</span>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="/ai/assets/app.js" defer></script>
+</body>
+</html>

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.ai.models import AICorrelatedDeviceEvidence
 from app.contracts import IntegrationSource
-from app.db.models import Device
+from app.db.models import Device, DeviceSourceLink
 
 
 _MAX_QUESTION_WORDS = 20
@@ -55,6 +55,23 @@ class AIDeviceRepository:
         )
         devices = self._db.scalars(statement).all()
         return [_to_evidence(device) for device in devices]
+
+    def get_source_record_id(
+        self,
+        device_id: int,
+        source: IntegrationSource,
+    ) -> str | None:
+        """Resolve an internal source record identifier without exposing it to AI evidence."""
+
+        return self._db.scalar(
+            select(DeviceSourceLink.source_record_id)
+            .where(
+                DeviceSourceLink.device_id == device_id,
+                DeviceSourceLink.source == source,
+            )
+            .order_by(DeviceSourceLink.id)
+            .limit(1)
+        )
 
 
 def _candidate_phrases(question: str) -> list[str]:

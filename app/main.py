@@ -8,6 +8,7 @@ from app.core.errors import IntegrationError, integration_error_handler
 from app.dashboard.executive.router import router as executive_router
 from app.core.request_id import RequestIdMiddleware
 from app.integrations.router import router as integrations_router
+from app.web.router import router as web_router
 
 
 def create_app() -> FastAPI:
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
     app.include_router(integrations_router)
     app.include_router(executive_router)
     app.include_router(ai_router)
+    app.include_router(web_router)
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:

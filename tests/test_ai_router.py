@@ -7,12 +7,14 @@ from pydantic import SecretStr
 from app.ai.errors import AIError
 from app.ai.models import (
     AIAnalysis,
+    AIDashboardSummaryResponse,
     AIInvestigationResponse,
     AIQuestionClassification,
     AIQueryResponse,
 )
 from app.ai.cache import AIExecutiveSummaryCache
 from app.ai.router import (
+    get_ai_dashboard_summary_cache,
     get_ai_investigation_service,
     get_ai_service,
     get_ai_summary_cache,
@@ -60,6 +62,7 @@ class FakeAIService:
     def __init__(self, *, error: AIError | None = None) -> None:
         self.error = error
         self.summary_calls = []
+        self.dashboard_summary_calls = []
         self.source_summary_calls = []
         self.investigation_calls = []
 
@@ -68,6 +71,22 @@ class FakeAIService:
         if self.error is not None:
             raise self.error
         return make_response(start, end)
+
+    async def summarize_dashboard(self, start, end) -> AIDashboardSummaryResponse:
+        self.dashboard_summary_calls.append((start, end))
+        if self.error is not None:
+            raise self.error
+        analysis = AIAnalysis(summary="Dashboard summary.", confidence="medium")
+        return AIDashboardSummaryResponse(
+            observed_at=end,
+            range_start=start,
+            range_end=end,
+            executive=analysis,
+            wazuh=analysis,
+            zabbix=analysis,
+            snipe_it=analysis,
+            freshservice=analysis,
+        )
 
     async def summarize_source(self, start, end, *, source) -> AIQueryResponse:
         self.source_summary_calls.append((source, start, end))
@@ -191,6 +210,37 @@ def test_ai_executive_insight_accepts_grafana_service_token_and_caches(auth_env)
     assert fake_service.summary_calls == [(START, NOW)]
 
 
+def test_ai_dashboard_summary_accepts_grafana_token_and_uses_one_cache(auth_env) -> None:
+    token = "g" * 48
+    auth_env.settings.grafana_api_token = SecretStr(token)
+    auth_env.settings.ai_enabled = True
+    auth_env.settings.ai_summary_cache_seconds = 300
+    fake_service = FakeAIService()
+    cache = AIExecutiveSummaryCache(clock=lambda: 100.0)
+    auth_env.client.app.dependency_overrides[get_ai_service] = lambda: fake_service
+    auth_env.client.app.dependency_overrides[get_ai_dashboard_summary_cache] = lambda: cache
+
+    for offset_seconds in (0, 30):
+        response = auth_env.client.get(
+            "/api/ai/insights/dashboard",
+            headers={"Authorization": f"Bearer {token}"},
+            params={
+                "from": (START + timedelta(seconds=offset_seconds)).isoformat(),
+                "to": (NOW + timedelta(seconds=offset_seconds)).isoformat(),
+            },
+        )
+        assert response.status_code == 200
+        assert set(response.json()) >= {
+            "executive",
+            "wazuh",
+            "zabbix",
+            "snipe_it",
+            "freshservice",
+        }
+
+    assert fake_service.dashboard_summary_calls == [(START, NOW)]
+
+
 def test_ai_source_insights_use_independent_caches(auth_env) -> None:
     token = "g" * 48
     auth_env.settings.grafana_api_token = SecretStr(token)
@@ -199,7 +249,7 @@ def test_ai_source_insights_use_independent_caches(auth_env) -> None:
     fake_service = FakeAIService()
     auth_env.client.app.dependency_overrides[get_ai_service] = lambda: fake_service
 
-    for route in ("snipe-it", "freshservice"):
+    for route in ("wazuh", "zabbix", "snipe-it", "freshservice"):
         for offset_seconds in (0, 30):
             response = auth_env.client.get(
                 f"/api/ai/insights/{route}",
@@ -212,6 +262,8 @@ def test_ai_source_insights_use_independent_caches(auth_env) -> None:
             assert response.status_code == 200
 
     assert fake_service.source_summary_calls == [
+        ("wazuh", START, NOW),
+        ("zabbix", START, NOW),
         ("snipe_it", START, NOW),
         ("freshservice", START, NOW),
     ]
@@ -241,7 +293,7 @@ def test_ai_source_insights_are_disabled_before_cache_or_service(auth_env) -> No
     fake_service = FakeAIService()
     auth_env.client.app.dependency_overrides[get_ai_service] = lambda: fake_service
 
-    for route in ("snipe-it", "freshservice"):
+    for route in ("wazuh", "zabbix", "snipe-it", "freshservice"):
         response = auth_env.client.get(
             f"/api/ai/insights/{route}",
             headers={"Authorization": f"Bearer {token}"},
