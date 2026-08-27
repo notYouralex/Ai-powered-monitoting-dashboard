@@ -189,6 +189,109 @@ def test_ai_service_executive_summary_skips_model_when_no_attention_signals() ->
     asyncio.run(run())
 
 
+def test_ai_service_source_summary_isolates_wazuh_attention_signals() -> None:
+    async def run() -> None:
+        dashboard = ExecutiveDashboardResponse(
+            observed_at=NOW,
+            range_start=START,
+            range_end=NOW,
+            sources=[
+                make_summary(
+                    "wazuh",
+                    metrics={
+                        "agents_disconnected": 2,
+                        "alerts_high": 3,
+                        "alerts_critical": 1,
+                        "vulnerabilities_high": 4,
+                        "vulnerabilities_critical": 1,
+                        "vulnerable_agents": 5,
+                    },
+                ),
+                make_summary("zabbix", metrics={"problems_disaster": 8}),
+                make_summary("snipe_it", metrics={"warranty_expired": 4}),
+                make_summary("freshservice", metrics={"overdue_open": 7}),
+            ],
+        )
+        provider = FakeProvider(confidence="high")
+        service = AIService(
+            provider=provider,
+            executive_service=FakeExecutiveService(dashboard),
+        )
+
+        response = await service.summarize_source(START, NOW, source="wazuh")
+
+        prompt = provider.calls[0]["prompt"]
+        assert "Wazuh" in prompt
+        assert '\"metric\":\"alerts_critical\",\"source\":\"wazuh\",\"value\":1' in prompt
+        assert "zabbix" not in prompt.lower()
+        assert "freshservice" not in prompt.lower()
+        assert response.analysis.summary.startswith("Current Wazuh attention signals:")
+        assert response.analysis.evidence == [
+            "Wazuh agents disconnected: 2",
+            "Wazuh alerts high: 3",
+            "Wazuh alerts critical: 1",
+            "Wazuh vulnerabilities high: 4",
+            "Wazuh vulnerabilities critical: 1",
+            "Wazuh vulnerable agents: 5",
+        ]
+
+    asyncio.run(run())
+
+
+def test_ai_service_source_summary_isolates_zabbix_attention_signals() -> None:
+    async def run() -> None:
+        dashboard = ExecutiveDashboardResponse(
+            observed_at=NOW,
+            range_start=START,
+            range_end=NOW,
+            sources=[
+                make_summary("wazuh", metrics={"alerts_critical": 9}),
+                make_summary(
+                    "zabbix",
+                    status="degraded",
+                    is_stale=True,
+                    metrics={
+                        "interfaces_unavailable": 2,
+                        "problems_high": 3,
+                        "problems_disaster": 1,
+                        "problems_unacknowledged": 4,
+                    },
+                    warnings=["Zabbix cached data is stale."],
+                ),
+                make_summary("snipe_it", metrics={"warranty_expired": 4}),
+                make_summary("freshservice", metrics={"overdue_open": 7}),
+            ],
+        )
+        provider = FakeProvider(confidence="high")
+        service = AIService(
+            provider=provider,
+            executive_service=FakeExecutiveService(dashboard),
+        )
+
+        response = await service.summarize_source(START, NOW, source="zabbix")
+
+        prompt = provider.calls[0]["prompt"]
+        assert "Zabbix" in prompt
+        assert '\"metric\":\"problems_disaster\",\"source\":\"zabbix\",\"value\":1' in prompt
+        assert "freshservice" not in prompt.lower()
+        assert "snipe_it" not in prompt.lower()
+        assert response.analysis.confidence == "medium"
+        assert response.analysis.evidence == [
+            "Zabbix interfaces unavailable: 2",
+            "Zabbix problems high: 3",
+            "Zabbix problems disaster: 1",
+            "Zabbix problems unacknowledged: 4",
+            "Zabbix source status: degraded; data stale: yes",
+        ]
+        assert response.source_warnings == [
+            "Zabbix status is degraded.",
+            "Zabbix data is stale.",
+            "Zabbix cached data is stale.",
+        ]
+
+    asyncio.run(run())
+
+
 def test_ai_service_source_summary_isolates_snipe_it_attention_signals() -> None:
     async def run() -> None:
         dashboard = ExecutiveDashboardResponse(
@@ -330,6 +433,34 @@ def test_ai_service_source_summary_skips_model_when_source_is_clear() -> None:
             "No Snipe-IT attention signals were present in the selected monitoring period."
         )
         assert response.analysis.confidence == "high"
+
+    asyncio.run(run())
+
+
+def test_ai_service_dashboard_summary_uses_one_model_generation() -> None:
+    async def run() -> None:
+        provider = FakeProvider(confidence="medium")
+        service = AIService(
+            provider=provider,
+            executive_service=FakeExecutiveService(make_dashboard()),
+        )
+
+        response = await service.summarize_dashboard(START, NOW)
+
+        assert len(provider.calls) == 1
+        assert provider.calls[0]["purpose"] == "summary"
+        assert response.executive.summary.startswith("Current attention signals:")
+        assert response.wazuh.summary.startswith("Current Wazuh attention signals:")
+        assert response.zabbix.summary.startswith("Current Zabbix attention signals:")
+        assert response.snipe_it.summary == (
+            "No Snipe-IT attention signals were present in the selected monitoring period."
+        )
+        assert response.freshservice.summary.startswith(
+            "Current Freshservice attention signals:"
+        )
+        assert response.zabbix.confidence == "medium"
+        assert response.range_start == START
+        assert response.range_end == NOW
 
     asyncio.run(run())
 

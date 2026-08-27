@@ -9,9 +9,12 @@ from app.ai.models import (
     AIInvestigationEvidence,
     AIQuestionClassification,
     AISourceEvidence,
+    AIZabbixHostEvidence,
+    AIZabbixHostProblemEvidence,
 )
 from app.contracts import ExecutiveSourceSummary, IntegrationSource
 from app.dashboard.executive.models import ExecutiveDashboardResponse
+from app.integrations.zabbix.models import ZabbixDashboardResponse, ZabbixHost
 
 
 _ALLOWED_METRICS: dict[IntegrationSource, tuple[str, ...]] = {
@@ -48,6 +51,7 @@ _ALLOWED_METRICS: dict[IntegrationSource, tuple[str, ...]] = {
         "due_today",
         "overdue_open",
         "escalated_open",
+        "resolution_sla_compliance_percent",
     ),
 }
 
@@ -148,7 +152,9 @@ def build_investigation_evidence(
 
     selected_sources: list[IntegrationSource]
     limitations = [
-        "Evidence contains normalized aggregate metrics and source health, not raw event, ticket, or asset records."
+        "Evidence contains normalized aggregate metrics, source health, and when applicable "
+        "bounded normalized ticket, asset, host, alert, vulnerability, or agent records; raw "
+        "source records and sensitive fields are excluded."
     ]
     if classification.scope == "environment":
         selected_sources = [summary.source for summary in dashboard.sources]
@@ -217,6 +223,7 @@ def _environment_source_evidence(
         status=summary.health.status,
         is_stale=is_stale,
         metrics=metrics,
+        health_reasons=_source_health_reasons(summary),
     )
 
 
@@ -233,6 +240,7 @@ def _source_evidence(summary: ExecutiveSourceSummary) -> AISourceEvidence:
         status=summary.health.status,
         is_stale=summary.is_stale or summary.health.is_stale,
         metrics=metrics,
+        health_reasons=_source_health_reasons(summary),
     )
 
 
@@ -261,3 +269,93 @@ def _summary_source_evidence(
             is_stale=is_stale,
         )
     return signals, affected_source
+
+
+def _source_health_reasons(summary: ExecutiveSourceSummary) -> list[str]:
+    is_stale = summary.is_stale or summary.health.is_stale
+    if summary.health.status == "healthy" and not is_stale:
+        return []
+
+    reasons: list[str] = []
+    for warning in [*summary.health.warnings, *summary.warnings]:
+        if warning not in reasons:
+            reasons.append(warning)
+        if len(reasons) >= 4:
+            break
+    return reasons
+
+
+def build_zabbix_host_evidence(
+    dashboard: ZabbixDashboardResponse,
+    host_id: str,
+) -> AIZabbixHostEvidence | None:
+    """Project one normalized Zabbix host into bounded device-specific AI evidence."""
+
+    host = next((item for item in dashboard.hosts if item.host_id == host_id), None)
+    if host is None:
+        return None
+
+    matching_problems = [
+        problem
+        for problem in dashboard.active_problems
+        if any(problem_host.host_id == host_id for problem_host in problem.hosts)
+    ]
+    severity_order = {
+        "disaster": 6,
+        "high": 5,
+        "average": 4,
+        "warning": 3,
+        "information": 2,
+        "not_classified": 1,
+        "unknown": 0,
+    }
+    matching_problems.sort(
+        key=lambda problem: (
+            severity_order.get(problem.severity, 0),
+            problem.started_at,
+        ),
+        reverse=True,
+    )
+
+    resource = next(
+        (item for item in dashboard.resource_pressure if item.host_id == host_id),
+        None,
+    )
+    peak_disk = None
+    if resource is not None and resource.disks:
+        peak_disk = max(disk.used_percent for disk in resource.disks)
+
+    return AIZabbixHostEvidence(
+        status=_zabbix_host_status(host),
+        unavailable_interface_count=sum(
+            interface.availability == "unavailable" for interface in host.interfaces
+        ),
+        active_problem_count=len(matching_problems),
+        problems=[
+            AIZabbixHostProblemEvidence(
+                name=problem.name[:256],
+                severity=problem.severity,
+                acknowledged=problem.acknowledged,
+                suppressed=problem.suppressed,
+            )
+            for problem in matching_problems[:5]
+        ],
+        cpu_used_percent=(resource.cpu_used_percent if resource is not None else None),
+        memory_used_percent=(
+            resource.memory_used_percent if resource is not None else None
+        ),
+        peak_disk_used_percent=peak_disk,
+    )
+
+
+def _zabbix_host_status(host: ZabbixHost) -> str:
+    if not host.enabled:
+        return "disabled"
+    if host.in_maintenance:
+        return "maintenance"
+    availability = {interface.availability for interface in host.interfaces}
+    if "unavailable" in availability:
+        return "unavailable"
+    if "available" in availability:
+        return "available"
+    return "unknown"

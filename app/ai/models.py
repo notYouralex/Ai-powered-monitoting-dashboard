@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal, TypeAlias
 
 from pydantic import (
@@ -103,6 +103,7 @@ class AISourceEvidence(BaseModel):
     status: IntegrationStatus
     is_stale: bool = False
     metrics: dict[str, AIMetricValue] = Field(default_factory=dict, max_length=8)
+    health_reasons: list[BoundedListText] = Field(default_factory=list, max_length=4)
 
 
 class AIExecutiveEvidence(BaseModel):
@@ -168,6 +169,155 @@ class AICorrelatedDeviceEvidence(BaseModel):
     linked_sources: list[IntegrationSource] = Field(default_factory=list, max_length=4)
 
 
+class AIFreshserviceTicketEvidence(BaseModel):
+    """Bounded operational Freshservice ticket fields permitted in AI evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ticket_id: int = Field(gt=0)
+    subject: BoundedListText | None = None
+    status: str = Field(min_length=1, max_length=32)
+    priority: str = Field(min_length=1, max_length=32)
+    ticket_type: str | None = Field(default=None, max_length=128)
+    category: str | None = Field(default=None, max_length=128)
+    sub_category: str | None = Field(default=None, max_length=128)
+    due_by: datetime | None = None
+    resolved_at: datetime | None = None
+    closed_at: datetime | None = None
+    is_overdue: bool = False
+    is_escalated: bool = False
+
+
+class AIFreshserviceTicketSetEvidence(BaseModel):
+    """Bounded Freshservice ticket-detail result for one investigation question."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    matching_count: int = Field(ge=0)
+    tickets: list[AIFreshserviceTicketEvidence] = Field(default_factory=list, max_length=20)
+    truncated: bool = False
+
+
+class AISnipeItAssetEvidence(BaseModel):
+    """Bounded operational Snipe-IT asset fields permitted in AI evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    asset_tag: str | None = Field(default=None, max_length=255)
+    name: str | None = Field(default=None, max_length=255)
+    model: str | None = Field(default=None, max_length=128)
+    manufacturer: str | None = Field(default=None, max_length=128)
+    category: str | None = Field(default=None, max_length=128)
+    status_label: str | None = Field(default=None, max_length=128)
+    location: str | None = Field(default=None, max_length=128)
+    purchase_date: date | None = None
+    warranty_expires: date | None = None
+    is_assigned: bool
+    warranty_state: Literal["expired", "expiring_soon", "active", "unknown"]
+    missing_asset_tag: bool = False
+
+
+class AISnipeItAssetSetEvidence(BaseModel):
+    """Bounded Snipe-IT asset-detail result for one investigation question."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    matching_count: int = Field(ge=0)
+    assets: list[AISnipeItAssetEvidence] = Field(default_factory=list, max_length=20)
+    truncated: bool = False
+
+
+class AIWazuhNamedCountEvidence(BaseModel):
+    """Bounded normalized Wazuh named aggregate permitted in AI evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=128)
+    count: int = Field(ge=0)
+
+
+class AIWazuhAlertEvidence(BaseModel):
+    """Bounded normalized Wazuh alert fields without rule or agent IDs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    timestamp: datetime
+    rule_level: int = Field(ge=0, le=16)
+    description: BoundedListText
+    agent_name: str | None = Field(default=None, max_length=128)
+    groups: list[str] = Field(default_factory=list, max_length=5)
+
+
+class AIWazuhVulnerabilityEvidence(BaseModel):
+    """Bounded normalized Wazuh vulnerability fields without agent IDs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    vulnerability_id: str = Field(min_length=1, max_length=128)
+    severity: str = Field(min_length=1, max_length=32)
+    score: float | None = Field(default=None, ge=0, le=10)
+    detected_at: datetime | None = None
+    agent_name: str | None = Field(default=None, max_length=128)
+    package_name: str | None = Field(default=None, max_length=128)
+    package_version: str | None = Field(default=None, max_length=128)
+    description: BoundedListText | None = None
+
+
+class AIWazuhAgentEvidence(BaseModel):
+    """Bounded Wazuh agent state without agent ID or IP address."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=128)
+    status: Literal["active", "pending", "never_connected", "disconnected", "unknown"]
+    last_keep_alive: datetime | None = None
+    os_name: str | None = Field(default=None, max_length=128)
+    os_version: str | None = Field(default=None, max_length=128)
+    os_platform: str | None = Field(default=None, max_length=64)
+    os_arch: str | None = Field(default=None, max_length=64)
+    groups: list[str] = Field(default_factory=list, max_length=5)
+
+
+class AIWazuhDetailEvidence(BaseModel):
+    """Bounded Wazuh detail selected from normalized dashboard data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    recent_alert_matches: int = Field(default=0, ge=0, le=50)
+    alerts: list[AIWazuhAlertEvidence] = Field(default_factory=list, max_length=10)
+    recent_vulnerability_matches: int = Field(default=0, ge=0, le=20)
+    vulnerabilities: list[AIWazuhVulnerabilityEvidence] = Field(default_factory=list, max_length=10)
+    agent_matches: int = Field(default=0, ge=0, le=10000)
+    agents: list[AIWazuhAgentEvidence] = Field(default_factory=list, max_length=10)
+    mitre_tactics: list[AIWazuhNamedCountEvidence] = Field(default_factory=list, max_length=10)
+    mitre_techniques: list[AIWazuhNamedCountEvidence] = Field(default_factory=list, max_length=10)
+
+
+class AIZabbixHostProblemEvidence(BaseModel):
+    """Bounded normalized Zabbix problem context for one correlated host."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: BoundedListText
+    severity: str = Field(min_length=1, max_length=32)
+    acknowledged: bool
+    suppressed: bool
+
+
+class AIZabbixHostEvidence(BaseModel):
+    """Bounded host-specific Zabbix evidence without source IDs or interface addresses."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["available", "unavailable", "unknown", "maintenance", "disabled"]
+    unavailable_interface_count: int = Field(ge=0, le=32)
+    active_problem_count: int = Field(ge=0, le=1000)
+    problems: list[AIZabbixHostProblemEvidence] = Field(default_factory=list, max_length=5)
+    cpu_used_percent: float | None = Field(default=None, ge=0, le=100)
+    memory_used_percent: float | None = Field(default=None, ge=0, le=100)
+    peak_disk_used_percent: float | None = Field(default=None, ge=0, le=100)
+
+
 class AIQuestionClassification(BaseModel):
     """Deterministic routing decision for an interactive AI question."""
 
@@ -207,7 +357,11 @@ class AIInvestigationEvidence(BaseModel):
     classification: AIQuestionClassification
     sources: list[AISourceEvidence] = Field(default_factory=list, max_length=4)
     device: AICorrelatedDeviceEvidence | None = None
-    limitations: list[BoundedListText] = Field(default_factory=list, max_length=6)
+    freshservice_tickets: AIFreshserviceTicketSetEvidence | None = None
+    snipe_it_assets: AISnipeItAssetSetEvidence | None = None
+    wazuh_details: AIWazuhDetailEvidence | None = None
+    zabbix_host: AIZabbixHostEvidence | None = None
+    limitations: list[BoundedListText] = Field(default_factory=list, max_length=8)
 
 
 class AIQueryResponse(BaseModel):
@@ -220,6 +374,21 @@ class AIQueryResponse(BaseModel):
     range_end: datetime
     analysis: AIAnalysis
     source_warnings: list[BoundedListText] = Field(default_factory=list, max_length=12)
+
+
+class AIDashboardSummaryResponse(BaseModel):
+    """One cached payload containing the five Grafana AI summary sections."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    observed_at: datetime
+    range_start: datetime
+    range_end: datetime
+    executive: AIAnalysis
+    wazuh: AIAnalysis
+    zabbix: AIAnalysis
+    snipe_it: AIAnalysis
+    freshservice: AIAnalysis
 
 
 class AIInvestigationResponse(BaseModel):
