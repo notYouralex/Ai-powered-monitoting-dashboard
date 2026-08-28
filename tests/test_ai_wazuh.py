@@ -310,7 +310,6 @@ class RecordingProvider:
         self.calls.append({"purpose": "investigation", "prompt": prompt})
         return AIInvestigationModelOutput(
             likely_explanation=None,
-            recommended_investigation=[],
             confidence="medium",
         )
 

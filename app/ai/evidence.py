@@ -11,6 +11,8 @@ from app.ai.models import (
     AISourceEvidence,
     AIZabbixHostEvidence,
     AIZabbixHostProblemEvidence,
+    AIZabbixHostSetEvidence,
+    AIZabbixSourceHostEvidence,
 )
 from app.contracts import ExecutiveSourceSummary, IntegrationSource
 from app.dashboard.executive.models import ExecutiveDashboardResponse
@@ -283,6 +285,175 @@ def _source_health_reasons(summary: ExecutiveSourceSummary) -> list[str]:
         if len(reasons) >= 4:
             break
     return reasons
+
+
+_ZABBIX_SEVERITY_ORDER = {
+    "disaster": 6,
+    "high": 5,
+    "average": 4,
+    "warning": 3,
+    "information": 2,
+    "not_classified": 1,
+    "unknown": 0,
+}
+
+
+def build_zabbix_source_evidence(
+    question: str,
+    dashboard: ZabbixDashboardResponse,
+    *,
+    limit: int = 5,
+) -> AIZabbixHostSetEvidence:
+    """Select bounded normalized Zabbix hosts relevant to a source-level question."""
+
+    limit = max(1, min(limit, 5))
+    normalized = f" {question.casefold()} "
+    requested_resources: list[str] = []
+    if " cpu " in normalized or "processor" in normalized:
+        requested_resources.append("cpu")
+    if " memory " in normalized or " ram " in normalized:
+        requested_resources.append("memory")
+    if any(term in normalized for term in (" disk ", " storage ", "filesystem")):
+        requested_resources.append("disk")
+
+    asks_availability = any(
+        term in normalized
+        for term in (" unavailable", " offline", " down ", " interface")
+    )
+    asks_problems = any(
+        term in normalized
+        for term in (" problem", " issue", " severity", " unacknowledged")
+    )
+
+    problems_by_host: dict[str, list] = {}
+    for problem in dashboard.active_problems:
+        for problem_host in problem.hosts:
+            problems_by_host.setdefault(problem_host.host_id, []).append(problem)
+    resources_by_host = {
+        resource.host_id: resource for resource in dashboard.resource_pressure
+    }
+
+    rows: list[tuple[str, AIZabbixSourceHostEvidence]] = []
+    for host in dashboard.hosts:
+        problems = problems_by_host.get(host.host_id, [])
+        highest_problem_severity = None
+        if problems:
+            highest_problem_severity = max(
+                problems,
+                key=lambda problem: _ZABBIX_SEVERITY_ORDER.get(problem.severity, 0),
+            ).severity
+        resource = resources_by_host.get(host.host_id)
+        peak_disk = None
+        if resource is not None and resource.disks:
+            peak_disk = max(disk.used_percent for disk in resource.disks)
+        rows.append(
+            (
+                host.host_id,
+                AIZabbixSourceHostEvidence(
+                    name=host.name,
+                    status=_zabbix_host_status(host),
+                    unavailable_interface_count=sum(
+                        interface.availability == "unavailable"
+                        for interface in host.interfaces
+                    ),
+                    active_problem_count=len(problems),
+                    highest_problem_severity=highest_problem_severity,
+                    cpu_used_percent=(
+                        resource.cpu_used_percent if resource is not None else None
+                    ),
+                    memory_used_percent=(
+                        resource.memory_used_percent if resource is not None else None
+                    ),
+                    peak_disk_used_percent=peak_disk,
+                ),
+            )
+        )
+
+    if requested_resources:
+        selection = "resource"
+
+        def resource_values(row: AIZabbixSourceHostEvidence) -> list[float]:
+            values: list[float] = []
+            if "cpu" in requested_resources and row.cpu_used_percent is not None:
+                values.append(row.cpu_used_percent)
+            if "memory" in requested_resources and row.memory_used_percent is not None:
+                values.append(row.memory_used_percent)
+            if "disk" in requested_resources and row.peak_disk_used_percent is not None:
+                values.append(row.peak_disk_used_percent)
+            return values
+
+        selected = [(host_id, row) for host_id, row in rows if resource_values(row)]
+        selected.sort(
+            key=lambda item: (
+                max(resource_values(item[1])),
+                _ZABBIX_SEVERITY_ORDER.get(item[1].highest_problem_severity or "unknown", 0),
+                item[1].active_problem_count,
+                item[1].unavailable_interface_count,
+            ),
+            reverse=True,
+        )
+    elif asks_availability:
+        selection = "availability"
+        selected = [
+            (host_id, row)
+            for host_id, row in rows
+            if row.status == "unavailable" or row.unavailable_interface_count > 0
+        ]
+        selected.sort(
+            key=lambda item: (
+                item[1].unavailable_interface_count,
+                item[1].active_problem_count,
+                _ZABBIX_SEVERITY_ORDER.get(item[1].highest_problem_severity or "unknown", 0),
+            ),
+            reverse=True,
+        )
+    elif asks_problems:
+        selection = "problems"
+        selected = [
+            (host_id, row) for host_id, row in rows if row.active_problem_count > 0
+        ]
+        selected.sort(
+            key=lambda item: (
+                _ZABBIX_SEVERITY_ORDER.get(item[1].highest_problem_severity or "unknown", 0),
+                item[1].active_problem_count,
+                item[1].unavailable_interface_count,
+            ),
+            reverse=True,
+        )
+    else:
+        selection = "affected"
+        top_order = {
+            host.host_id: index for index, host in enumerate(dashboard.top_affected_hosts)
+        }
+        if top_order:
+            selected = [item for item in rows if item[0] in top_order]
+            selected.sort(key=lambda item: top_order[item[0]])
+        else:
+            selected = [
+                (host_id, row)
+                for host_id, row in rows
+                if row.active_problem_count > 0
+                or row.unavailable_interface_count > 0
+                or row.status == "unavailable"
+            ]
+            selected.sort(
+                key=lambda item: (
+                    _ZABBIX_SEVERITY_ORDER.get(
+                        item[1].highest_problem_severity or "unknown", 0
+                    ),
+                    item[1].active_problem_count,
+                    item[1].unavailable_interface_count,
+                ),
+                reverse=True,
+            )
+
+    matching_count = len(selected)
+    return AIZabbixHostSetEvidence(
+        selection=selection,
+        matching_count=matching_count,
+        truncated=matching_count > limit,
+        hosts=[row for _, row in selected[:limit]],
+    )
 
 
 def build_zabbix_host_evidence(

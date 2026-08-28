@@ -3,22 +3,21 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from time import monotonic
+from typing import Generic, TypeVar
 
-from app.ai.models import AIQueryResponse
 
-
-GenerateSummary = Callable[[datetime, datetime], Awaitable[AIQueryResponse]]
-CacheKey = tuple[int, int, int]
+SummaryResponseT = TypeVar("SummaryResponseT")
+CacheKey = tuple[int, datetime, datetime]
 
 
 @dataclass(frozen=True)
-class _CacheEntry:
-    response: AIQueryResponse
+class _CacheEntry(Generic[SummaryResponseT]):
+    response: SummaryResponseT
     expires_at: float
 
 
-class AIExecutiveSummaryCache:
-    """Short process-local cache that coalesces Executive AI summary generation."""
+class AIExecutiveSummaryCache(Generic[SummaryResponseT]):
+    """Short process-local cache that coalesces exact-range AI summary generation."""
 
     def __init__(
         self,
@@ -30,7 +29,7 @@ class AIExecutiveSummaryCache:
             raise ValueError("max_entries must be positive")
         self._clock = clock
         self._max_entries = max_entries
-        self._entries: dict[CacheKey, _CacheEntry] = {}
+        self._entries: dict[CacheKey, _CacheEntry[SummaryResponseT]] = {}
         self._lock = asyncio.Lock()
 
     async def get_or_generate(
@@ -39,8 +38,8 @@ class AIExecutiveSummaryCache:
         start: datetime,
         end: datetime,
         ttl_seconds: int,
-        generate: GenerateSummary,
-    ) -> AIQueryResponse:
+        generate: Callable[[datetime, datetime], Awaitable[SummaryResponseT]],
+    ) -> SummaryResponseT:
         key = _cache_key(start, end, ttl_seconds)
         now = self._clock()
         entry = self._entries.get(key)
@@ -74,8 +73,4 @@ class AIExecutiveSummaryCache:
 
 
 def _cache_key(start: datetime, end: datetime, ttl_seconds: int) -> CacheKey:
-    return (
-        ttl_seconds,
-        int(start.timestamp()) // ttl_seconds,
-        int(end.timestamp()) // ttl_seconds,
-    )
+    return ttl_seconds, start, end

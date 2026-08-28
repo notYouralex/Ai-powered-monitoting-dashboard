@@ -12,6 +12,7 @@ from app.ai.models import (
     AIInvestigationResponse,
     AIQueryRequest,
     AIQueryResponse,
+    AIReadinessResponse,
 )
 from app.ai.ollama import OllamaProvider
 from app.ai.service import AIService
@@ -32,12 +33,12 @@ AI_DEFAULT_RANGE = timedelta(hours=24)
 AI_MAX_RANGE = timedelta(days=30)
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
-_dashboard_summary_cache = AIExecutiveSummaryCache()
-_executive_summary_cache = AIExecutiveSummaryCache()
-_wazuh_summary_cache = AIExecutiveSummaryCache()
-_zabbix_summary_cache = AIExecutiveSummaryCache()
-_snipe_it_summary_cache = AIExecutiveSummaryCache()
-_freshservice_summary_cache = AIExecutiveSummaryCache()
+_dashboard_summary_cache = AIExecutiveSummaryCache[AIDashboardSummaryResponse]()
+_executive_summary_cache = AIExecutiveSummaryCache[AIQueryResponse]()
+_wazuh_summary_cache = AIExecutiveSummaryCache[AIQueryResponse]()
+_zabbix_summary_cache = AIExecutiveSummaryCache[AIQueryResponse]()
+_snipe_it_summary_cache = AIExecutiveSummaryCache[AIQueryResponse]()
+_freshservice_summary_cache = AIExecutiveSummaryCache[AIQueryResponse]()
 
 
 class _LazyWazuhDashboardService:
@@ -66,28 +67,34 @@ def get_ai_investigation_service(
     )
 
 
-def get_ai_dashboard_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_dashboard_summary_cache() -> AIExecutiveSummaryCache[AIDashboardSummaryResponse]:
     return _dashboard_summary_cache
 
 
-def get_ai_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_summary_cache() -> AIExecutiveSummaryCache[AIQueryResponse]:
     return _executive_summary_cache
 
 
-def get_ai_wazuh_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_wazuh_summary_cache() -> AIExecutiveSummaryCache[AIQueryResponse]:
     return _wazuh_summary_cache
 
 
-def get_ai_zabbix_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_zabbix_summary_cache() -> AIExecutiveSummaryCache[AIQueryResponse]:
     return _zabbix_summary_cache
 
 
-def get_ai_snipe_it_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_snipe_it_summary_cache() -> AIExecutiveSummaryCache[AIQueryResponse]:
     return _snipe_it_summary_cache
 
 
-def get_ai_freshservice_summary_cache() -> AIExecutiveSummaryCache:
+def get_ai_freshservice_summary_cache() -> AIExecutiveSummaryCache[AIQueryResponse]:
     return _freshservice_summary_cache
+
+
+def get_ai_readiness_provider(
+    settings: Settings = Depends(get_settings),
+) -> OllamaProvider:
+    return OllamaProvider(settings)
 
 
 def get_ai_service(
@@ -98,6 +105,17 @@ def get_ai_service(
         provider=OllamaProvider(settings),
         executive_service=executive_service,
     )
+
+
+@router.get(
+    "/status",
+    response_model=AIReadinessResponse,
+    dependencies=[Depends(require_dashboard_access)],
+)
+async def get_ai_status(
+    provider: OllamaProvider = Depends(get_ai_readiness_provider),
+) -> AIReadinessResponse:
+    return await provider.readiness()
 
 
 @router.post(
@@ -129,7 +147,9 @@ async def get_dashboard_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_dashboard_summary_cache),
+    cache: AIExecutiveSummaryCache[AIDashboardSummaryResponse] = Depends(
+        get_ai_dashboard_summary_cache
+    ),
 ) -> AIDashboardSummaryResponse:
     if not settings.ai_enabled:
         raise AIError(code="AI_DISABLED", retryable=False)
@@ -153,7 +173,7 @@ async def get_executive_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_summary_cache),
+    cache: AIExecutiveSummaryCache[AIQueryResponse] = Depends(get_ai_summary_cache),
 ) -> AIQueryResponse:
     if not settings.ai_enabled:
         raise AIError(code="AI_DISABLED", retryable=False)
@@ -177,7 +197,7 @@ async def get_wazuh_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_wazuh_summary_cache),
+    cache: AIExecutiveSummaryCache[AIQueryResponse] = Depends(get_ai_wazuh_summary_cache),
 ) -> AIQueryResponse:
     return await _get_source_ai_insight(
         source="wazuh",
@@ -199,7 +219,7 @@ async def get_zabbix_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_zabbix_summary_cache),
+    cache: AIExecutiveSummaryCache[AIQueryResponse] = Depends(get_ai_zabbix_summary_cache),
 ) -> AIQueryResponse:
     return await _get_source_ai_insight(
         source="zabbix",
@@ -221,7 +241,7 @@ async def get_snipe_it_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_snipe_it_summary_cache),
+    cache: AIExecutiveSummaryCache[AIQueryResponse] = Depends(get_ai_snipe_it_summary_cache),
 ) -> AIQueryResponse:
     return await _get_source_ai_insight(
         source="snipe_it",
@@ -243,7 +263,9 @@ async def get_freshservice_ai_insight(
     to: datetime | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     service: AIService = Depends(get_ai_service),
-    cache: AIExecutiveSummaryCache = Depends(get_ai_freshservice_summary_cache),
+    cache: AIExecutiveSummaryCache[AIQueryResponse] = Depends(
+        get_ai_freshservice_summary_cache
+    ),
 ) -> AIQueryResponse:
     return await _get_source_ai_insight(
         source="freshservice",
@@ -262,7 +284,7 @@ async def _get_source_ai_insight(
     to: datetime | None,
     settings: Settings,
     service: AIService,
-    cache: AIExecutiveSummaryCache,
+    cache: AIExecutiveSummaryCache[AIQueryResponse],
 ) -> AIQueryResponse:
     if not settings.ai_enabled:
         raise AIError(code="AI_DISABLED", retryable=False)

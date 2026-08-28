@@ -86,14 +86,12 @@ def test_ollama_provider_uses_minimal_investigation_schema() -> None:
         assert payload["model"] == "qwen3:1.7b"
         assert set(payload["format"]["properties"]) == {
             "likely_explanation",
-            "recommended_investigation",
             "confidence",
         }
         assert "summary" not in payload["format"]["properties"]
         assert "evidence" not in payload["format"]["properties"]
         response = {
             "likely_explanation": "The evidence indicates multiple items require review.",
-            "recommended_investigation": ["Review the selected monitoring evidence."],
             "confidence": "medium",
         }
         return httpx.Response(
@@ -203,6 +201,133 @@ def test_ollama_provider_rejects_requests_when_ai_is_disabled() -> None:
                 prompt="Synthetic monitoring evidence.",
             )
         assert exc_info.value.code == "AI_DISABLED"
+
+    import asyncio
+
+    asyncio.run(run())
+
+
+def test_ollama_readiness_skips_runtime_when_ai_is_disabled() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("disabled readiness must not contact Ollama")
+
+    async def run() -> None:
+        provider = OllamaProvider(
+            make_settings(ai_enabled=False),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await provider.readiness()
+
+        assert result.status == "disabled"
+        assert result.enabled is False
+        assert result.runtime_reachable is None
+        assert result.summary_model.model == "gemma3:1b-it-qat"
+        assert result.summary_model.available is None
+        assert result.investigation_model.model == "qwen3:1.7b"
+        assert result.investigation_model.available is None
+
+    import asyncio
+
+    asyncio.run(run())
+
+
+def test_ollama_readiness_reports_runtime_unavailable_without_error_details() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("secret connection detail", request=request)
+
+    async def run() -> None:
+        provider = OllamaProvider(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await provider.readiness()
+
+        assert result.status == "runtime_unavailable"
+        assert result.enabled is True
+        assert result.runtime_reachable is False
+        assert result.summary_model.available is None
+        assert result.investigation_model.available is None
+        serialized = result.model_dump_json()
+        assert "secret connection detail" not in serialized
+        assert "127.0.0.1" not in serialized
+
+    import asyncio
+
+    asyncio.run(run())
+
+
+def test_ollama_readiness_treats_malformed_model_inventory_as_unavailable() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"models": "unexpected"})
+
+    async def run() -> None:
+        provider = OllamaProvider(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await provider.readiness()
+
+        assert result.status == "runtime_unavailable"
+        assert result.runtime_reachable is False
+        assert result.summary_model.available is None
+        assert result.investigation_model.available is None
+
+    import asyncio
+
+    asyncio.run(run())
+
+
+def test_ollama_readiness_reports_only_configured_model_availability() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert str(request.url) == "http://127.0.0.1:11434/api/tags"
+        return httpx.Response(
+            200,
+            json={
+                "models": [
+                    {"name": "gemma3:1b-it-qat"},
+                    {"model": "qwen3:1.7b"},
+                    {"name": "unrelated-private-model:latest"},
+                ]
+            },
+        )
+
+    async def run() -> None:
+        provider = OllamaProvider(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await provider.readiness()
+
+        assert result.status == "ready"
+        assert result.runtime_reachable is True
+        assert result.summary_model.available is True
+        assert result.investigation_model.available is True
+        assert "unrelated-private-model" not in result.model_dump_json()
+
+    import asyncio
+
+    asyncio.run(run())
+
+
+def test_ollama_readiness_reports_model_unavailable_when_configured_model_is_missing() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"models": [{"name": "gemma3:1b-it-qat"}]},
+        )
+
+    async def run() -> None:
+        provider = OllamaProvider(
+            make_settings(),
+            transport=httpx.MockTransport(handler),
+        )
+        result = await provider.readiness()
+
+        assert result.status == "model_unavailable"
+        assert result.runtime_reachable is True
+        assert result.summary_model.available is True
+        assert result.investigation_model.available is False
 
     import asyncio
 

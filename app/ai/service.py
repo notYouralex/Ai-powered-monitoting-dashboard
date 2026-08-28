@@ -10,6 +10,7 @@ from app.ai.evidence import (
     build_investigation_evidence,
     build_source_summary_evidence,
     build_zabbix_host_evidence,
+    build_zabbix_source_evidence,
 )
 from app.ai.investigation import build_investigation_prompt, ground_investigation_analysis
 from app.ai.wazuh import build_wazuh_detail_evidence, should_load_wazuh_details
@@ -473,6 +474,7 @@ class AIService:
         freshservice_tickets = evidence.freshservice_tickets
         snipe_it_assets = evidence.snipe_it_assets
         zabbix_host = evidence.zabbix_host
+        zabbix_hosts = evidence.zabbix_hosts
 
         if (
             evidence.classification.scope == "source"
@@ -551,6 +553,37 @@ class AIService:
                 )
 
         if (
+            evidence.classification.scope == "source"
+            and evidence.classification.source == "zabbix"
+            and self._zabbix_service is not None
+        ):
+            try:
+                zabbix_dashboard = self._zabbix_service.get_dashboard()
+            except (IntegrationError, SQLAlchemyError):
+                zabbix_hosts = None
+                limitations.append(
+                    "Zabbix host-detail evidence is temporarily unavailable; using the "
+                    "normalized aggregate source summary only."
+                )
+            else:
+                zabbix_hosts = build_zabbix_source_evidence(
+                    question,
+                    zabbix_dashboard,
+                    limit=5,
+                )
+                if zabbix_hosts.matching_count > 0:
+                    sources = [
+                        source.model_copy(update={"metrics": {}})
+                        if source.source == "zabbix"
+                        else source
+                        for source in sources
+                    ]
+                limitations.append(
+                    "Zabbix host detail uses up to 5 prioritized normalized host records; "
+                    "source host IDs, technical names, and interface addresses are excluded."
+                )
+
+        if (
             evidence.classification.scope == "device"
             and evidence.device is not None
             and "zabbix" in evidence.device.linked_sources
@@ -583,8 +616,8 @@ class AIService:
             and _question_requests_specific_host(question)
         ):
             limitations.append(
-                "No specific correlated host was identified; host-level cause cannot be determined "
-                "from aggregate Zabbix evidence."
+                "No specific correlated host was identified; the bounded source-level host list "
+                "cannot establish which host the question refers to or a host-specific root cause."
             )
 
         return evidence.model_copy(
@@ -593,6 +626,7 @@ class AIService:
                 "freshservice_tickets": freshservice_tickets,
                 "snipe_it_assets": snipe_it_assets,
                 "zabbix_host": zabbix_host,
+                "zabbix_hosts": zabbix_hosts,
                 "limitations": limitations[:8],
             }
         )

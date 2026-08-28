@@ -1,7 +1,14 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 
-from app.ai.evidence import build_investigation_evidence, build_zabbix_host_evidence
+import pytest
+from pydantic import ValidationError
+
+from app.ai.evidence import (
+    build_investigation_evidence,
+    build_zabbix_host_evidence,
+    build_zabbix_source_evidence,
+)
 from app.ai.investigation import build_investigation_prompt, ground_investigation_analysis
 from app.ai.models import (
     AIAnalysis,
@@ -93,7 +100,7 @@ def device() -> AICorrelatedDeviceEvidence:
     )
 
 
-def test_investigation_prompt_teaches_count_free_category_based_recommendations() -> None:
+def test_investigation_prompt_reserves_recommendations_for_application_control() -> None:
     evidence = build_investigation_evidence(
         dashboard(),
         AIQuestionClassification(scope="environment"),
@@ -102,16 +109,21 @@ def test_investigation_prompt_teaches_count_free_category_based_recommendations(
 
     prompt = build_investigation_prompt("What needs attention?", evidence)
 
-    assert "Use metric names and categories to choose investigation topics" in prompt
-    assert "omit their values from prose" in prompt
-    assert "Review affected Wazuh agents" in prompt
-    assert "Review unacknowledged Zabbix problems" in prompt
-    assert "Review escalated Freshservice tickets" in prompt
-    assert "There are 251 critical vulnerabilities" in prompt
-    assert "416 assets are unassigned" in prompt
+    assert "Do not generate investigation recommendations" in prompt
+    assert "application derives read-only investigation actions" in prompt
+    assert "commands or remediation actions" in prompt
 
 
-def test_grounding_keeps_count_free_review_actions_and_rejects_counted_versions() -> None:
+def test_model_output_rejects_model_controlled_recommendations() -> None:
+    with pytest.raises(ValidationError):
+        AIInvestigationModelOutput(
+            likely_explanation=None,
+            recommended_investigation=["Delete monitoring logs."],
+            confidence="medium",
+        )
+
+
+def test_grounding_builds_application_controlled_read_only_recommendations() -> None:
     evidence = build_investigation_evidence(
         dashboard(),
         AIQuestionClassification(scope="environment"),
@@ -119,23 +131,19 @@ def test_grounding_keeps_count_free_review_actions_and_rejects_counted_versions(
     )
     model_output = AIInvestigationModelOutput(
         likely_explanation=None,
-        recommended_investigation=[
-            "Review Wazuh critical alerts and disconnected agents.",
-            "Review unacknowledged Zabbix problems for operator attention.",
-            "Review escalated Freshservice tickets for ownership and current investigation status.",
-            "Review 2 disconnected Wazuh agents.",
-        ],
         confidence="medium",
     )
 
     grounded = ground_investigation_analysis(model_output, evidence)
 
     assert grounded.recommended_investigation == [
-        "Review Wazuh critical alerts and disconnected agents.",
-        "Review unacknowledged Zabbix problems for operator attention.",
-        "Review escalated Freshservice tickets for ownership and current investigation status.",
+        "Review disconnected Wazuh agents and their latest normalized status evidence.",
+        "Review high- and critical-severity Wazuh alerts in the selected period.",
+        "Review high- and disaster-severity Zabbix problems in the selected monitoring evidence.",
+        "Review unassigned Snipe-IT assets and their normalized inventory status.",
+        "Review open, overdue, high-priority, or escalated Freshservice tickets in the selected evidence.",
     ]
-    assert any("omitted" in warning.lower() for warning in grounded.warnings)
+    assert not any("omitted" in warning.lower() for warning in grounded.warnings)
 
 
 def test_environment_investigation_evidence_keeps_only_attention_signals_and_affected_sources() -> None:
@@ -249,10 +257,6 @@ class BadInvestigationProvider:
         self.calls.append({"purpose": "investigation", "system_prompt": system_prompt, "prompt": prompt})
         return AIInvestigationModelOutput(
             likely_explanation="High CPU caused the Wazuh critical alerts.",
-            recommended_investigation=[
-                "sudo systemctl restart wazuh-manager",
-                "Review the Wazuh alert context and authentication history.",
-            ],
             confidence="high",
         )
 
@@ -281,7 +285,8 @@ def test_investigation_service_replaces_model_facts_and_filters_unsupported_reas
         assert response.analysis.contributing_factors == []
         assert response.analysis.operational_impact is None
         assert response.analysis.recommended_investigation == [
-            "Review the Wazuh alert context and authentication history."
+            "Review disconnected Wazuh agents and their latest normalized status evidence.",
+            "Review high- and critical-severity Wazuh alerts in the selected period.",
         ]
         assert response.analysis.confidence == "medium"
 
@@ -504,7 +509,6 @@ def test_source_health_reason_is_grounded_as_application_controlled_explanation(
     grounded = ground_investigation_analysis(
         AIInvestigationModelOutput(
             likely_explanation=None,
-            recommended_investigation=[],
             confidence="medium",
         ),
         evidence,
@@ -531,6 +535,152 @@ def test_zabbix_host_evidence_is_bounded_and_excludes_interface_addresses() -> N
     assert "server-42.example.com" not in serialized
     assert "interface_id" not in serialized
     assert "address" not in serialized
+
+
+def zabbix_source_dashboard() -> ZabbixDashboardResponse:
+    base = zabbix_host_dashboard()
+    hosts = []
+    resources = []
+    for index in range(1, 7):
+        hosts.append(
+            ZabbixHost(
+                host_id=str(index),
+                technical_name=f"server-{index}.internal.example",
+                name=f"Server {index}",
+                enabled=True,
+                in_maintenance=False,
+                interfaces=[
+                    ZabbixHostInterface(
+                        interface_id=f"if-{index}",
+                        type="agent",
+                        is_main=True,
+                        address=f"10.10.0.{index}",
+                        availability="available",
+                    )
+                ],
+            )
+        )
+        resources.append(
+            ZabbixResourcePressure(
+                host_id=str(index),
+                cpu_used_percent=float(index * 10),
+                cpu_observed_at=NOW,
+                memory_used_percent=float(index * 10 + 5),
+                memory_observed_at=NOW,
+                disks=[
+                    ZabbixDiskPressure(
+                        filesystem="/",
+                        used_percent=float(index * 8),
+                        observed_at=NOW,
+                    )
+                ],
+            )
+        )
+    return base.model_copy(
+        update={
+            "hosts": hosts,
+            "active_problems": [],
+            "resource_pressure": resources,
+        }
+    )
+
+
+def test_zabbix_source_evidence_ranks_resource_hosts_and_hides_source_ids() -> None:
+    evidence = build_zabbix_source_evidence(
+        "Which Zabbix hosts have high CPU or memory?",
+        zabbix_source_dashboard(),
+        limit=5,
+    )
+
+    assert evidence.selection == "resource"
+    assert evidence.matching_count == 6
+    assert evidence.truncated is True
+    assert [host.name for host in evidence.hosts] == [
+        "Server 6",
+        "Server 5",
+        "Server 4",
+        "Server 3",
+        "Server 2",
+    ]
+    assert evidence.hosts[0].cpu_used_percent == 60.0
+    assert evidence.hosts[0].memory_used_percent == 65.0
+    serialized = evidence.model_dump_json()
+    assert "host_id" not in serialized
+    assert "technical_name" not in serialized
+    assert "interface_id" not in serialized
+    assert "10.10.0." not in serialized
+
+
+def test_zabbix_source_evidence_selects_unavailable_and_problem_hosts() -> None:
+    base = zabbix_source_dashboard()
+    unavailable_host = base.hosts[1].model_copy(
+        update={
+            "interfaces": [
+                base.hosts[1].interfaces[0].model_copy(
+                    update={"availability": "unavailable"}
+                )
+            ]
+        }
+    )
+    dashboard_with_issues = base.model_copy(
+        update={
+            "hosts": [base.hosts[0], unavailable_host, *base.hosts[2:]],
+            "active_problems": [
+                ZabbixProblem(
+                    event_id="201",
+                    trigger_id="301",
+                    name="Warning problem",
+                    severity="warning",
+                    started_at=NOW,
+                    acknowledged=False,
+                    suppressed=False,
+                    hosts=[
+                        ZabbixProblemHost(
+                            host_id="2",
+                            technical_name="server-2.internal.example",
+                            name="Server 2",
+                        )
+                    ],
+                ),
+                ZabbixProblem(
+                    event_id="202",
+                    trigger_id="302",
+                    name="High problem",
+                    severity="high",
+                    started_at=NOW,
+                    acknowledged=False,
+                    suppressed=False,
+                    hosts=[
+                        ZabbixProblemHost(
+                            host_id="3",
+                            technical_name="server-3.internal.example",
+                            name="Server 3",
+                        )
+                    ],
+                ),
+            ],
+        }
+    )
+
+    availability = build_zabbix_source_evidence(
+        "Which Zabbix hosts are unavailable?",
+        dashboard_with_issues,
+    )
+    problems = build_zabbix_source_evidence(
+        "Which Zabbix hosts have active problems by severity?",
+        dashboard_with_issues,
+    )
+
+    assert availability.selection == "availability"
+    assert availability.matching_count == 1
+    assert availability.hosts[0].name == "Server 2"
+    assert availability.hosts[0].status == "unavailable"
+    assert availability.hosts[0].unavailable_interface_count == 1
+    assert problems.selection == "problems"
+    assert problems.matching_count == 2
+    assert [host.name for host in problems.hosts] == ["Server 3", "Server 2"]
+    assert problems.hosts[0].highest_problem_severity == "high"
+    assert problems.hosts[1].highest_problem_severity == "warning"
 
 
 class FakeFreshserviceMetricsRepository:
@@ -718,6 +868,46 @@ def test_service_adds_bounded_snipe_it_asset_details_for_asset_question() -> Non
         assert "Finance Laptop" in prompt
         assert "SENSITIVE-SERIAL" not in prompt
         assert "assigned_to_id" not in prompt
+
+    asyncio.run(run())
+
+
+def test_service_adds_bounded_zabbix_source_host_evidence_for_resource_question() -> None:
+    async def run() -> None:
+        class SourceZabbixDashboardService:
+            def get_dashboard(self):
+                return zabbix_source_dashboard()
+
+        provider = BadInvestigationProvider()
+        service = AIService(
+            provider=provider,
+            executive_service=FakeExecutiveService(),
+            device_repository=FakeDeviceRepository([]),
+            zabbix_service=SourceZabbixDashboardService(),
+        )
+
+        response = await service.investigate(
+            "Which Zabbix hosts have high CPU or memory?",
+            START,
+            NOW,
+        )
+
+        assert response.classification.scope == "source"
+        assert response.classification.source == "zabbix"
+        assert response.analysis.summary.startswith(
+            "Selected 5 of 6 normalized Zabbix hosts for resource review"
+        )
+        assert any(
+            "Zabbix host Server 6:" in fact
+            and "CPU used percent 60.0" in fact
+            and "memory used percent 65.0" in fact
+            for fact in response.analysis.evidence
+        )
+        assert not any("host_id" in fact for fact in response.analysis.evidence)
+        prompt = provider.calls[0]["prompt"]
+        assert "Server 6" in prompt
+        assert "server-6.internal.example" not in prompt
+        assert "10.10.0.6" not in prompt
 
     asyncio.run(run())
 
