@@ -19,6 +19,12 @@ from app.contracts import IntegrationSource, IntegrationStatus
 AIConfidence: TypeAlias = Literal["low", "medium", "high"]
 AIPurpose: TypeAlias = Literal["summary", "investigation"]
 AIQuestionScope: TypeAlias = Literal["environment", "source", "device"]
+AIReadinessStatus: TypeAlias = Literal[
+    "disabled",
+    "runtime_unavailable",
+    "model_unavailable",
+    "ready",
+]
 AIMetricValue: TypeAlias = StrictBool | StrictInt | StrictFloat
 AIAttentionMetric: TypeAlias = Literal[
     "agents_disconnected",
@@ -69,6 +75,30 @@ class AIQueryRequest(BaseModel):
         return value.strip()
 
 
+class AIModelReadiness(BaseModel):
+    """Availability of one configured local AI model without runtime connection details."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    model: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=128),
+    ]
+    available: bool | None = None
+
+
+class AIReadinessResponse(BaseModel):
+    """Safe readiness contract for the local AI runtime and configured models."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+    status: AIReadinessStatus
+    runtime_reachable: bool | None = None
+    summary_model: AIModelReadiness
+    investigation_model: AIModelReadiness
+
+
 class AIAnalysis(BaseModel):
     """Strict structured model output validated before it reaches an API response."""
 
@@ -90,7 +120,6 @@ class AIInvestigationModelOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     likely_explanation: BoundedText | None = None
-    recommended_investigation: list[BoundedListText] = Field(default_factory=list, max_length=6)
     confidence: AIConfidence
 
 
@@ -318,6 +347,32 @@ class AIZabbixHostEvidence(BaseModel):
     peak_disk_used_percent: float | None = Field(default=None, ge=0, le=100)
 
 
+class AIZabbixSourceHostEvidence(BaseModel):
+    """Bounded source-level Zabbix host facts without source IDs or interface addresses."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: BoundedListText
+    status: Literal["available", "unavailable", "unknown", "maintenance", "disabled"]
+    unavailable_interface_count: int = Field(ge=0, le=32)
+    active_problem_count: int = Field(ge=0, le=1000)
+    highest_problem_severity: str | None = Field(default=None, max_length=32)
+    cpu_used_percent: float | None = Field(default=None, ge=0, le=100)
+    memory_used_percent: float | None = Field(default=None, ge=0, le=100)
+    peak_disk_used_percent: float | None = Field(default=None, ge=0, le=100)
+
+
+class AIZabbixHostSetEvidence(BaseModel):
+    """Question-selected bounded Zabbix host set for source-level investigations."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    selection: Literal["resource", "availability", "problems", "affected"]
+    matching_count: int = Field(ge=0, le=5000)
+    truncated: bool = False
+    hosts: list[AIZabbixSourceHostEvidence] = Field(default_factory=list, max_length=5)
+
+
 class AIQuestionClassification(BaseModel):
     """Deterministic routing decision for an interactive AI question."""
 
@@ -361,6 +416,7 @@ class AIInvestigationEvidence(BaseModel):
     snipe_it_assets: AISnipeItAssetSetEvidence | None = None
     wazuh_details: AIWazuhDetailEvidence | None = None
     zabbix_host: AIZabbixHostEvidence | None = None
+    zabbix_hosts: AIZabbixHostSetEvidence | None = None
     limitations: list[BoundedListText] = Field(default_factory=list, max_length=8)
 
 
