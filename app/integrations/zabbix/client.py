@@ -16,6 +16,7 @@ from app.integrations.zabbix.models import (
     ZabbixHost,
     ZabbixHostInterface,
     ZabbixInterfaceType,
+    ZabbixNetworkLiveSeries,
     ZabbixProblem,
     ZabbixProblemHost,
     ZabbixProblemSeverity,
@@ -25,6 +26,7 @@ from app.integrations.zabbix.models import (
     ZabbixTopologyMap,
     ZabbixTopologyNode,
 )
+from app.integrations.zabbix.network import normalize_network_live
 from app.integrations.zabbix.resource_pressure import (
     normalize_resource_pressure,
     select_resource_trend_items,
@@ -41,6 +43,9 @@ ZABBIX_PROBLEM_HOST_LIMIT = 32
 ZABBIX_RESOURCE_ITEM_LIMIT = 10000
 ZABBIX_RESOURCE_ITEM_SENTINEL_LIMIT = ZABBIX_RESOURCE_ITEM_LIMIT + 1
 ZABBIX_RESOURCE_HOST_LIMIT = 5000
+ZABBIX_NETWORK_ITEM_LIMIT = 10000
+ZABBIX_NETWORK_ITEM_SENTINEL_LIMIT = ZABBIX_NETWORK_ITEM_LIMIT + 1
+ZABBIX_NETWORK_SERIES_LIMIT = 10000
 ZABBIX_TREND_HOST_LIMIT = 10
 ZABBIX_TREND_SELECTION_LIMIT = 30
 ZABBIX_TREND_ROW_LIMIT = 720
@@ -285,6 +290,58 @@ class ZabbixClient:
             if len(resource_pressure) > ZABBIX_RESOURCE_HOST_LIMIT:
                 raise ValueError("too many normalized Zabbix resource hosts")
             return resource_pressure
+        except (
+            KeyError,
+            TypeError,
+            ValueError,
+            OverflowError,
+            OSError,
+            ValidationError,
+        ) as exc:
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False) from exc
+
+    async def list_network_live(self) -> list[ZabbixNetworkLiveSeries]:
+        async def read_prefix(prefix: str) -> list[Any]:
+            return await self._read_jsonrpc(
+                method="item.get",
+                params={
+                    "output": [
+                        "itemid",
+                        "hostid",
+                        "key_",
+                        "lastvalue",
+                        "lastclock",
+                        "units",
+                    ],
+                    "monitored": True,
+                    "filter": {"state": "0"},
+                    "search": {"key_": prefix},
+                    "startSearch": True,
+                    "sortfield": "itemid",
+                    "limit": ZABBIX_NETWORK_ITEM_SENTINEL_LIMIT,
+                },
+            )
+
+        latency_items, inbound_items, outbound_items = await asyncio.gather(
+            read_prefix("icmppingsec"),
+            read_prefix("net.if.in"),
+            read_prefix("net.if.out"),
+        )
+        if any(
+            len(items) > ZABBIX_NETWORK_ITEM_LIMIT
+            for items in (latency_items, inbound_items, outbound_items)
+        ):
+            raise self._source_error("SOURCE_BAD_RESPONSE", retryable=False)
+
+        try:
+            rows = normalize_network_live(
+                latency_items,
+                inbound_items,
+                outbound_items,
+            )
+            if len(rows) > ZABBIX_NETWORK_SERIES_LIMIT:
+                raise ValueError("too many normalized Zabbix network series")
+            return rows
         except (
             KeyError,
             TypeError,

@@ -462,7 +462,7 @@
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${zabbix_ds}"
       },
-      "description": "Network Weathermap NG view of Zabbix map Hijo network map (map_id 3). Device positions and connections are snapshotted from the normalized Zabbix map; node status and problem counts refresh through /api/dashboard/zabbix. Green nodes are available with no active problems, orange nodes are available with active problems, red nodes are unavailable, yellow is maintenance, and gray is disabled/unknown. Links are endpoint-derived only: green means neither endpoint is unavailable; red blinking means at least one endpoint is unavailable. This does not prove physical/interface/circuit health. Traffic-flow animation is intentionally disabled because the normalized topology contract does not expose traffic telemetry.",
+      "description": "Network Weathermap NG view of Zabbix map Hijo network map (map_id 3). Device positions and connections are snapshotted from the normalized Zabbix map; node status and problem counts refresh through /api/dashboard/zabbix. Green nodes are available with no active problems, orange nodes are available with active problems, red nodes are unavailable, yellow is maintenance, and gray is disabled/unknown. Links are endpoint-derived only: green means neither endpoint is unavailable; red blinking means at least one endpoint is unavailable. This does not prove physical/interface/circuit health. Traffic-flow animation remains disabled because interface bandwidth telemetry is not mapped to individual topology links or circuits.",
       "gridPos": {
         "x": 0,
         "y": 4,
@@ -4679,6 +4679,246 @@
           "global_query_id": "",
           "parser": "backend",
           "root_selector": "$map($.warnings, function($w) { {'warning': $w} })",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Network Latency",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Near-live ICMP response latency from normalized Zabbix icmppingsec item values, retained for the last hour by the FastAPI cache.",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "columns": [
+            {
+              "selector": "time",
+              "text": "Time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "value",
+              "text": "Latency",
+              "type": "number"
+            },
+            {
+              "selector": "host",
+              "text": "Host",
+              "type": "string"
+            }
+          ],
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "root_selector": "$map($.network_live[metric='latency'], function($s) { $map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.value, 'host': $s.host_id} }) }).*",
+          "source": "url",
+          "type": "json",
+          "url": "/api/dashboard/zabbix",
+          "url_options": {
+            "data": "",
+            "method": "GET"
+          }
+        }
+      ],
+      "pluginVersion": "13.1.1"
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Network Bandwidth",
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${zabbix_ds}"
+      },
+      "description": "Near-live inbound and outbound interface bandwidth rates normalized to bits per second from Zabbix net.if.in and net.if.out items, retained for the last hour by the FastAPI cache.",
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${zabbix_ds}"
+          },
+          "columns": [
+            {
+              "selector": "time",
+              "text": "Time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "value",
+              "text": "Bits/s",
+              "type": "number"
+            },
+            {
+              "selector": "host",
+              "text": "Host",
+              "type": "string"
+            },
+            {
+              "selector": "interface",
+              "text": "Interface",
+              "type": "string"
+            },
+            {
+              "selector": "direction",
+              "text": "Direction",
+              "type": "string"
+            }
+          ],
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "root_selector": "$map($.network_live[metric!='latency'], function($s) { $map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.value, 'host': $s.host_id, 'interface': $s.interface, 'direction': $s.metric} }) }).*",
           "source": "url",
           "type": "json",
           "url": "/api/dashboard/zabbix",

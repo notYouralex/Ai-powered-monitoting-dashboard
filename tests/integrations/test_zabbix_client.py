@@ -1595,12 +1595,141 @@ def test_list_resource_pressure_maps_normalizer_error_to_bad_response() -> None:
 def test_public_client_exposes_resource_pressure_without_generic_or_mutation_methods() -> None:
     public = {name for name in dir(ZabbixClient) if not name.startswith("_")}
     assert "list_resource_pressure" in public
+    assert "list_network_live" in public
     assert "list_resource_trends" in public
     assert "request" not in public
     assert "call" not in public
     assert "create" not in public
     assert "update" not in public
     assert "delete" not in public
+
+
+_NETWORK_PREFIXES = {"icmppingsec", "net.if.in", "net.if.out"}
+
+
+def _network_item_record(
+    *,
+    item_id: str,
+    host_id: str = "10001",
+    key: str,
+    value: str,
+    units: str,
+    clock: str = "1723521600",
+) -> dict[str, str]:
+    return {
+        "itemid": item_id,
+        "hostid": host_id,
+        "key_": key,
+        "lastvalue": value,
+        "lastclock": clock,
+        "units": units,
+    }
+
+
+def test_list_network_live_issues_three_bounded_item_get_requests() -> None:
+    async def run() -> None:
+        started: set[str] = set()
+        all_started = asyncio.Event()
+        seen_params: dict[str, dict] = {}
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            assert body["method"] == "item.get"
+            prefix = body["params"]["search"]["key_"]
+            assert prefix in _NETWORK_PREFIXES
+            seen_params[prefix] = body["params"]
+            started.add(prefix)
+            if started == _NETWORK_PREFIXES:
+                all_started.set()
+            await asyncio.wait_for(all_started.wait(), timeout=0.2)
+
+            if prefix == "icmppingsec":
+                result = [
+                    _network_item_record(
+                        item_id="1",
+                        key="icmppingsec",
+                        value="0.010",
+                        units="s",
+                    )
+                ]
+            elif prefix == "net.if.in":
+                result = [
+                    _network_item_record(
+                        item_id="2",
+                        key="net.if.in[eth0,bytes]",
+                        value="1000",
+                        units="bps",
+                    )
+                ]
+            else:
+                result = [
+                    _network_item_record(
+                        item_id="3",
+                        key="net.if.out[eth0,bytes]",
+                        value="2000",
+                        units="bps",
+                    )
+                ]
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        rows = await client.list_network_live()
+
+        assert started == _NETWORK_PREFIXES
+        expected_common = {
+            "output": [
+                "itemid",
+                "hostid",
+                "key_",
+                "lastvalue",
+                "lastclock",
+                "units",
+            ],
+            "monitored": True,
+            "filter": {"state": "0"},
+            "startSearch": True,
+            "sortfield": "itemid",
+            "limit": 10001,
+        }
+        for prefix in _NETWORK_PREFIXES:
+            assert seen_params[prefix] == {
+                **expected_common,
+                "search": {"key_": prefix},
+            }
+        assert [(row.metric, row.interface, row.points[0].value) for row in rows] == [
+            ("inbound", "eth0", 1000.0),
+            ("latency", None, 10.0),
+            ("outbound", "eth0", 2000.0),
+        ]
+
+    asyncio.run(run())
+
+
+def test_list_network_live_rejects_sentinel_result() -> None:
+    async def run() -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            prefix = body["params"]["search"]["key_"]
+            result = [{}] * 10001 if prefix == "icmppingsec" else []
+            return httpx.Response(
+                200,
+                json={"jsonrpc": "2.0", "id": body["id"], "result": result},
+            )
+
+        client = ZabbixClient.from_settings(
+            make_settings(), transport=httpx.MockTransport(handler)
+        )
+        with pytest.raises(IntegrationError) as exc_info:
+            await client.list_network_live()
+        assert exc_info.value.code == "SOURCE_BAD_RESPONSE"
+        assert exc_info.value.retryable is False
+
+    asyncio.run(run())
 
 
 def test_list_resource_pressure_rejects_more_than_5000_normalized_hosts() -> None:
