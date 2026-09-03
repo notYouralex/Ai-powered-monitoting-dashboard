@@ -40,6 +40,7 @@ class SnipeItDashboardAssetRecord:
     asset_tag: str | None = None
     serial: str | None = None
     category: str | None = None
+    company: str | None = None
     status_label: str | None = None
     assigned_to_id: int | None = None
     location: str | None = None
@@ -59,6 +60,7 @@ class SqlAlchemySnipeItAssetRepository:
         "asset_tag",
         "serial",
         "category",
+        "company",
         "status_label",
         "assigned_to_id",
         "location",
@@ -84,6 +86,7 @@ class SqlAlchemySnipeItAssetRepository:
                 assets.c.asset_tag,
                 assets.c.serial,
                 assets.c.category,
+                assets.c.company,
                 assets.c.status_label,
                 assets.c.assigned_to_id,
                 assets.c.location,
@@ -99,6 +102,7 @@ class SqlAlchemySnipeItAssetRepository:
                     asset_tag=_optional_text(row["asset_tag"]),
                     serial=_optional_text(row["serial"]),
                     category=_optional_text(row["category"]),
+                    company=_optional_text(row["company"]),
                     status_label=_optional_text(row["status_label"]),
                     assigned_to_id=_optional_positive_int(row["assigned_to_id"]),
                     location=_optional_text(row["location"]),
@@ -215,6 +219,10 @@ class SnipeItDashboardService:
             category_distribution=_named_counts(
                 (asset.category or "Uncategorized" for asset in assets),
                 limit=10,
+            ),
+            company_distribution=_named_counts(
+                (asset.company or "Unknown" for asset in assets),
+                limit=50,
             ),
             location_distribution=_named_counts(
                 (asset.location or "Unknown" for asset in assets),

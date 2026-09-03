@@ -28,6 +28,8 @@ def normalized_asset(asset_id: int = 101, **overrides) -> SnipeItAsset:
         "category": "Laptop",
         "manufacturer_id": 13,
         "manufacturer": "Dell",
+        "company_id": 17,
+        "company": "Example Company",
         "status_label_id": 14,
         "status_label": "Ready to Deploy",
         "status_type": "deployable",
@@ -89,6 +91,8 @@ def test_sync_upserts_assets_without_duplicates_or_mass_deactivation() -> None:
         assert assets[0].source_asset_id == 101
         assert assets[0].name == "Renamed Laptop"
         assert assets[0].status_label == "Deployed"
+        assert assets[0].company_id == 17
+        assert assets[0].company == "Example Company"
         assert assets[0].assigned_to_id == 15
         assert assets[0].synced_at == T1
         assert assets[1].source_asset_id == 102

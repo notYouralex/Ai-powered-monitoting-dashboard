@@ -104,6 +104,8 @@ def _apply_asset(record: Asset, asset: SnipeItAsset, *, synced_at: datetime) -> 
     record.category = asset.category
     record.manufacturer_id = asset.manufacturer_id
     record.manufacturer = asset.manufacturer
+    record.company_id = asset.company_id
+    record.company = asset.company
     record.status_label_id = asset.status_label_id
     record.status_label = asset.status_label
     record.status_type = asset.status_type

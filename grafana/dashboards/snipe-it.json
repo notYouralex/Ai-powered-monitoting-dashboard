@@ -608,7 +608,7 @@
     {
       "id": 13,
       "type": "piechart",
-      "title": "Assets by Location",
+      "title": "Assets by Company",
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
         "uid": "${DS_MONITORING_API}"
@@ -684,7 +684,7 @@
           ],
           "format": "table",
           "parser": "backend",
-          "root_selector": "$.location_distribution",
+          "root_selector": "$.company_distribution",
           "source": "url",
           "type": "json",
           "url": "/api/dashboard/snipe-it",
@@ -750,31 +750,13 @@
                 "value": 314
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "scope": "series",
-              "options": "Location"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 50
-              }
-            ]
           }
         ]
       },
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "Location"
-          }
-        ]
+        "sortBy": []
       },
       "targets": [
         {
@@ -795,18 +777,13 @@
               "type": "string"
             },
             {
-              "selector": "target",
-              "text": "Target",
-              "type": "string"
-            },
-            {
               "selector": "performed_by",
               "text": "Performed By",
               "type": "string"
             },
             {
-              "selector": "location",
-              "text": "Location",
+              "selector": "target",
+              "text": "Assigned To",
               "type": "string"
             },
             {

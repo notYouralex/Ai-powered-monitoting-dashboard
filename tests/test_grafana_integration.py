@@ -270,7 +270,7 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
         "Retired",
         "Assets by Type / Category",
         "Assets by Status",
-        "Assets by Location",
+        "Assets by Company",
         "Recent Activity",
         "Upcoming Warranty Expiry",
     }
@@ -291,7 +291,7 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
         "h": 8,
     }
     assert panels["Assets by Status"]["gridPos"] == {"x": 8, "y": 4, "w": 8, "h": 8}
-    assert panels["Assets by Location"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
+    assert panels["Assets by Company"]["gridPos"] == {"x": 16, "y": 4, "w": 8, "h": 8}
     assert panels["Recent Activity"]["gridPos"] == {"x": 0, "y": 12, "w": 14, "h": 9}
     assert panels["Upcoming Warranty Expiry"]["gridPos"] == {
         "x": 14,
@@ -320,17 +320,22 @@ def test_snipe_it_dashboard_matches_clean_asset_management_layout() -> None:
         assert target["url_options"]["method"] == "GET"
         assert "Authorization" not in json.dumps(target)
 
+    company_target = panels["Assets by Company"]["targets"][0]
+    assert company_target["root_selector"] == "$.company_distribution"
+
     activity_target = panels["Recent Activity"]["targets"][0]
     assert activity_target["root_selector"] == "$.activity"
     assert activity_target["url"] == "/api/dashboard/snipe-it/recent-activity"
     assert [column["selector"] for column in activity_target["columns"]] == [
         "action",
         "asset",
-        "target",
         "performed_by",
-        "location",
+        "target",
         "occurred_at",
     ]
+    assert {column["selector"]: column["text"] for column in activity_target["columns"]}[
+        "target"
+    ] == "Assigned To"
 
     warranty_target = panels["Upcoming Warranty Expiry"]["targets"][0]
     assert warranty_target["root_selector"] == "$.warranty_expiry"

@@ -18,6 +18,8 @@ class SnipeItAsset(BaseModel):
     category: str | None = Field(default=None, max_length=255)
     manufacturer_id: int | None = Field(default=None, gt=0)
     manufacturer: str | None = Field(default=None, max_length=255)
+    company_id: int | None = Field(default=None, gt=0)
+    company: str | None = Field(default=None, max_length=255)
     status_label_id: int | None = Field(default=None, gt=0)
     status_label: str | None = Field(default=None, max_length=255)
     status_type: str | None = Field(default=None, max_length=64)

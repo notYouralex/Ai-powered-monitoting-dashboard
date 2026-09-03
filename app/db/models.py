@@ -198,6 +198,8 @@ class Asset(Base):
     category: Mapped[str | None] = mapped_column(String(255), nullable=True)
     manufacturer_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    company: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status_label_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     status_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -215,6 +217,7 @@ class Asset(Base):
         Index("ix_assets_serial", "serial"),
         Index("ix_assets_status_label", "status_label"),
         Index("ix_assets_category", "category"),
+        Index("ix_assets_company", "company"),
         Index("ix_assets_synced_at", "synced_at"),
     )
 

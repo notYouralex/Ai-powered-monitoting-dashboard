@@ -8,34 +8,34 @@ DASHBOARD = ROOT / "grafana" / "dashboards" / "zabbix-infrastructure.json"
 
 
 EXPECTED_POSITIONS = {
-    "2": [860, 610],
-    "3": [1140, 610],
-    "4": [1000, 700],
-    "5": [1000, 900],
-    "6": [1160, 780],
-    "7": [860, 1080],
-    "8": [1030, 1100],
-    "9": [1280, 900],
-    "10": [900, 170],
-    "11": [720, 760],
-    "12": [720, 1000],
-    "13": [1100, 170],
-    "14": [1580, 350],
-    "15": [1440, 310],
-    "16": [1830, 820],
-    "17": [1700, 760],
-    "18": [1630, 1360],
-    "19": [1500, 1310],
-    "20": [480, 315],
-    "21": [360, 240],
-    "22": [350, 400],
-    "23": [510, 415],
-    "24": [300, 830],
-    "25": [230, 730],
-    "26": [230, 930],
-    "27": [420, 1340],
-    "28": [930, 1570],
-    "29": [1080, 1630],
+    "2": [650, 560],
+    "3": [900, 560],
+    "4": [800, 720],
+    "5": [1050, 800],
+    "6": [700, 940],
+    "7": [1100, 1040],
+    "8": [1300, 1040],
+    "9": [1350, 590],
+    "10": [650, 160],
+    "11": [1100, 560],
+    "12": [900, 1160],
+    "13": [850, 160],
+    "14": [1350, 160],
+    "15": [1150, 160],
+    "16": [1900, 570],
+    "17": [1700, 570],
+    "18": [1900, 1020],
+    "19": [1700, 1020],
+    "20": [100, 220],
+    "21": [350, 220],
+    "22": [100, 100],
+    "23": [350, 100],
+    "24": [260, 1010],
+    "25": [120, 900],
+    "26": [120, 1120],
+    "27": [590, 1620],
+    "28": [1260, 1620],
+    "29": [1540, 1620],
 }
 
 EXPECTED_LINKS = [
@@ -89,7 +89,7 @@ def _topology_panel() -> dict:
     return next(panel for panel in dashboard["panels"] if panel.get("id") == 13)
 
 
-def test_zabbix_topology_uses_admin_centered_radial_layout() -> None:
+def test_zabbix_topology_uses_clean_grouped_network_layout() -> None:
     dashboard = _dashboard()
     panels = {panel["id"]: panel for panel in dashboard["panels"]}
 
@@ -122,19 +122,29 @@ def test_zabbix_topology_uses_admin_centered_radial_layout() -> None:
     assert 'width="2000" height="1800"' in svg
     assert "<ellipse" not in svg
     assert 'id="site-ring"' not in svg
-    assert 'id="admin-zone" x="640" y="520" width="720" height="660" stroke-width="8"' in svg
-    assert 'id="ph1-zone" x="760" y="60" width="480" height="240"' in svg
-    assert 'id="ph2-zone" x="1280" y="180" width="440" height="280"' in svg
-    assert 'id="coop-c-zone" x="1540" y="650" width="440" height="260"' in svg
-    assert 'id="hsf-zone" x="1370" y="1210" width="420" height="240"' in svg
-    assert 'id="staffhouse-zone" x="800" y="1490" width="400" height="230"' in svg
-    assert 'id="warehouse-zone" x="240" y="1230" width="360" height="240"' in svg
-    assert 'id="lanikai-zone" x="80" y="660" width="420" height="340"' in svg
-    assert 'id="tower-tourist-zone" x="140" y="150" width="520" height="320"' in svg
+    assert 'id="admin-zone" x="475" y="410" width="1050" height="970" stroke-width="8"' in svg
+    assert 'id="tower-tourist-zone" x="20" y="20" width="430" height="270"' in svg
+    assert 'id="ph1-zone" x="570" y="20" width="360" height="270"' in svg
+    assert 'id="ph2-zone" x="1070" y="20" width="360" height="270"' in svg
+    assert 'id="coop-c-zone" x="1645" y="410" width="335" height="330"' in svg
+    assert 'id="hsf-zone" x="1645" y="860" width="335" height="330"' in svg
+    assert 'id="staffhouse-zone" x="1110" y="1500" width="600" height="280"' in svg
+    assert 'id="warehouse-zone" x="290" y="1500" width="600" height="280"' in svg
+    assert 'id="lanikai-zone" x="20" y="810" width="335" height="400"' in svg
+    assert '<text x="1000" y="455" font-size="40">ADMIN</text>' in svg
+    assert '<text x="750" y="60" font-size="28">PH1</text>' in svg
+    assert '<text x="1250" y="60" font-size="28">PH2</text>' in svg
+    assert '<text x="1812" y="455" font-size="28">COOP C</text>' in svg
+    assert '<text x="1812" y="905" font-size="28">HSF</text>' in svg
+    assert '<text x="1410" y="1545" font-size="28">STAFFHOUSE</text>' in svg
+    assert '<text x="590" y="1545" font-size="28">WAREHOUSE</text>' in svg
+    assert '<text x="187" y="855" font-size="28">LANIKAI</text>' in svg
+    assert '<text x="235" y="60" font-size="26">TOWER 2 / TOURIST CENTER</text>' in svg
 
     nodes = {node["id"]: node for node in weathermap["nodes"]}
     assert set(nodes) == set(EXPECTED_POSITIONS)
     assert {node_id: node["position"] for node_id, node in nodes.items()} == EXPECTED_POSITIONS
+    assert nodes["3"]["label"] == "DC TECH"
     assert nodes["27"]["label"] == "warehouse_switch"
     assert nodes["27"]["nodeIcon"]["name"] == "networking/switch"
     assert nodes["28"]["label"] == "staffhouse_p2p"
@@ -156,8 +166,26 @@ def test_zabbix_reconstructed_layout_preserves_live_topology_graph() -> None:
     ]
     assert all(link["stroke"] == 5 for link in weathermap["links"])
     radial_links = {link["id"]: link for link in weathermap["links"]}
-    assert "waypoints" not in radial_links["edge-27"]
-    assert "waypoints" not in radial_links["edge-29"]
+    expected_waypoints = {
+        "edge-12": [{"x": 650, "y": 350}, {"x": 1300, "y": 350}, {"x": 1300, "y": 590}],
+        "edge-14": [{"x": 1150, "y": 320}, {"x": 1350, "y": 320}],
+        "edge-16": [{"x": 1580, "y": 590}, {"x": 1580, "y": 570}],
+        "edge-18": [{"x": 1580, "y": 1020}, {"x": 1580, "y": 590}],
+        "edge-20": [{"x": 1100, "y": 380}, {"x": 500, "y": 380}, {"x": 500, "y": 220}],
+        "edge-23": [{"x": 80, "y": 900}, {"x": 80, "y": 350}, {"x": 100, "y": 350}],
+        "edge-27": [{"x": 590, "y": 1440}, {"x": 900, "y": 1440}],
+        "edge-29": [
+            {"x": 1580, "y": 590},
+            {"x": 1550, "y": 640},
+            {"x": 1550, "y": 1440},
+            {"x": 1260, "y": 1440},
+        ],
+    }
+    assert {link_id for link_id, link in radial_links.items() if "waypoints" in link} == set(
+        expected_waypoints
+    )
+    for link_id, waypoints in expected_waypoints.items():
+        assert radial_links[link_id]["waypoints"] == waypoints
 
     nodes = {node["id"]: node for node in weathermap["nodes"]}
     assert all(node["statusQuery"] == f"node_{node_id}_status" for node_id, node in nodes.items())
