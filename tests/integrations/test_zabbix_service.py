@@ -6,6 +6,8 @@ from app.integrations.zabbix.models import (
     ZabbixDiskPressure,
     ZabbixHost,
     ZabbixHostInterface,
+    ZabbixNetworkLivePoint,
+    ZabbixNetworkLiveSeries,
     ZabbixProblem,
     ZabbixProblemHost,
     ZabbixResourcePressure,
@@ -123,20 +125,25 @@ class FakeZabbixClient:
         active_problems: list[ZabbixProblem] | None = None,
         resource_pressure: list[ZabbixResourcePressure] | None = None,
         resource_trends: list[ZabbixResourceTrend] | None = None,
+        network_live: list[ZabbixNetworkLiveSeries] | None = None,
         topology_maps: list[ZabbixTopologyMap] | None = None,
         trend_error: IntegrationError | None = None,
+        network_error: IntegrationError | None = None,
         topology_error: IntegrationError | None = None,
     ) -> None:
         self.hosts = hosts
         self.active_problems = [] if active_problems is None else active_problems
         self.resource_pressure = [] if resource_pressure is None else resource_pressure
         self.resource_trends = [] if resource_trends is None else resource_trends
+        self.network_live = [] if network_live is None else network_live
         self.topology_maps = [] if topology_maps is None else topology_maps
         self.trend_error = trend_error
+        self.network_error = network_error
         self.topology_error = topology_error
         self.host_calls = 0
         self.problem_calls = 0
         self.resource_calls = 0
+        self.network_calls = 0
         self.trend_calls: list[list[str]] = []
 
     async def list_hosts(self) -> list[ZabbixHost]:
@@ -150,6 +157,12 @@ class FakeZabbixClient:
     async def list_resource_pressure(self) -> list[ZabbixResourcePressure]:
         self.resource_calls += 1
         return self.resource_pressure
+
+    async def list_network_live(self) -> list[ZabbixNetworkLiveSeries]:
+        self.network_calls += 1
+        if self.network_error is not None:
+            raise self.network_error
+        return self.network_live
 
     async def list_resource_trends(self, host_ids: list[str]) -> list[ZabbixResourceTrend]:
         self.trend_calls.append(host_ids)
@@ -168,11 +181,13 @@ class CoordinatedClient:
         self.host_started = asyncio.Event()
         self.problem_started = asyncio.Event()
         self.resource_started = asyncio.Event()
+        self.network_started = asyncio.Event()
 
     async def _wait_for_all(self) -> None:
         await asyncio.wait_for(self.host_started.wait(), timeout=0.2)
         await asyncio.wait_for(self.problem_started.wait(), timeout=0.2)
         await asyncio.wait_for(self.resource_started.wait(), timeout=0.2)
+        await asyncio.wait_for(self.network_started.wait(), timeout=0.2)
 
     async def list_hosts(self) -> list[ZabbixHost]:
         self.host_started.set()
@@ -189,6 +204,11 @@ class CoordinatedClient:
         await self._wait_for_all()
         return []
 
+    async def list_network_live(self) -> list[ZabbixNetworkLiveSeries]:
+        self.network_started.set()
+        await self._wait_for_all()
+        return []
+
     async def list_resource_trends(self, host_ids: list[str]) -> list[ZabbixResourceTrend]:
         assert host_ids == []
         return []
@@ -197,7 +217,7 @@ class CoordinatedClient:
         return []
 
 
-def test_dashboard_service_fetches_hosts_problems_and_resources_concurrently() -> None:
+def test_dashboard_service_fetches_hosts_problems_resources_and_network_concurrently() -> None:
     async def run() -> None:
         service = ZabbixDashboardService(client=CoordinatedClient())
 
@@ -208,6 +228,62 @@ def test_dashboard_service_fetches_hosts_problems_and_resources_concurrently() -
         assert response.summary.resource_hosts_total == 0
         assert response.active_problems == []
         assert response.resource_pressure == []
+        assert response.network_live == []
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_exposes_network_live_metrics() -> None:
+    async def run() -> None:
+        network_live = [
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="latency",
+                points=[ZabbixNetworkLivePoint(observed_at=STARTED_AT, value=12.5)],
+            ),
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="inbound",
+                interface="eth0",
+                points=[ZabbixNetworkLivePoint(observed_at=STARTED_AT, value=1000)],
+            ),
+        ]
+        client = FakeZabbixClient([], network_live=network_live)
+
+        response = await ZabbixDashboardService(client=client).get_dashboard()
+
+        assert client.network_calls == 1
+        assert [
+            (row.metric, row.interface, row.points[0].value)
+            for row in response.network_live
+        ] == [
+            ("latency", None, 12.5),
+            ("inbound", "eth0", 1000.0),
+        ]
+
+    asyncio.run(run())
+
+
+def test_dashboard_service_keeps_core_data_when_network_read_fails() -> None:
+    async def run() -> None:
+        client = FakeZabbixClient(
+            [host("1", enabled=True, availability="available")],
+            network_error=IntegrationError(
+                source="zabbix",
+                code="SOURCE_UNAVAILABLE",
+                retryable=True,
+            ),
+        )
+
+        response = await ZabbixDashboardService(client=client).get_dashboard()
+
+        assert response.health.status == "healthy"
+        assert response.summary.hosts_total == 1
+        assert response.network_live == []
+        assert (
+            "Zabbix network latency and bandwidth metrics are unavailable; "
+            "core monitoring data remains available."
+        ) in response.warnings
 
     asyncio.run(run())
 
@@ -227,6 +303,7 @@ def test_dashboard_service_builds_host_and_interface_summary() -> None:
         assert client.host_calls == 1
         assert client.problem_calls == 1
         assert client.resource_calls == 1
+        assert client.network_calls == 1
         assert response.source == "zabbix"
         assert response.health.source == "zabbix"
         assert response.health.status == "healthy"

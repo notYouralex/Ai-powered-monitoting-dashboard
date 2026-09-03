@@ -40,6 +40,7 @@ class SnipeItDashboardResponse(BaseModel):
     summary: SnipeItDashboardSummary
     status_distribution: list[SnipeItNamedCount] = Field(default_factory=list, max_length=20)
     category_distribution: list[SnipeItNamedCount] = Field(default_factory=list, max_length=10)
+    company_distribution: list[SnipeItNamedCount] = Field(default_factory=list, max_length=50)
     location_distribution: list[SnipeItNamedCount] = Field(default_factory=list, max_length=10)
     warnings: list[str] = Field(default_factory=list, max_length=20)
 

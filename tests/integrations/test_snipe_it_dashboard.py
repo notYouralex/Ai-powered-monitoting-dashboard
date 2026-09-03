@@ -36,6 +36,7 @@ def asset(asset_id: int, **overrides) -> SnipeItDashboardAssetRecord:
         "asset_tag": f"LT-{asset_id}",
         "serial": f"SERIAL-{asset_id}",
         "category": "Laptop",
+        "company": "Main Company",
         "status_label": "Ready to Deploy",
         "assigned_to_id": None,
         "location": "Main Office",
@@ -143,6 +144,7 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
             asset(
                 103,
                 category="Monitor",
+                company="Branch Company",
                 status_label="Deployed",
                 assigned_to_id=11,
                 location="Branch Office",
@@ -151,6 +153,7 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
             asset(
                 104,
                 category=None,
+                company=None,
                 status_label=None,
                 location=None,
                 warranty_expires=None,
@@ -192,6 +195,11 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
         "Monitor": 1,
         "Uncategorized": 1,
     }
+    assert {item.name: item.count for item in response.company_distribution} == {
+        "Main Company": 2,
+        "Branch Company": 1,
+        "Unknown": 1,
+    }
     assert {item.name: item.count for item in response.location_distribution} == {
         "Main Office": 2,
         "Branch Office": 1,
@@ -199,6 +207,27 @@ def test_dashboard_aggregates_normalized_assets_without_exposing_assignee_names(
     }
     assert "recent_activity" not in response.model_dump()
     assert "assigned_to" not in response.model_dump_json()
+
+
+def test_dashboard_company_distribution_keeps_more_than_ten_companies(auth_env) -> None:
+    configure_snipe_it(auth_env)
+    seed_sync_run(auth_env)
+    repository = FakeAssetRepository(
+        [asset(asset_id, company=f"Company {asset_id:02d}") for asset_id in range(1, 27)]
+    )
+
+    with auth_env.session_factory() as db:
+        response = SnipeItDashboardService(
+            db=db,
+            settings=auth_env.settings,
+            asset_repository=repository,
+            clock=lambda: NOW,
+        ).get_dashboard()
+
+    assert len(response.company_distribution) == 26
+    assert {item.name for item in response.company_distribution} == {
+        f"Company {asset_id:02d}" for asset_id in range(1, 27)
+    }
 
 
 def test_dashboard_builds_requested_asset_state_summary_cards(auth_env) -> None:

@@ -9,6 +9,7 @@ from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
     ZabbixDashboardSummary,
     ZabbixHost,
+    ZabbixNetworkLiveSeries,
     ZabbixProblem,
     ZabbixResourceLivePoint,
     ZabbixResourceLiveSeries,
@@ -28,11 +29,13 @@ class ZabbixDashboardService:
 
     async def get_dashboard(self) -> ZabbixDashboardResponse:
         started = perf_counter()
-        hosts, active_problems, resource_pressure = await asyncio.gather(
+        hosts, active_problems, resource_pressure, network_result = await asyncio.gather(
             self._client.list_hosts(),
             self._client.list_active_problems(),
             self._client.list_resource_pressure(),
+            self._get_network_live(),
         )
+        network_live, network_warning = network_result
         top_affected_hosts = rank_top_affected_hosts(
             hosts,
             active_problems,
@@ -69,14 +72,26 @@ class ZabbixDashboardService:
             resource_pressure=resource_pressure,
             top_affected_hosts=top_affected_hosts,
             resource_live=resource_live,
+            network_live=network_live,
             topology_maps=topology_maps,
             warnings=_build_warnings(
                 hosts,
                 active_problems,
                 resource_pressure,
+                network_warning=network_warning,
                 topology_warning=topology_warning,
             ),
         )
+
+    async def _get_network_live(self) -> tuple[list[ZabbixNetworkLiveSeries], str | None]:
+        try:
+            return await self._client.list_network_live(), None
+        except IntegrationError:
+            return (
+                [],
+                "Zabbix network latency and bandwidth metrics are unavailable; "
+                "core monitoring data remains available.",
+            )
 
 
 def _build_resource_live(
@@ -229,6 +244,7 @@ def _build_warnings(
     active_problems: list[ZabbixProblem],
     resource_pressure: list[ZabbixResourcePressure],
     *,
+    network_warning: str | None = None,
     topology_warning: str | None = None,
 ) -> list[str]:
     warnings: list[str] = []
@@ -266,6 +282,8 @@ def _build_warnings(
     _append_resource_warning(warnings, missing_cpu, "CPU")
     _append_resource_warning(warnings, missing_memory, "memory")
     _append_resource_warning(warnings, missing_disk, "disk")
+    if network_warning is not None:
+        warnings.append(network_warning)
     if topology_warning is not None:
         warnings.append(topology_warning)
     return warnings

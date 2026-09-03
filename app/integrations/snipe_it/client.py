@@ -13,8 +13,8 @@ from app.core.http import create_http_client, request_with_retries
 from app.integrations.snipe_it.models import SnipeItActivity, SnipeItAsset
 
 
-SNIPE_IT_ASSET_PAGE_SIZE = 200
-SNIPE_IT_MAX_ASSET_PAGES = 50
+SNIPE_IT_ASSET_PAGE_SIZE = 50
+SNIPE_IT_MAX_ASSET_PAGES = 200
 SNIPE_IT_MAX_ASSETS = SNIPE_IT_ASSET_PAGE_SIZE * SNIPE_IT_MAX_ASSET_PAGES
 SNIPE_IT_RECENT_ACTIVITY_LIMIT = 10
 
@@ -193,6 +193,7 @@ class SnipeItClient:
         model_id, model = _optional_relation(value.get("model"))
         category_id, category = _optional_relation(value.get("category"))
         manufacturer_id, manufacturer = _optional_relation(value.get("manufacturer"))
+        company_id, company = _optional_relation(value.get("company"))
         status_label_id, status_label = _optional_relation(value.get("status_label"))
         assigned_to_id, _assigned_to_name = _optional_relation(value.get("assigned_to"))
         location_id, location = _optional_relation(value.get("location"))
@@ -220,6 +221,8 @@ class SnipeItClient:
             category=category,
             manufacturer_id=manufacturer_id,
             manufacturer=manufacturer,
+            company_id=company_id,
+            company=company,
             status_label_id=status_label_id,
             status_label=status_label,
             status_type=status_type,

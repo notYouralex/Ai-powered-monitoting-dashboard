@@ -31,6 +31,7 @@ def asset_payload(asset_id: int = 101, **overrides) -> dict:
         "model": {"id": 11, "name": "Latitude 7450"},
         "category": {"id": 12, "name": "Laptop"},
         "manufacturer": {"id": 13, "name": "Dell"},
+        "company": {"id": 17, "name": "Example Company"},
         "status_label": {"id": 14, "name": "Ready to Deploy", "status_meta": "deployable"},
         "assigned_to": {"id": 15, "name": "Example User", "type": "user"},
         "location": {"id": 16, "name": "Main Office"},
@@ -75,7 +76,7 @@ def test_list_assets_uses_bearer_auth_and_normalizes_reporting_fields() -> None:
         assert request.headers["Accept"] == "application/json"
         assert request.headers["Content-Type"] == "application/json"
         assert request.headers["User-Agent"].startswith("ai-powered-monitoring-dashboard/")
-        assert request.url.params["limit"] == "200"
+        assert request.url.params["limit"] == "50"
         assert request.url.params["offset"] == "0"
         assert request.url.params["sort"] == "id"
         assert request.url.params["order"] == "asc"
@@ -91,6 +92,8 @@ def test_list_assets_uses_bearer_auth_and_normalizes_reporting_fields() -> None:
         assert asset.category == "Laptop"
         assert asset.manufacturer_id == 13
         assert asset.manufacturer == "Dell"
+        assert asset.company_id == 17
+        assert asset.company == "Example Company"
         assert asset.status_label_id == 14
         assert asset.status_label == "Ready to Deploy"
         assert asset.status_type == "deployable"

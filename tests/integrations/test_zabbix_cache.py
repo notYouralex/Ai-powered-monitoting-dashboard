@@ -20,6 +20,8 @@ from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
     ZabbixDashboardSummary,
     ZabbixHost,
+    ZabbixNetworkLivePoint,
+    ZabbixNetworkLiveSeries,
     ZabbixResourcePressure,
 )
 
@@ -51,6 +53,7 @@ class FakeZabbixClient:
     def __init__(self) -> None:
         self.hosts = [host("1")]
         self.resource_pressure: list[ZabbixResourcePressure] | None = None
+        self.network_live: list[ZabbixNetworkLiveSeries] = []
         self.error: IntegrationError | None = None
 
     async def list_hosts(self):
@@ -65,6 +68,9 @@ class FakeZabbixClient:
         if self.resource_pressure is not None:
             return self.resource_pressure
         return [ZabbixResourcePressure(host_id=row.host_id) for row in self.hosts]
+
+    async def list_network_live(self):
+        return self.network_live
 
     async def list_resource_trends(self, host_ids: list[str]):
         return []
@@ -162,6 +168,62 @@ def test_refresh_accumulates_live_cpu_and_memory_samples_in_singleton_cache() ->
         assert live[1]["points"] == [
             {"observed_at": T0.isoformat().replace("+00:00", "Z"), "used_percent": 40.0},
             {"observed_at": T2.isoformat().replace("+00:00", "Z"), "used_percent": 50.0},
+        ]
+        db.close()
+
+    asyncio.run(run())
+
+
+def test_refresh_accumulates_live_network_samples_in_singleton_cache() -> None:
+    async def run() -> None:
+        db = make_db()
+        client = FakeZabbixClient()
+        client.network_live = [
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="latency",
+                points=[ZabbixNetworkLivePoint(observed_at=T0, value=10)],
+            ),
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="inbound",
+                interface="eth0",
+                points=[ZabbixNetworkLivePoint(observed_at=T0, value=1000)],
+            ),
+        ]
+        clock_values = iter([T0, T1, T2, T3])
+        service = ZabbixCacheRefreshService(client, clock=lambda: next(clock_values))
+
+        await service.refresh(db)
+        client.network_live = [
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="latency",
+                points=[ZabbixNetworkLivePoint(observed_at=T2, value=12)],
+            ),
+            ZabbixNetworkLiveSeries(
+                host_id="1",
+                metric="inbound",
+                interface="eth0",
+                points=[ZabbixNetworkLivePoint(observed_at=T2, value=1500)],
+            ),
+        ]
+        await service.refresh(db)
+
+        cached = db.get(ZabbixDashboardCache, 1)
+        assert cached is not None
+        live = cached.snapshot["network_live"]
+        assert [(row["host_id"], row["metric"], row["interface"]) for row in live] == [
+            ("1", "latency", None),
+            ("1", "inbound", "eth0"),
+        ]
+        assert live[0]["points"] == [
+            {"observed_at": T0.isoformat().replace("+00:00", "Z"), "value": 10.0},
+            {"observed_at": T2.isoformat().replace("+00:00", "Z"), "value": 12.0},
+        ]
+        assert live[1]["points"] == [
+            {"observed_at": T0.isoformat().replace("+00:00", "Z"), "value": 1000.0},
+            {"observed_at": T2.isoformat().replace("+00:00", "Z"), "value": 1500.0},
         ]
         db.close()
 

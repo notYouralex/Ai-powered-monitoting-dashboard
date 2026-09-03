@@ -26,6 +26,8 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
         "CPU Load",
         "Memory Usage",
         "Warnings",
+        "Network Latency",
+        "Network Bandwidth",
     }
 
     topology = panels["Live Host Topology"]
@@ -59,6 +61,8 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
 
     warnings = panels["Warnings"]
     assert warnings["gridPos"] == {"x": 0, "y": 23, "w": 16, "h": 5}
+    assert panels["Network Latency"]["gridPos"] == {"x": 0, "y": 28, "w": 12, "h": 8}
+    assert panels["Network Bandwidth"]["gridPos"] == {"x": 12, "y": 28, "w": 12, "h": 8}
     assert warnings["targets"][0]["root_selector"] == (
         "$map($.warnings, function($w) { {'warning': $w} })"
     )

@@ -13,6 +13,8 @@ from app.db.models import SyncRun, ZabbixDashboardCache
 from app.integrations.zabbix.client import ZabbixClient
 from app.integrations.zabbix.models import (
     ZabbixDashboardResponse,
+    ZabbixNetworkLivePoint,
+    ZabbixNetworkLiveSeries,
     ZabbixResourceLivePoint,
     ZabbixResourceLiveSeries,
 )
@@ -65,6 +67,7 @@ class ZabbixCacheRefreshService:
         try:
             cached = db.get(ZabbixDashboardCache, ZABBIX_CACHE_ROW_ID)
             previous_live: list[ZabbixResourceLiveSeries] = []
+            previous_network_live: list[ZabbixNetworkLiveSeries] = []
             if cached is not None:
                 try:
                     previous = ZabbixDashboardResponse.model_validate(cached.snapshot)
@@ -72,6 +75,7 @@ class ZabbixCacheRefreshService:
                     previous = None
                 if previous is not None:
                     previous_live = previous.resource_live
+                    previous_network_live = previous.network_live
 
             dashboard = dashboard.model_copy(
                 update={
@@ -79,7 +83,12 @@ class ZabbixCacheRefreshService:
                         previous_live,
                         dashboard.resource_live,
                         observed_at=completed_at,
-                    )
+                    ),
+                    "network_live": _merge_network_live(
+                        previous_network_live,
+                        dashboard.network_live,
+                        observed_at=completed_at,
+                    ),
                 }
             )
             if cached is None:
@@ -265,6 +274,42 @@ def _merge_resource_live(
     for current_series in current:
         key = (current_series.host_id, current_series.metric)
         points_by_time: dict[datetime, ZabbixResourceLivePoint] = {}
+        previous_series = previous_by_key.get(key)
+        if previous_series is not None:
+            for point in previous_series.points:
+                if point.observed_at >= cutoff:
+                    points_by_time[point.observed_at] = point
+        for point in current_series.points:
+            if point.observed_at >= cutoff:
+                points_by_time[point.observed_at] = point
+
+        points = sorted(points_by_time.values(), key=lambda point: point.observed_at)
+        points = points[-ZABBIX_LIVE_MAX_POINTS:]
+        if points:
+            merged.append(current_series.model_copy(update={"points": points}))
+
+    return merged
+
+
+def _merge_network_live(
+    previous: list[ZabbixNetworkLiveSeries],
+    current: list[ZabbixNetworkLiveSeries],
+    *,
+    observed_at: datetime,
+) -> list[ZabbixNetworkLiveSeries]:
+    cutoff = observed_at - timedelta(seconds=ZABBIX_LIVE_WINDOW_SECONDS)
+    previous_by_key = {
+        (row.host_id, row.metric, row.interface): row for row in previous
+    }
+    merged: list[ZabbixNetworkLiveSeries] = []
+
+    for current_series in current:
+        key = (
+            current_series.host_id,
+            current_series.metric,
+            current_series.interface,
+        )
+        points_by_time: dict[datetime, ZabbixNetworkLivePoint] = {}
         previous_series = previous_by_key.get(key)
         if previous_series is not None:
             for point in previous_series.points:

@@ -62,6 +62,8 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
         "CPU Load",
         "Memory Usage",
         "Warnings",
+        "Network Latency",
+        "Network Bandwidth",
     }
     assert set(panels) == expected_titles
 
@@ -99,6 +101,8 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
     assert panels["System Information"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 4}
     assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 12}
     assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 20}
+    assert panels["Network Latency"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 28}
+    assert panels["Network Bandwidth"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 28}
     assert dashboard["time"] == {"from": "now-1h", "to": "now"}
 
     for title, metric in [("CPU Load", "cpu"), ("Memory Usage", "memory")]:
@@ -109,6 +113,22 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
             "'value': $p.used_percent, 'host': $s.host_id} }) }).*"
         )
     assert panels["Warnings"]["gridPos"] == {"h": 5, "w": 16, "x": 0, "y": 23}
+
+    latency = panels["Network Latency"]
+    assert latency["fieldConfig"]["defaults"]["unit"] == "ms"
+    assert latency["targets"][0]["root_selector"] == (
+        "$map($.network_live[metric='latency'], function($s) { "
+        "$map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.value, "
+        "'host': $s.host_id} }) }).*"
+    )
+
+    bandwidth = panels["Network Bandwidth"]
+    assert bandwidth["fieldConfig"]["defaults"]["unit"] == "bps"
+    assert bandwidth["targets"][0]["root_selector"] == (
+        "$map($.network_live[metric!='latency'], function($s) { "
+        "$map($s.points, function($p) { {'time': $p.observed_at, 'value': $p.value, "
+        "'host': $s.host_id, 'interface': $s.interface, 'direction': $s.metric} }) }).*"
+    )
 
     system_target = panels["System Information"]["targets"][0]
     assert system_target["root_selector"] == "$.topology_maps[0].nodes"
