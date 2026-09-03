@@ -466,8 +466,8 @@
       "gridPos": {
         "x": 0,
         "y": 4,
-        "w": 16,
-        "h": 19
+        "w": 24,
+        "h": 39
       },
       "fieldConfig": {
         "defaults": {},
@@ -511,7 +511,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_1_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -547,7 +547,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_2_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -583,7 +583,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_3_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -619,7 +619,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_4_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -655,7 +655,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_5_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -691,7 +691,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_6_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -727,7 +727,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_7_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -763,7 +763,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_8_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -773,7 +773,6 @@
                 "width": 8
               },
               "id": "edge-9",
-              "linkOffset": -5,
               "nodes": [
                 {
                   "id": "5"
@@ -800,50 +799,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_9_up",
-              "stroke": 4,
-              "waypoints": [
-                {
-                  "x": 455,
-                  "y": 416
-                }
-              ]
-            },
-            {
-              "animation": "disabled",
-              "arrows": {
-                "height": 10,
-                "offset": 2,
-                "width": 8
-              },
-              "id": "edge-10",
-              "linkOffset": 5,
-              "nodes": [
-                {
-                  "id": "5"
-                },
-                {
-                  "id": "11"
-                }
-              ],
-              "showThroughputPercentage": false,
-              "sides": {
-                "A": {
-                  "anchor": 0,
-                  "bandwidth": 0,
-                  "dashboardLink": "",
-                  "labelOffset": 55
-                },
-                "Z": {
-                  "anchor": 0,
-                  "bandwidth": 0,
-                  "dashboardLink": "",
-                  "labelOffset": 55
-                }
-              },
-              "statusBlink": true,
-              "statusDownColor": "#d44a3a",
-              "statusQuery": "edge_10_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -879,7 +835,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_11_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -915,7 +871,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_12_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -951,7 +907,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_13_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -987,7 +943,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_14_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1023,7 +979,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_15_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1059,7 +1015,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_16_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1095,7 +1051,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_17_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1131,7 +1087,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_18_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1167,7 +1123,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_19_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1203,7 +1159,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_20_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1239,7 +1195,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_21_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1275,7 +1231,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_22_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1311,7 +1267,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_23_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1347,7 +1303,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_24_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1383,7 +1339,7 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_25_up",
-              "stroke": 4
+              "stroke": 5
             },
             {
               "animation": "disabled",
@@ -1419,7 +1375,115 @@
               "statusBlink": true,
               "statusDownColor": "#d44a3a",
               "statusQuery": "edge_26_up",
-              "stroke": 4
+              "stroke": 5
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-27",
+              "nodes": [
+                {
+                  "id": "27"
+                },
+                {
+                  "id": "12"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_27_up",
+              "stroke": 5
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-28",
+              "nodes": [
+                {
+                  "id": "29"
+                },
+                {
+                  "id": "28"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_28_up",
+              "stroke": 5
+            },
+            {
+              "animation": "disabled",
+              "arrows": {
+                "height": 10,
+                "offset": 2,
+                "width": 8
+              },
+              "id": "edge-29",
+              "nodes": [
+                {
+                  "id": "9"
+                },
+                {
+                  "id": "28"
+                }
+              ],
+              "showThroughputPercentage": false,
+              "sides": {
+                "A": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                },
+                "Z": {
+                  "anchor": 0,
+                  "bandwidth": 0,
+                  "dashboardLink": "",
+                  "labelOffset": 55
+                }
+              },
+              "statusBlink": true,
+              "statusDownColor": "#d44a3a",
+              "statusQuery": "edge_29_up",
+              "stroke": 5
             }
           ],
           "nodes": [
@@ -1475,8 +1539,8 @@
                 "vertical": 6
               },
               "position": [
-                57,
-                -53
+                860,
+                610
               ],
               "statusQuery": "node_2_status",
               "statusValueMappings": [
@@ -1566,8 +1630,8 @@
                 "vertical": 6
               },
               "position": [
-                402,
-                -64
+                1140,
+                610
               ],
               "statusQuery": "node_3_status",
               "statusValueMappings": [
@@ -1657,8 +1721,8 @@
                 "vertical": 6
               },
               "position": [
-                228,
-                127
+                1000,
+                700
               ],
               "statusQuery": "node_4_status",
               "statusValueMappings": [
@@ -1700,7 +1764,7 @@
               "anchors": {
                 "0": {
                   "numFilledLinks": 0,
-                  "numLinks": 7
+                  "numLinks": 6
                 },
                 "1": {
                   "numFilledLinks": 0,
@@ -1748,8 +1812,8 @@
                 "vertical": 6
               },
               "position": [
-                277,
-                363
+                1000,
+                900
               ],
               "statusQuery": "node_5_status",
               "statusValueMappings": [
@@ -1839,8 +1903,8 @@
                 "vertical": 6
               },
               "position": [
-                800,
-                121
+                1160,
+                780
               ],
               "statusQuery": "node_6_status",
               "statusValueMappings": [
@@ -1930,8 +1994,8 @@
                 "vertical": 6
               },
               "position": [
-                34,
-                488
+                860,
+                1080
               ],
               "statusQuery": "node_7_status",
               "statusValueMappings": [
@@ -2021,8 +2085,8 @@
                 "vertical": 6
               },
               "position": [
-                2,
-                249
+                1030,
+                1100
               ],
               "statusQuery": "node_8_status",
               "statusValueMappings": [
@@ -2064,7 +2128,7 @@
               "anchors": {
                 "0": {
                   "numFilledLinks": 0,
-                  "numLinks": 5
+                  "numLinks": 6
                 },
                 "1": {
                   "numFilledLinks": 0,
@@ -2112,8 +2176,8 @@
                 "vertical": 6
               },
               "position": [
-                376,
-                605
+                1280,
+                900
               ],
               "statusQuery": "node_9_status",
               "statusValueMappings": [
@@ -2203,8 +2267,8 @@
                 "vertical": 6
               },
               "position": [
-                23,
-                673
+                900,
+                170
               ],
               "statusQuery": "node_10_status",
               "statusValueMappings": [
@@ -2246,7 +2310,7 @@
               "anchors": {
                 "0": {
                   "numFilledLinks": 0,
-                  "numLinks": 3
+                  "numLinks": 2
                 },
                 "1": {
                   "numFilledLinks": 0,
@@ -2294,8 +2358,8 @@
                 "vertical": 6
               },
               "position": [
-                652,
-                473
+                720,
+                760
               ],
               "statusQuery": "node_11_status",
               "statusValueMappings": [
@@ -2337,7 +2401,7 @@
               "anchors": {
                 "0": {
                   "numFilledLinks": 0,
-                  "numLinks": 2
+                  "numLinks": 3
                 },
                 "1": {
                   "numFilledLinks": 0,
@@ -2385,8 +2449,8 @@
                 "vertical": 6
               },
               "position": [
-                561,
-                266
+                720,
+                1000
               ],
               "statusQuery": "node_12_status",
               "statusValueMappings": [
@@ -2476,8 +2540,8 @@
                 "vertical": 6
               },
               "position": [
-                -90,
-                1060
+                1100,
+                170
               ],
               "statusQuery": "node_13_status",
               "statusValueMappings": [
@@ -2567,8 +2631,8 @@
                 "vertical": 6
               },
               "position": [
-                110,
-                1065
+                1580,
+                350
               ],
               "statusQuery": "node_14_status",
               "statusValueMappings": [
@@ -2658,8 +2722,8 @@
                 "vertical": 6
               },
               "position": [
-                130,
-                798
+                1440,
+                310
               ],
               "statusQuery": "node_15_status",
               "statusValueMappings": [
@@ -2749,8 +2813,8 @@
                 "vertical": 6
               },
               "position": [
-                321,
-                1068
+                1830,
+                820
               ],
               "statusQuery": "node_16_status",
               "statusValueMappings": [
@@ -2840,8 +2904,8 @@
                 "vertical": 6
               },
               "position": [
-                331,
-                834
+                1700,
+                760
               ],
               "statusQuery": "node_17_status",
               "statusValueMappings": [
@@ -2931,8 +2995,8 @@
                 "vertical": 6
               },
               "position": [
-                591,
-                1078
+                1630,
+                1360
               ],
               "statusQuery": "node_18_status",
               "statusValueMappings": [
@@ -3022,8 +3086,8 @@
                 "vertical": 6
               },
               "position": [
-                553,
-                800
+                1500,
+                1310
               ],
               "statusQuery": "node_19_status",
               "statusValueMappings": [
@@ -3113,8 +3177,8 @@
                 "vertical": 6
               },
               "position": [
-                830,
-                895
+                480,
+                315
               ],
               "statusQuery": "node_20_status",
               "statusValueMappings": [
@@ -3204,8 +3268,8 @@
                 "vertical": 6
               },
               "position": [
-                719,
-                639
+                360,
+                240
               ],
               "statusQuery": "node_21_status",
               "statusValueMappings": [
@@ -3295,8 +3359,8 @@
                 "vertical": 6
               },
               "position": [
-                1166,
-                630
+                350,
+                400
               ],
               "statusQuery": "node_22_status",
               "statusValueMappings": [
@@ -3386,8 +3450,8 @@
                 "vertical": 6
               },
               "position": [
-                1123,
-                895
+                510,
+                415
               ],
               "statusQuery": "node_23_status",
               "statusValueMappings": [
@@ -3477,8 +3541,8 @@
                 "vertical": 6
               },
               "position": [
-                844,
-                366
+                300,
+                830
               ],
               "statusQuery": "node_24_status",
               "statusValueMappings": [
@@ -3568,8 +3632,8 @@
                 "vertical": 6
               },
               "position": [
-                913,
-                520
+                230,
+                730
               ],
               "statusQuery": "node_25_status",
               "statusValueMappings": [
@@ -3659,8 +3723,8 @@
                 "vertical": 6
               },
               "position": [
-                1137,
-                416
+                230,
+                930
               ],
               "statusQuery": "node_26_status",
               "statusValueMappings": [
@@ -3695,6 +3759,132 @@
                   "query": "node_26_problems",
                   "units": "none"
                 }
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {"numFilledLinks": 0, "numLinks": 1},
+                "1": {"numFilledLinks": 0, "numLinks": 0},
+                "2": {"numFilledLinks": 0, "numLinks": 0},
+                "3": {"numFilledLinks": 0, "numLinks": 0},
+                "4": {"numFilledLinks": 0, "numLinks": 0}
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "27",
+              "isConnection": false,
+              "label": "warehouse_switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {"horizontal": 2, "vertical": 2},
+                "size": {"height": 34, "width": 34},
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {"horizontal": 10, "vertical": 6},
+              "position": [420, 1340],
+              "statusQuery": "node_27_status",
+              "statusValueMappings": [
+                {"color": "#d44a3a", "value": 0},
+                {"color": "#6e6e6e", "value": 1},
+                {"color": "#8e8e8e", "value": 2},
+                {"color": "#f2cc0c", "value": 3},
+                {"color": "#ff9830", "value": 4},
+                {"color": "#299c46", "value": 5}
+              ],
+              "tooltipMetrics": [
+                {"label": "Active problems", "query": "node_27_problems", "units": "none"}
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {"numFilledLinks": 0, "numLinks": 2},
+                "1": {"numFilledLinks": 0, "numLinks": 0},
+                "2": {"numFilledLinks": 0, "numLinks": 0},
+                "3": {"numFilledLinks": 0, "numLinks": 0},
+                "4": {"numFilledLinks": 0, "numLinks": 0}
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "28",
+              "isConnection": false,
+              "label": "staffhouse_p2p",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/radio-tower",
+                "padding": {"horizontal": 2, "vertical": 2},
+                "size": {"height": 34, "width": 34},
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/radio-tower.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {"horizontal": 10, "vertical": 6},
+              "position": [930, 1570],
+              "statusQuery": "node_28_status",
+              "statusValueMappings": [
+                {"color": "#d44a3a", "value": 0},
+                {"color": "#6e6e6e", "value": 1},
+                {"color": "#8e8e8e", "value": 2},
+                {"color": "#f2cc0c", "value": 3},
+                {"color": "#ff9830", "value": 4},
+                {"color": "#299c46", "value": 5}
+              ],
+              "tooltipMetrics": [
+                {"label": "Active problems", "query": "node_28_problems", "units": "none"}
+              ],
+              "useConstantSpacing": false
+            },
+            {
+              "anchors": {
+                "0": {"numFilledLinks": 0, "numLinks": 1},
+                "1": {"numFilledLinks": 0, "numLinks": 0},
+                "2": {"numFilledLinks": 0, "numLinks": 0},
+                "3": {"numFilledLinks": 0, "numLinks": 0},
+                "4": {"numFilledLinks": 0, "numLinks": 0}
+              },
+              "colors": {
+                "background": "#22252b",
+                "border": "#5794f2",
+                "font": "#ffffff",
+                "statusDown": "#d44a3a"
+              },
+              "compactVerticalLinks": false,
+              "id": "29",
+              "isConnection": false,
+              "label": "staffhouse_switch",
+              "nodeIcon": {
+                "drawInside": true,
+                "name": "networking/switch",
+                "padding": {"horizontal": 2, "vertical": 2},
+                "size": {"height": 34, "width": 34},
+                "src": "public/plugins/tamirsuliman-weathermap-panel/icons/networking/switch.svg"
+              },
+              "nodeStatusColorTarget": "both",
+              "padding": {"horizontal": 10, "vertical": 6},
+              "position": [1080, 1630],
+              "statusQuery": "node_29_status",
+              "statusValueMappings": [
+                {"color": "#d44a3a", "value": 0},
+                {"color": "#6e6e6e", "value": 1},
+                {"color": "#8e8e8e", "value": 2},
+                {"color": "#f2cc0c", "value": 3},
+                {"color": "#ff9830", "value": 4},
+                {"color": "#299c46", "value": 5}
+              ],
+              "tooltipMetrics": [
+                {"label": "Active problems", "query": "node_29_problems", "units": "none"}
               ],
               "useConstantSpacing": false
             }
@@ -3739,6 +3929,11 @@
             },
             "panel": {
               "backgroundColor": "#00000000",
+              "backgroundImage": {
+                "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAwIiBoZWlnaHQ9IjE4MDAiIHZpZXdCb3g9IjAgMCAyMDAwIDE4MDAiPgogIDxnIGZpbGw9IiMwYjEyMjAiIGZpbGwtb3BhY2l0eT0iMC4zNCIgc3Ryb2tlPSIjYThiM2M0IiBzdHJva2Utb3BhY2l0eT0iMC45NSIgc3Ryb2tlLXdpZHRoPSI2Ij4KICAgIDxyZWN0IGlkPSJhZG1pbi16b25lIiB4PSI2NDAiIHk9IjUyMCIgd2lkdGg9IjcyMCIgaGVpZ2h0PSI2NjAiIHN0cm9rZS13aWR0aD0iOCIvPgogICAgPHJlY3QgaWQ9InBoMS16b25lIiB4PSI3NjAiIHk9IjYwIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjI0MCIvPgogICAgPHJlY3QgaWQ9InBoMi16b25lIiB4PSIxMjgwIiB5PSIxODAiIHdpZHRoPSI0NDAiIGhlaWdodD0iMjgwIi8+CiAgICA8cmVjdCBpZD0iY29vcC1jLXpvbmUiIHg9IjE1NDAiIHk9IjY1MCIgd2lkdGg9IjQ0MCIgaGVpZ2h0PSIyNjAiLz4KICAgIDxyZWN0IGlkPSJoc2Ytem9uZSIgeD0iMTM3MCIgeT0iMTIxMCIgd2lkdGg9IjQyMCIgaGVpZ2h0PSIyNDAiLz4KICAgIDxyZWN0IGlkPSJzdGFmZmhvdXNlLXpvbmUiIHg9IjgwMCIgeT0iMTQ5MCIgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyMzAiLz4KICAgIDxyZWN0IGlkPSJ3YXJlaG91c2Utem9uZSIgeD0iMjQwIiB5PSIxMjMwIiB3aWR0aD0iMzYwIiBoZWlnaHQ9IjI0MCIvPgogICAgPHJlY3QgaWQ9ImxhbmlrYWktem9uZSIgeD0iODAiIHk9IjY2MCIgd2lkdGg9IjQyMCIgaGVpZ2h0PSIzNDAiLz4KICAgIDxyZWN0IGlkPSJ0b3dlci10b3VyaXN0LXpvbmUiIHg9IjE0MCIgeT0iMTUwIiB3aWR0aD0iNTIwIiBoZWlnaHQ9IjMyMCIvPgogIDwvZz4KICA8ZyBmaWxsPSIjZWVmMmY3IiBmaWxsLW9wYWNpdHk9IjAuOTgiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjIiIHRleHQtYW5jaG9yPSJtaWRkbGUiPgogICAgPHRleHQgeD0iMTAwMCIgeT0iNTY1IiBmb250LXNpemU9IjM2Ij5BRE1JTjwvdGV4dD4KICAgIDx0ZXh0IHg9IjEwMDAiIHk9IjEwNSIgZm9udC1zaXplPSIyOCI+UEgxPC90ZXh0PgogICAgPHRleHQgeD0iMTUwMCIgeT0iMjI1IiBmb250LXNpemU9IjI4Ij5QSDI8L3RleHQ+CiAgICA8dGV4dCB4PSIxNzYwIiB5PSI2OTUiIGZvbnQtc2l6ZT0iMjgiPkNPT1AgQzwvdGV4dD4KICAgIDx0ZXh0IHg9IjE1ODAiIHk9IjEyNTUiIGZvbnQtc2l6ZT0iMjgiPkhTRjwvdGV4dD4KICAgIDx0ZXh0IHg9IjEwMDAiIHk9IjE1MzUiIGZvbnQtc2l6ZT0iMjgiPlNUQUZGSE9VU0U8L3RleHQ+CiAgICA8dGV4dCB4PSI0MjAiIHk9IjEyNzUiIGZvbnQtc2l6ZT0iMjgiPldBUkVIT1VTRTwvdGV4dD4KICAgIDx0ZXh0IHg9IjI5MCIgeT0iNzA1IiBmb250LXNpemU9IjI4Ij5MQU5JS0FJPC90ZXh0PgogICAgPHRleHQgeD0iNDAwIiB5PSIxOTUiIGZvbnQtc2l6ZT0iMjYiPlRPV0VSIDIgLyBUT1VSSVNUIENFTlRFUjwvdGV4dD4KICA8L2c+Cjwvc3ZnPg==",
+                "fit": "contain",
+                "attachToCanvas": true
+              },
               "grid": {
                 "enabled": false,
                 "guidesEnabled": false,
@@ -3749,8 +3944,8 @@
                 "y": 0
               },
               "panelSize": {
-                "height": 1050,
-                "width": 1250
+                "height": 1800,
+                "width": 2000
               },
               "showTimestamp": true,
               "viewZoomPan": true,
@@ -4081,6 +4276,36 @@
               "type": "number"
             },
             {
+              "selector": "node_27_status",
+              "text": "node_27_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_27_problems",
+              "text": "node_27_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_28_status",
+              "text": "node_28_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_28_problems",
+              "text": "node_28_problems",
+              "type": "number"
+            },
+            {
+              "selector": "node_29_status",
+              "text": "node_29_status",
+              "type": "number"
+            },
+            {
+              "selector": "node_29_problems",
+              "text": "node_29_problems",
+              "type": "number"
+            },
+            {
               "selector": "edge_1_up",
               "text": "edge_1_up",
               "type": "number"
@@ -4123,11 +4348,6 @@
             {
               "selector": "edge_9_up",
               "text": "edge_9_up",
-              "type": "number"
-            },
-            {
-              "selector": "edge_10_up",
-              "text": "edge_10_up",
               "type": "number"
             },
             {
@@ -4209,13 +4429,28 @@
               "selector": "edge_26_up",
               "text": "edge_26_up",
               "type": "number"
+            },
+            {
+              "selector": "edge_27_up",
+              "text": "edge_27_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_28_up",
+              "text": "edge_28_up",
+              "type": "number"
+            },
+            {
+              "selector": "edge_29_up",
+              "text": "edge_29_up",
+              "type": "number"
             }
           ],
           "filters": [],
           "format": "table",
           "global_query_id": "",
           "parser": "backend",
-          "root_selector": "($topology := $.topology_maps[map_id='3'][0]; $nodes := $topology.nodes; $n2 := $nodes[node_id='2'][0]; $n3 := $nodes[node_id='3'][0]; $n4 := $nodes[node_id='4'][0]; $n5 := $nodes[node_id='5'][0]; $n6 := $nodes[node_id='6'][0]; $n7 := $nodes[node_id='7'][0]; $n8 := $nodes[node_id='8'][0]; $n9 := $nodes[node_id='9'][0]; $n10 := $nodes[node_id='10'][0]; $n11 := $nodes[node_id='11'][0]; $n12 := $nodes[node_id='12'][0]; $n13 := $nodes[node_id='13'][0]; $n14 := $nodes[node_id='14'][0]; $n15 := $nodes[node_id='15'][0]; $n16 := $nodes[node_id='16'][0]; $n17 := $nodes[node_id='17'][0]; $n18 := $nodes[node_id='18'][0]; $n19 := $nodes[node_id='19'][0]; $n20 := $nodes[node_id='20'][0]; $n21 := $nodes[node_id='21'][0]; $n22 := $nodes[node_id='22'][0]; $n23 := $nodes[node_id='23'][0]; $n24 := $nodes[node_id='24'][0]; $n25 := $nodes[node_id='25'][0]; $n26 := $nodes[node_id='26'][0]; [{'node_2_status': ($n2.status = 'unavailable' ? 0 : ($n2.status = 'available' and $n2.active_problem_count > 0 ? 4 : ($n2.status = 'available' ? 5 : ($n2.status = 'maintenance' ? 3 : ($n2.status = 'disabled' ? 2 : 1))))), 'node_2_problems': $n2.active_problem_count, 'node_3_status': ($n3.status = 'unavailable' ? 0 : ($n3.status = 'available' and $n3.active_problem_count > 0 ? 4 : ($n3.status = 'available' ? 5 : ($n3.status = 'maintenance' ? 3 : ($n3.status = 'disabled' ? 2 : 1))))), 'node_3_problems': $n3.active_problem_count, 'node_4_status': ($n4.status = 'unavailable' ? 0 : ($n4.status = 'available' and $n4.active_problem_count > 0 ? 4 : ($n4.status = 'available' ? 5 : ($n4.status = 'maintenance' ? 3 : ($n4.status = 'disabled' ? 2 : 1))))), 'node_4_problems': $n4.active_problem_count, 'node_5_status': ($n5.status = 'unavailable' ? 0 : ($n5.status = 'available' and $n5.active_problem_count > 0 ? 4 : ($n5.status = 'available' ? 5 : ($n5.status = 'maintenance' ? 3 : ($n5.status = 'disabled' ? 2 : 1))))), 'node_5_problems': $n5.active_problem_count, 'node_6_status': ($n6.status = 'unavailable' ? 0 : ($n6.status = 'available' and $n6.active_problem_count > 0 ? 4 : ($n6.status = 'available' ? 5 : ($n6.status = 'maintenance' ? 3 : ($n6.status = 'disabled' ? 2 : 1))))), 'node_6_problems': $n6.active_problem_count, 'node_7_status': ($n7.status = 'unavailable' ? 0 : ($n7.status = 'available' and $n7.active_problem_count > 0 ? 4 : ($n7.status = 'available' ? 5 : ($n7.status = 'maintenance' ? 3 : ($n7.status = 'disabled' ? 2 : 1))))), 'node_7_problems': $n7.active_problem_count, 'node_8_status': ($n8.status = 'unavailable' ? 0 : ($n8.status = 'available' and $n8.active_problem_count > 0 ? 4 : ($n8.status = 'available' ? 5 : ($n8.status = 'maintenance' ? 3 : ($n8.status = 'disabled' ? 2 : 1))))), 'node_8_problems': $n8.active_problem_count, 'node_9_status': ($n9.status = 'unavailable' ? 0 : ($n9.status = 'available' and $n9.active_problem_count > 0 ? 4 : ($n9.status = 'available' ? 5 : ($n9.status = 'maintenance' ? 3 : ($n9.status = 'disabled' ? 2 : 1))))), 'node_9_problems': $n9.active_problem_count, 'node_10_status': ($n10.status = 'unavailable' ? 0 : ($n10.status = 'available' and $n10.active_problem_count > 0 ? 4 : ($n10.status = 'available' ? 5 : ($n10.status = 'maintenance' ? 3 : ($n10.status = 'disabled' ? 2 : 1))))), 'node_10_problems': $n10.active_problem_count, 'node_11_status': ($n11.status = 'unavailable' ? 0 : ($n11.status = 'available' and $n11.active_problem_count > 0 ? 4 : ($n11.status = 'available' ? 5 : ($n11.status = 'maintenance' ? 3 : ($n11.status = 'disabled' ? 2 : 1))))), 'node_11_problems': $n11.active_problem_count, 'node_12_status': ($n12.status = 'unavailable' ? 0 : ($n12.status = 'available' and $n12.active_problem_count > 0 ? 4 : ($n12.status = 'available' ? 5 : ($n12.status = 'maintenance' ? 3 : ($n12.status = 'disabled' ? 2 : 1))))), 'node_12_problems': $n12.active_problem_count, 'node_13_status': ($n13.status = 'unavailable' ? 0 : ($n13.status = 'available' and $n13.active_problem_count > 0 ? 4 : ($n13.status = 'available' ? 5 : ($n13.status = 'maintenance' ? 3 : ($n13.status = 'disabled' ? 2 : 1))))), 'node_13_problems': $n13.active_problem_count, 'node_14_status': ($n14.status = 'unavailable' ? 0 : ($n14.status = 'available' and $n14.active_problem_count > 0 ? 4 : ($n14.status = 'available' ? 5 : ($n14.status = 'maintenance' ? 3 : ($n14.status = 'disabled' ? 2 : 1))))), 'node_14_problems': $n14.active_problem_count, 'node_15_status': ($n15.status = 'unavailable' ? 0 : ($n15.status = 'available' and $n15.active_problem_count > 0 ? 4 : ($n15.status = 'available' ? 5 : ($n15.status = 'maintenance' ? 3 : ($n15.status = 'disabled' ? 2 : 1))))), 'node_15_problems': $n15.active_problem_count, 'node_16_status': ($n16.status = 'unavailable' ? 0 : ($n16.status = 'available' and $n16.active_problem_count > 0 ? 4 : ($n16.status = 'available' ? 5 : ($n16.status = 'maintenance' ? 3 : ($n16.status = 'disabled' ? 2 : 1))))), 'node_16_problems': $n16.active_problem_count, 'node_17_status': ($n17.status = 'unavailable' ? 0 : ($n17.status = 'available' and $n17.active_problem_count > 0 ? 4 : ($n17.status = 'available' ? 5 : ($n17.status = 'maintenance' ? 3 : ($n17.status = 'disabled' ? 2 : 1))))), 'node_17_problems': $n17.active_problem_count, 'node_18_status': ($n18.status = 'unavailable' ? 0 : ($n18.status = 'available' and $n18.active_problem_count > 0 ? 4 : ($n18.status = 'available' ? 5 : ($n18.status = 'maintenance' ? 3 : ($n18.status = 'disabled' ? 2 : 1))))), 'node_18_problems': $n18.active_problem_count, 'node_19_status': ($n19.status = 'unavailable' ? 0 : ($n19.status = 'available' and $n19.active_problem_count > 0 ? 4 : ($n19.status = 'available' ? 5 : ($n19.status = 'maintenance' ? 3 : ($n19.status = 'disabled' ? 2 : 1))))), 'node_19_problems': $n19.active_problem_count, 'node_20_status': ($n20.status = 'unavailable' ? 0 : ($n20.status = 'available' and $n20.active_problem_count > 0 ? 4 : ($n20.status = 'available' ? 5 : ($n20.status = 'maintenance' ? 3 : ($n20.status = 'disabled' ? 2 : 1))))), 'node_20_problems': $n20.active_problem_count, 'node_21_status': ($n21.status = 'unavailable' ? 0 : ($n21.status = 'available' and $n21.active_problem_count > 0 ? 4 : ($n21.status = 'available' ? 5 : ($n21.status = 'maintenance' ? 3 : ($n21.status = 'disabled' ? 2 : 1))))), 'node_21_problems': $n21.active_problem_count, 'node_22_status': ($n22.status = 'unavailable' ? 0 : ($n22.status = 'available' and $n22.active_problem_count > 0 ? 4 : ($n22.status = 'available' ? 5 : ($n22.status = 'maintenance' ? 3 : ($n22.status = 'disabled' ? 2 : 1))))), 'node_22_problems': $n22.active_problem_count, 'node_23_status': ($n23.status = 'unavailable' ? 0 : ($n23.status = 'available' and $n23.active_problem_count > 0 ? 4 : ($n23.status = 'available' ? 5 : ($n23.status = 'maintenance' ? 3 : ($n23.status = 'disabled' ? 2 : 1))))), 'node_23_problems': $n23.active_problem_count, 'node_24_status': ($n24.status = 'unavailable' ? 0 : ($n24.status = 'available' and $n24.active_problem_count > 0 ? 4 : ($n24.status = 'available' ? 5 : ($n24.status = 'maintenance' ? 3 : ($n24.status = 'disabled' ? 2 : 1))))), 'node_24_problems': $n24.active_problem_count, 'node_25_status': ($n25.status = 'unavailable' ? 0 : ($n25.status = 'available' and $n25.active_problem_count > 0 ? 4 : ($n25.status = 'available' ? 5 : ($n25.status = 'maintenance' ? 3 : ($n25.status = 'disabled' ? 2 : 1))))), 'node_25_problems': $n25.active_problem_count, 'node_26_status': ($n26.status = 'unavailable' ? 0 : ($n26.status = 'available' and $n26.active_problem_count > 0 ? 4 : ($n26.status = 'available' ? 5 : ($n26.status = 'maintenance' ? 3 : ($n26.status = 'disabled' ? 2 : 1))))), 'node_26_problems': $n26.active_problem_count, 'edge_1_up': ($n4.status = 'unavailable' or $n2.status = 'unavailable' ? 0 : 1), 'edge_2_up': ($n3.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_3_up': ($n5.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_4_up': ($n4.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_5_up': ($n5.status = 'unavailable' or $n8.status = 'unavailable' ? 0 : 1), 'edge_6_up': ($n5.status = 'unavailable' or $n7.status = 'unavailable' ? 0 : 1), 'edge_7_up': ($n12.status = 'unavailable' or $n5.status = 'unavailable' ? 0 : 1), 'edge_8_up': ($n12.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_9_up': ($n5.status = 'unavailable' or $n11.status = 'unavailable' ? 0 : 1), 'edge_10_up': ($n5.status = 'unavailable' or $n11.status = 'unavailable' ? 0 : 1), 'edge_11_up': ($n5.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_12_up': ($n10.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_13_up': ($n10.status = 'unavailable' or $n13.status = 'unavailable' ? 0 : 1), 'edge_14_up': ($n15.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_15_up': ($n15.status = 'unavailable' or $n14.status = 'unavailable' ? 0 : 1), 'edge_16_up': ($n9.status = 'unavailable' or $n17.status = 'unavailable' ? 0 : 1), 'edge_17_up': ($n17.status = 'unavailable' or $n16.status = 'unavailable' ? 0 : 1), 'edge_18_up': ($n19.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_19_up': ($n18.status = 'unavailable' or $n19.status = 'unavailable' ? 0 : 1), 'edge_20_up': ($n11.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_21_up': ($n20.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_22_up': ($n22.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_23_up': ($n25.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_24_up': ($n25.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_25_up': ($n26.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_26_up': ($n23.status = 'unavailable' or $n22.status = 'unavailable' ? 0 : 1)}])",
+          "root_selector": "($topology := $.topology_maps[map_id='3'][0]; $nodes := $topology.nodes; $n2 := $nodes[node_id='2'][0]; $n3 := $nodes[node_id='3'][0]; $n4 := $nodes[node_id='4'][0]; $n5 := $nodes[node_id='5'][0]; $n6 := $nodes[node_id='6'][0]; $n7 := $nodes[node_id='7'][0]; $n8 := $nodes[node_id='8'][0]; $n9 := $nodes[node_id='9'][0]; $n10 := $nodes[node_id='10'][0]; $n11 := $nodes[node_id='11'][0]; $n12 := $nodes[node_id='12'][0]; $n13 := $nodes[node_id='13'][0]; $n14 := $nodes[node_id='14'][0]; $n15 := $nodes[node_id='15'][0]; $n16 := $nodes[node_id='16'][0]; $n17 := $nodes[node_id='17'][0]; $n18 := $nodes[node_id='18'][0]; $n19 := $nodes[node_id='19'][0]; $n20 := $nodes[node_id='20'][0]; $n21 := $nodes[node_id='21'][0]; $n22 := $nodes[node_id='22'][0]; $n23 := $nodes[node_id='23'][0]; $n24 := $nodes[node_id='24'][0]; $n25 := $nodes[node_id='25'][0]; $n26 := $nodes[node_id='26'][0]; $n27 := $nodes[node_id='27'][0]; $n28 := $nodes[node_id='28'][0]; $n29 := $nodes[node_id='29'][0]; [{'node_2_status': ($n2.status = 'unavailable' ? 0 : ($n2.status = 'available' and $n2.active_problem_count > 0 ? 4 : ($n2.status = 'available' ? 5 : ($n2.status = 'maintenance' ? 3 : ($n2.status = 'disabled' ? 2 : 1))))), 'node_2_problems': $n2.active_problem_count, 'node_3_status': ($n3.status = 'unavailable' ? 0 : ($n3.status = 'available' and $n3.active_problem_count > 0 ? 4 : ($n3.status = 'available' ? 5 : ($n3.status = 'maintenance' ? 3 : ($n3.status = 'disabled' ? 2 : 1))))), 'node_3_problems': $n3.active_problem_count, 'node_4_status': ($n4.status = 'unavailable' ? 0 : ($n4.status = 'available' and $n4.active_problem_count > 0 ? 4 : ($n4.status = 'available' ? 5 : ($n4.status = 'maintenance' ? 3 : ($n4.status = 'disabled' ? 2 : 1))))), 'node_4_problems': $n4.active_problem_count, 'node_5_status': ($n5.status = 'unavailable' ? 0 : ($n5.status = 'available' and $n5.active_problem_count > 0 ? 4 : ($n5.status = 'available' ? 5 : ($n5.status = 'maintenance' ? 3 : ($n5.status = 'disabled' ? 2 : 1))))), 'node_5_problems': $n5.active_problem_count, 'node_6_status': ($n6.status = 'unavailable' ? 0 : ($n6.status = 'available' and $n6.active_problem_count > 0 ? 4 : ($n6.status = 'available' ? 5 : ($n6.status = 'maintenance' ? 3 : ($n6.status = 'disabled' ? 2 : 1))))), 'node_6_problems': $n6.active_problem_count, 'node_7_status': ($n7.status = 'unavailable' ? 0 : ($n7.status = 'available' and $n7.active_problem_count > 0 ? 4 : ($n7.status = 'available' ? 5 : ($n7.status = 'maintenance' ? 3 : ($n7.status = 'disabled' ? 2 : 1))))), 'node_7_problems': $n7.active_problem_count, 'node_8_status': ($n8.status = 'unavailable' ? 0 : ($n8.status = 'available' and $n8.active_problem_count > 0 ? 4 : ($n8.status = 'available' ? 5 : ($n8.status = 'maintenance' ? 3 : ($n8.status = 'disabled' ? 2 : 1))))), 'node_8_problems': $n8.active_problem_count, 'node_9_status': ($n9.status = 'unavailable' ? 0 : ($n9.status = 'available' and $n9.active_problem_count > 0 ? 4 : ($n9.status = 'available' ? 5 : ($n9.status = 'maintenance' ? 3 : ($n9.status = 'disabled' ? 2 : 1))))), 'node_9_problems': $n9.active_problem_count, 'node_10_status': ($n10.status = 'unavailable' ? 0 : ($n10.status = 'available' and $n10.active_problem_count > 0 ? 4 : ($n10.status = 'available' ? 5 : ($n10.status = 'maintenance' ? 3 : ($n10.status = 'disabled' ? 2 : 1))))), 'node_10_problems': $n10.active_problem_count, 'node_11_status': ($n11.status = 'unavailable' ? 0 : ($n11.status = 'available' and $n11.active_problem_count > 0 ? 4 : ($n11.status = 'available' ? 5 : ($n11.status = 'maintenance' ? 3 : ($n11.status = 'disabled' ? 2 : 1))))), 'node_11_problems': $n11.active_problem_count, 'node_12_status': ($n12.status = 'unavailable' ? 0 : ($n12.status = 'available' and $n12.active_problem_count > 0 ? 4 : ($n12.status = 'available' ? 5 : ($n12.status = 'maintenance' ? 3 : ($n12.status = 'disabled' ? 2 : 1))))), 'node_12_problems': $n12.active_problem_count, 'node_13_status': ($n13.status = 'unavailable' ? 0 : ($n13.status = 'available' and $n13.active_problem_count > 0 ? 4 : ($n13.status = 'available' ? 5 : ($n13.status = 'maintenance' ? 3 : ($n13.status = 'disabled' ? 2 : 1))))), 'node_13_problems': $n13.active_problem_count, 'node_14_status': ($n14.status = 'unavailable' ? 0 : ($n14.status = 'available' and $n14.active_problem_count > 0 ? 4 : ($n14.status = 'available' ? 5 : ($n14.status = 'maintenance' ? 3 : ($n14.status = 'disabled' ? 2 : 1))))), 'node_14_problems': $n14.active_problem_count, 'node_15_status': ($n15.status = 'unavailable' ? 0 : ($n15.status = 'available' and $n15.active_problem_count > 0 ? 4 : ($n15.status = 'available' ? 5 : ($n15.status = 'maintenance' ? 3 : ($n15.status = 'disabled' ? 2 : 1))))), 'node_15_problems': $n15.active_problem_count, 'node_16_status': ($n16.status = 'unavailable' ? 0 : ($n16.status = 'available' and $n16.active_problem_count > 0 ? 4 : ($n16.status = 'available' ? 5 : ($n16.status = 'maintenance' ? 3 : ($n16.status = 'disabled' ? 2 : 1))))), 'node_16_problems': $n16.active_problem_count, 'node_17_status': ($n17.status = 'unavailable' ? 0 : ($n17.status = 'available' and $n17.active_problem_count > 0 ? 4 : ($n17.status = 'available' ? 5 : ($n17.status = 'maintenance' ? 3 : ($n17.status = 'disabled' ? 2 : 1))))), 'node_17_problems': $n17.active_problem_count, 'node_18_status': ($n18.status = 'unavailable' ? 0 : ($n18.status = 'available' and $n18.active_problem_count > 0 ? 4 : ($n18.status = 'available' ? 5 : ($n18.status = 'maintenance' ? 3 : ($n18.status = 'disabled' ? 2 : 1))))), 'node_18_problems': $n18.active_problem_count, 'node_19_status': ($n19.status = 'unavailable' ? 0 : ($n19.status = 'available' and $n19.active_problem_count > 0 ? 4 : ($n19.status = 'available' ? 5 : ($n19.status = 'maintenance' ? 3 : ($n19.status = 'disabled' ? 2 : 1))))), 'node_19_problems': $n19.active_problem_count, 'node_20_status': ($n20.status = 'unavailable' ? 0 : ($n20.status = 'available' and $n20.active_problem_count > 0 ? 4 : ($n20.status = 'available' ? 5 : ($n20.status = 'maintenance' ? 3 : ($n20.status = 'disabled' ? 2 : 1))))), 'node_20_problems': $n20.active_problem_count, 'node_21_status': ($n21.status = 'unavailable' ? 0 : ($n21.status = 'available' and $n21.active_problem_count > 0 ? 4 : ($n21.status = 'available' ? 5 : ($n21.status = 'maintenance' ? 3 : ($n21.status = 'disabled' ? 2 : 1))))), 'node_21_problems': $n21.active_problem_count, 'node_22_status': ($n22.status = 'unavailable' ? 0 : ($n22.status = 'available' and $n22.active_problem_count > 0 ? 4 : ($n22.status = 'available' ? 5 : ($n22.status = 'maintenance' ? 3 : ($n22.status = 'disabled' ? 2 : 1))))), 'node_22_problems': $n22.active_problem_count, 'node_23_status': ($n23.status = 'unavailable' ? 0 : ($n23.status = 'available' and $n23.active_problem_count > 0 ? 4 : ($n23.status = 'available' ? 5 : ($n23.status = 'maintenance' ? 3 : ($n23.status = 'disabled' ? 2 : 1))))), 'node_23_problems': $n23.active_problem_count, 'node_24_status': ($n24.status = 'unavailable' ? 0 : ($n24.status = 'available' and $n24.active_problem_count > 0 ? 4 : ($n24.status = 'available' ? 5 : ($n24.status = 'maintenance' ? 3 : ($n24.status = 'disabled' ? 2 : 1))))), 'node_24_problems': $n24.active_problem_count, 'node_25_status': ($n25.status = 'unavailable' ? 0 : ($n25.status = 'available' and $n25.active_problem_count > 0 ? 4 : ($n25.status = 'available' ? 5 : ($n25.status = 'maintenance' ? 3 : ($n25.status = 'disabled' ? 2 : 1))))), 'node_25_problems': $n25.active_problem_count, 'node_26_status': ($n26.status = 'unavailable' ? 0 : ($n26.status = 'available' and $n26.active_problem_count > 0 ? 4 : ($n26.status = 'available' ? 5 : ($n26.status = 'maintenance' ? 3 : ($n26.status = 'disabled' ? 2 : 1))))), 'node_26_problems': $n26.active_problem_count, 'node_27_status': ($n27.status = 'unavailable' ? 0 : ($n27.status = 'available' and $n27.active_problem_count > 0 ? 4 : ($n27.status = 'available' ? 5 : ($n27.status = 'maintenance' ? 3 : ($n27.status = 'disabled' ? 2 : 1))))), 'node_27_problems': $n27.active_problem_count, 'node_28_status': ($n28.status = 'unavailable' ? 0 : ($n28.status = 'available' and $n28.active_problem_count > 0 ? 4 : ($n28.status = 'available' ? 5 : ($n28.status = 'maintenance' ? 3 : ($n28.status = 'disabled' ? 2 : 1))))), 'node_28_problems': $n28.active_problem_count, 'node_29_status': ($n29.status = 'unavailable' ? 0 : ($n29.status = 'available' and $n29.active_problem_count > 0 ? 4 : ($n29.status = 'available' ? 5 : ($n29.status = 'maintenance' ? 3 : ($n29.status = 'disabled' ? 2 : 1))))), 'node_29_problems': $n29.active_problem_count, 'edge_1_up': ($n4.status = 'unavailable' or $n2.status = 'unavailable' ? 0 : 1), 'edge_2_up': ($n3.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_3_up': ($n5.status = 'unavailable' or $n4.status = 'unavailable' ? 0 : 1), 'edge_4_up': ($n4.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_5_up': ($n5.status = 'unavailable' or $n8.status = 'unavailable' ? 0 : 1), 'edge_6_up': ($n5.status = 'unavailable' or $n7.status = 'unavailable' ? 0 : 1), 'edge_7_up': ($n12.status = 'unavailable' or $n5.status = 'unavailable' ? 0 : 1), 'edge_8_up': ($n12.status = 'unavailable' or $n6.status = 'unavailable' ? 0 : 1), 'edge_9_up': ($n5.status = 'unavailable' or $n11.status = 'unavailable' ? 0 : 1), 'edge_11_up': ($n5.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_12_up': ($n10.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_13_up': ($n10.status = 'unavailable' or $n13.status = 'unavailable' ? 0 : 1), 'edge_14_up': ($n15.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_15_up': ($n15.status = 'unavailable' or $n14.status = 'unavailable' ? 0 : 1), 'edge_16_up': ($n9.status = 'unavailable' or $n17.status = 'unavailable' ? 0 : 1), 'edge_17_up': ($n17.status = 'unavailable' or $n16.status = 'unavailable' ? 0 : 1), 'edge_18_up': ($n19.status = 'unavailable' or $n9.status = 'unavailable' ? 0 : 1), 'edge_19_up': ($n18.status = 'unavailable' or $n19.status = 'unavailable' ? 0 : 1), 'edge_20_up': ($n11.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_21_up': ($n20.status = 'unavailable' or $n21.status = 'unavailable' ? 0 : 1), 'edge_22_up': ($n22.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_23_up': ($n25.status = 'unavailable' or $n20.status = 'unavailable' ? 0 : 1), 'edge_24_up': ($n25.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_25_up': ($n26.status = 'unavailable' or $n24.status = 'unavailable' ? 0 : 1), 'edge_26_up': ($n23.status = 'unavailable' or $n22.status = 'unavailable' ? 0 : 1), 'edge_27_up': ($n27.status = 'unavailable' or $n12.status = 'unavailable' ? 0 : 1), 'edge_28_up': ($n29.status = 'unavailable' or $n28.status = 'unavailable' ? 0 : 1), 'edge_29_up': ($n9.status = 'unavailable' or $n28.status = 'unavailable' ? 0 : 1)}])",
           "source": "url",
           "type": "json",
           "url": "/api/dashboard/zabbix",
@@ -4237,8 +4472,8 @@
       },
       "description": "Host status and active-problem counts from the first visible normalized Zabbix topology map.",
       "gridPos": {
-        "x": 16,
-        "y": 4,
+        "x": 0,
+        "y": 43,
         "w": 8,
         "h": 8
       },
@@ -4351,8 +4586,8 @@
       },
       "description": "Near-live CPU utilization sampled from current Zabbix item values on each 60-second cache refresh for ranked hosts.",
       "gridPos": {
-        "x": 16,
-        "y": 12,
+        "x": 8,
+        "y": 43,
         "w": 8,
         "h": 8
       },
@@ -4488,7 +4723,7 @@
       "description": "Near-live memory utilization sampled from current Zabbix item values on each 60-second cache refresh for ranked hosts.",
       "gridPos": {
         "x": 16,
-        "y": 20,
+        "y": 43,
         "w": 8,
         "h": 8
       },
@@ -4624,8 +4859,8 @@
       "description": "Bounded source and staleness warnings returned by FastAPI.",
       "gridPos": {
         "x": 0,
-        "y": 23,
-        "w": 16,
+        "y": 51,
+        "w": 24,
         "h": 5
       },
       "fieldConfig": {
@@ -4701,7 +4936,7 @@
       "description": "Near-live ICMP response latency from normalized Zabbix icmppingsec item values, retained for the last hour by the FastAPI cache.",
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 56,
         "w": 12,
         "h": 8
       },
@@ -4816,7 +5051,7 @@
       "description": "Near-live inbound and outbound interface bandwidth rates normalized to bits per second from Zabbix net.if.in and net.if.out items, retained for the last hour by the FastAPI cache.",
       "gridPos": {
         "x": 12,
-        "y": 28,
+        "y": 56,
         "w": 12,
         "h": 8
       },
