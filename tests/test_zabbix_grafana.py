@@ -97,12 +97,12 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
         {"selector": "cpu_used_percent", "text": "cpu_used_percent", "type": "number"}
     ]
 
-    assert panels["Live Host Topology"]["gridPos"] == {"h": 19, "w": 16, "x": 0, "y": 4}
-    assert panels["System Information"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 4}
-    assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 12}
-    assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 20}
-    assert panels["Network Latency"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 28}
-    assert panels["Network Bandwidth"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 28}
+    assert panels["Live Host Topology"]["gridPos"] == {"h": 39, "w": 24, "x": 0, "y": 4}
+    assert panels["System Information"]["gridPos"] == {"h": 8, "w": 8, "x": 0, "y": 43}
+    assert panels["CPU Load"]["gridPos"] == {"h": 8, "w": 8, "x": 8, "y": 43}
+    assert panels["Memory Usage"]["gridPos"] == {"h": 8, "w": 8, "x": 16, "y": 43}
+    assert panels["Network Latency"]["gridPos"] == {"h": 8, "w": 12, "x": 0, "y": 56}
+    assert panels["Network Bandwidth"]["gridPos"] == {"h": 8, "w": 12, "x": 12, "y": 56}
     assert dashboard["time"] == {"from": "now-1h", "to": "now"}
 
     for title, metric in [("CPU Load", "cpu"), ("Memory Usage", "memory")]:
@@ -112,7 +112,7 @@ def test_zabbix_dashboard_uses_global_view_layout() -> None:
             "$map($s.points, function($p) { {'time': $p.observed_at, "
             "'value': $p.used_percent, 'host': $s.host_id} }) }).*"
         )
-    assert panels["Warnings"]["gridPos"] == {"h": 5, "w": 16, "x": 0, "y": 23}
+    assert panels["Warnings"]["gridPos"] == {"h": 5, "w": 24, "x": 0, "y": 51}
 
     latency = panels["Network Latency"]
     assert latency["fieldConfig"]["defaults"]["unit"] == "ms"
@@ -154,14 +154,14 @@ def test_zabbix_dashboard_live_topology_uses_network_weathermap() -> None:
     weathermap = panel["options"]["weathermap"]
     assert weathermap["version"] == 14
     assert weathermap["id"] == "zabbix-hijo-network-map"
-    assert len(weathermap["nodes"]) == 25
-    assert len(weathermap["links"]) == 26
+    assert len(weathermap["nodes"]) == 28
+    assert len(weathermap["links"]) == 28
 
     nodes = {node["id"]: node for node in weathermap["nodes"]}
-    assert nodes["4"]["position"] == [228, 127]
-    assert nodes["5"]["position"] == [277, 363]
-    assert nodes["21"]["position"] == [719, 639]
-    assert nodes["26"]["position"] == [1137, 416]
+    assert nodes["4"]["position"] == [800, 720]
+    assert nodes["5"]["position"] == [1050, 800]
+    assert nodes["21"]["position"] == [350, 220]
+    assert nodes["26"]["position"] == [120, 1120]
     assert nodes["4"]["nodeIcon"]["name"] == "networking/firewall"
     assert nodes["5"]["nodeIcon"]["name"] == "networking/switch"
     assert nodes["6"]["nodeIcon"]["name"] == "networking/server"
@@ -198,7 +198,7 @@ def test_zabbix_dashboard_live_topology_uses_network_weathermap() -> None:
         } == expected_status_colors
 
     settings = weathermap["settings"]
-    assert settings["panel"]["panelSize"] == {"width": 1250, "height": 1050}
+    assert settings["panel"]["panelSize"] == {"width": 2000, "height": 1800}
     assert settings["panel"]["viewZoomPan"] is True
     assert settings["link"]["stroke"]["color"] == "#299c46"
     assert settings["link"]["flowAnimation"]["enabled"] is False

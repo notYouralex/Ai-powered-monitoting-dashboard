@@ -33,12 +33,12 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
     topology = panels["Live Host Topology"]
     assert topology["type"] == "tamirsuliman-weathermap-panel"
     assert topology["pluginVersion"] == "1.6.12"
-    assert topology["gridPos"] == {"x": 0, "y": 4, "w": 16, "h": 19}
+    assert topology["gridPos"] == {"x": 0, "y": 4, "w": 24, "h": 39}
 
     weathermap = topology["options"]["weathermap"]
     assert weathermap["version"] == 14
-    assert len(weathermap["nodes"]) == 25
-    assert len(weathermap["links"]) == 26
+    assert len(weathermap["nodes"]) == 28
+    assert len(weathermap["links"]) == 28
     assert weathermap["settings"]["link"]["flowAnimation"]["enabled"] is False
     assert weathermap["settings"]["statusLegend"]["enabled"] is True
 
@@ -60,9 +60,9 @@ def test_zabbix_dashboard_matches_finalized_infrastructure_layout() -> None:
     )
 
     warnings = panels["Warnings"]
-    assert warnings["gridPos"] == {"x": 0, "y": 23, "w": 16, "h": 5}
-    assert panels["Network Latency"]["gridPos"] == {"x": 0, "y": 28, "w": 12, "h": 8}
-    assert panels["Network Bandwidth"]["gridPos"] == {"x": 12, "y": 28, "w": 12, "h": 8}
+    assert warnings["gridPos"] == {"x": 0, "y": 51, "w": 24, "h": 5}
+    assert panels["Network Latency"]["gridPos"] == {"x": 0, "y": 56, "w": 12, "h": 8}
+    assert panels["Network Bandwidth"]["gridPos"] == {"x": 12, "y": 56, "w": 12, "h": 8}
     assert warnings["targets"][0]["root_selector"] == (
         "$map($.warnings, function($w) { {'warning': $w} })"
     )
