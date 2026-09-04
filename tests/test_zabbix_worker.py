@@ -60,7 +60,12 @@ def test_worker_delegates_configured_zabbix_refresh_to_cache_service(monkeypatch
             seen["refresh_db"] = db
             return SimpleNamespace(status="success")
 
+    def fake_correlate(db):
+        seen["correlation_db"] = db
+        return 1
+
     monkeypatch.setattr("app.worker.ZabbixCacheRefreshService", FakeRefreshService)
+    monkeypatch.setattr("app.worker.correlate_zabbix_cache", fake_correlate)
 
     result = asyncio.run(
         run_zabbix_refresh_once(
@@ -73,3 +78,4 @@ def test_worker_delegates_configured_zabbix_refresh_to_cache_service(monkeypatch
     assert result == "success"
     assert seen["client"] is client
     assert seen["refresh_db"] is seen["db"]
+    assert seen["correlation_db"] is seen["db"]
