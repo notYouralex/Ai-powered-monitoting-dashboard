@@ -225,7 +225,7 @@ fastapi-api
 background-worker
 ```
 
-Grafana is intentionally external to this Compose stack because the project reuses the existing host-installed instance. A local AI runtime and the final reverse proxy are part of the approved target architecture but are not yet present in the current Compose implementation.
+Grafana is intentionally external to this Compose stack because the project reuses the existing host-installed instance. A local AI runtime remains host-local. The repository now includes an internal HTTPS Nginx template under `deploy/nginx/` for Grafana, FastAPI/AI, and Wazuh Dashboard. Nginx installation, certificate installation, Grafana/Wazuh Dashboard listener changes, DNS/firewall work, and service reloads remain separate deployment actions.
 
 ## Requirements
 
@@ -321,7 +321,7 @@ The current repository state leaves the following major work:
 3. Add device correlation and shared integration-health behavior.
 4. Standardize the remaining Grafana provisioning/reference files around the existing host-installed deployment model.
 5. Add the fully local AI runtime and bounded AI orchestration.
-6. Add the final internal HTTPS/reverse-proxy deployment model.
+6. Activate and validate the prepared internal HTTPS/reverse-proxy deployment model.
 7. Complete end-to-end acceptance, backup/restore, operational documentation, and handover.
 
 ## Security boundary

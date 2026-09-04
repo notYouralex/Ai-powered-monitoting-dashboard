@@ -191,3 +191,57 @@ def test_api_receives_grafana_api_token_without_exposing_value() -> None:
 
     assert "GRAFANA_API_TOKEN: ${GRAFANA_API_TOKEN:-}" in api
     assert "Bearer " not in api
+
+
+def test_nginx_template_fronts_all_user_facing_services_over_internal_https() -> None:
+    nginx = read("deploy/nginx/ai-monitoring.conf.example")
+
+    assert "listen <INTERNAL_BIND_IP>:443 ssl;" in nginx
+    assert "server_name <GRAFANA_HOSTNAME>;" in nginx
+    assert "server_name <APP_HOSTNAME>;" in nginx
+    assert "server_name <WAZUH_DASHBOARD_HOSTNAME>;" in nginx
+    assert "ssl_protocols TLSv1.2 TLSv1.3;" in nginx
+    assert "ssl_certificate <TLS_CERTIFICATE_PATH>;" in nginx
+    assert "ssl_certificate_key <TLS_PRIVATE_KEY_PATH>;" in nginx
+    assert "proxy_pass https://127.0.0.1:3000;" in nginx
+    assert "proxy_ssl_trusted_certificate <GRAFANA_UPSTREAM_CA_PATH>;" in nginx
+    assert "proxy_ssl_name localhost;" in nginx
+    assert "proxy_pass http://127.0.0.1:<APP_PORT>;" in nginx
+    assert "proxy_pass https://127.0.0.1:5601;" in nginx
+    assert "proxy_ssl_verify on;" in nginx
+    assert "proxy_ssl_trusted_certificate <WAZUH_DASHBOARD_CA_PATH>;" in nginx
+    assert "proxy_ssl_name 127.0.0.1;" in nginx
+    assert "proxy_set_header X-Forwarded-Proto https;" in nginx
+    assert "listen 0.0.0.0" not in nginx
+    assert "listen [::]" not in nginx
+
+
+def test_nginx_template_supports_grafana_live_and_long_ai_requests() -> None:
+    nginx = read("deploy/nginx/ai-monitoring.conf.example")
+
+    assert "location /api/live/" in nginx
+    assert "proxy_set_header Upgrade $http_upgrade;" in nginx
+    assert 'proxy_set_header Connection "upgrade";' in nginx
+    assert "proxy_read_timeout 180s;" in nginx
+
+
+def test_internal_https_runbook_requires_loopback_services_and_secure_cookies() -> None:
+    runbook = read("docs/deployment/internal-https.md")
+
+    assert "APP_ENV=production" in runbook
+    assert "COOKIE_SECURE=true" in runbook
+    assert "protocol = https" in runbook
+    assert "http_addr = 127.0.0.1" in runbook
+    assert "<GRAFANA_UPSTREAM_CA_PATH>" in runbook
+    assert "127.0.0.1:8000" in runbook
+    assert "127.0.0.1:3000" in runbook
+    assert "127.0.0.1:55432" in runbook
+    assert "127.0.0.1:5601" in runbook
+    assert "server.host: 127.0.0.1" in runbook
+    assert "server.port: 5601" in runbook
+    assert "server.ssl.enabled: true" in runbook
+    assert "<WAZUH_DASHBOARD_HOSTNAME>" in runbook
+    assert "<WAZUH_DASHBOARD_CA_PATH>" in runbook
+    assert "nginx -t" in runbook
+    assert "private key" in runbook.lower()
+    assert "do not commit" in runbook.lower()
