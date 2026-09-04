@@ -94,12 +94,13 @@ def test_api_uses_loopback_postgres_and_read_only_wazuh_certificates() -> None:
     assert "./.runtime-certs:/run/wazuh-certs:ro" in api
 
 
-def test_background_worker_remains_on_compose_network() -> None:
+def test_background_worker_uses_host_network_and_loopback_postgres() -> None:
     compose = read("compose.yaml")
     worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
 
-    assert "network_mode: host" not in worker
-    assert "@postgresql:5432/" in worker
+    assert "network_mode: host" in worker
+    assert "@127.0.0.1:${POSTGRES_HOST_PORT:-55432}/" in worker
+    assert "@postgresql:5432/" not in worker
 
 
 def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
@@ -108,6 +109,23 @@ def test_api_has_healthcheck_for_worker_startup_ordering() -> None:
 
     assert "healthcheck:" in api
     assert "/health" in api
+
+
+def test_background_worker_receives_wazuh_server_settings() -> None:
+    compose = read("compose.yaml")
+    worker = compose.split("background-worker:", 1)[1].split("grafana:", 1)[0]
+
+    expected_settings = (
+        "WAZUH_BASE_URL",
+        "WAZUH_USERNAME",
+        "WAZUH_PASSWORD",
+        "WAZUH_VERIFY_TLS",
+        "WAZUH_CA_BUNDLE",
+        "WAZUH_TIMEOUT_SECONDS",
+    )
+
+    for setting in expected_settings:
+        assert f"{setting}: ${{{setting}" in worker
 
 
 def test_background_worker_receives_zabbix_and_snipe_it_settings() -> None:

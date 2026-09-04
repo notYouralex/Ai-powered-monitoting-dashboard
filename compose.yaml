@@ -100,11 +100,18 @@ services:
     depends_on:
       fastapi-api:
         condition: service_healthy
+    network_mode: host
     environment:
       APP_ENV: ${APP_ENV:-development}
       APP_SECRET_KEY: ${APP_SECRET_KEY:?set APP_SECRET_KEY in .env}
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-monitoring}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgresql:5432/${POSTGRES_DB:-monitoring}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-monitoring}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@127.0.0.1:${POSTGRES_HOST_PORT:-55432}/${POSTGRES_DB:-monitoring}
       RUN_MIGRATIONS: "false"
+      WAZUH_BASE_URL: ${WAZUH_BASE_URL:-}
+      WAZUH_USERNAME: ${WAZUH_USERNAME:-}
+      WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
+      WAZUH_VERIFY_TLS: ${WAZUH_VERIFY_TLS:-true}
+      WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
+      WAZUH_TIMEOUT_SECONDS: ${WAZUH_TIMEOUT_SECONDS:-10}
       ZABBIX_BASE_URL: ${ZABBIX_BASE_URL:-}
       ZABBIX_API_TOKEN: ${ZABBIX_API_TOKEN:-}
       ZABBIX_VERIFY_TLS: ${ZABBIX_VERIFY_TLS:-true}
