@@ -55,3 +55,9 @@ This UI-import approach keeps the bearer token in Grafana's secure datasource co
 3. Configure the Infinity datasource in the existing Grafana UI using the secure bearer token field.
 4. Import the Wazuh, Freshservice, Snipe-IT, Zabbix, Executive, and AI Monitoring Summary dashboard JSON files and point them at the Monitoring API datasource.
 5. Validate panel rendering and data freshness in Grafana.
+
+## Operations and handover
+
+For the step-by-step operator checklist, dashboard-by-dashboard expected results, plugin verification, troubleshooting decision tree, recovery procedure, and final handover sign-off, use `docs/deployment/grafana-operations-handover.md`.
+
+That runbook is the primary operations and handover reference. This README remains the shorter technical description of the Grafana integration and datasource model.
