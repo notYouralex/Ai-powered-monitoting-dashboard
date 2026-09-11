@@ -1,12 +1,30 @@
-# Remaining Work Coordination Plan
+# Implementation Coordination Plan and Current Status
 
 ## Purpose
 
-This document coordinates the remaining project work between the two interns and their AI agents so that independent tasks can proceed without overlapping edits, conflicting migrations, competing shared-file changes, or accidental modification of another owner's integration.
+This document records the project coordination model used by the two interns and their AI agents so that independent tasks can proceed without overlapping edits, conflicting migrations, competing shared-file changes, or accidental modification of another owner's integration.
 
 It supplements `AGENTS.md` and `docs/development/collaboration-rules.md`. If this document conflicts with either of them, the stricter ownership, security, review, or validation rule takes precedence.
 
 This file is a coordination reference. During normal implementation, AI agents should read it but should not edit it unless the user or designated project coordinator explicitly asks for an assignment change.
+
+## Current Repository Status
+
+The milestone sequence below was written before the shared backend, Grafana, AI, correlation, and deployment-preparation work was completed. It is retained to document ownership and the implementation order that was used, but it is no longer a list of unfinished repository features.
+
+The current repository includes:
+
+- the shared Executive aggregator/API under `app/dashboard/executive/` and `GET /api/dashboard/executive`;
+- the project-maintained Executive Grafana dashboard at `grafana/dashboards/executive.json`;
+- device correlation under `app/correlation/`, with worker ingestion from Wazuh, Zabbix, and Snipe-IT observations;
+- cross-source integration-health aggregation under `app/integrations/health/` and `GET /api/integrations/health`;
+- standardized inert Grafana provisioning/reference files for the host-installed Grafana deployment model;
+- local Ollama-backed AI orchestration under `app/ai/`, including investigation, readiness, combined dashboard summary, and source-summary endpoints;
+- the `AI Monitoring Summary` Grafana dashboard at `grafana/dashboards/ai-summary.json`;
+- an internal HTTPS Nginx template plus the deployment runbook under `deploy/nginx/` and `docs/deployment/internal-https.md`;
+- backend acceptance, PostgreSQL backup/restore, and Grafana operations/handover runbooks under `docs/deployment/`.
+
+The remaining work is environment-specific deployment and runtime acceptance: deploy the approved release, supply protected source configuration, activate the approved HTTPS/reverse-proxy changes, validate the configured integrations and dashboards, rehearse database restore, and complete handover. The separate unified web-dashboard migration described in `docs/development/web-app-implementation-plan.md` is still planned; the current browser UI exposes `/ai`, not the proposed `/app/*` dashboard shell. Do not execute the historical milestones below merely because they remain documented; inspect the current repository first and create a new scoped task for any further change.
 
 ## Agent and Source Ownership
 
@@ -45,10 +63,10 @@ The following paths are shared. Only the primary implementer of the active share
 - `app/main.py`
 - `app/worker.py`
 - `app/integrations/router.py`
-- future `app/dashboard/executive/**`
-- future `app/integrations/health/**`
-- future `app/correlation/**`
-- future shared AI/orchestration packages
+- `app/dashboard/executive/**`
+- `app/integrations/health/**`
+- `app/correlation/**`
+- `app/ai/**` and other shared AI/orchestration paths
 - `migrations/**`
 - `compose.yaml`
 - `Dockerfile`
@@ -56,7 +74,8 @@ The following paths are shared. Only the primary implementer of the active share
 - `pyproject.toml`
 - `uv.lock`
 - `grafana/provisioning/**`
-- future `grafana/dashboards/executive.json`
+- `grafana/dashboards/executive.json`
+- `grafana/dashboards/ai-summary.json`
 - shared tests that exercise cross-source behavior
 
 The following coordination/project-policy files are coordinator-owned and should not be edited incidentally by either implementation agent:
@@ -84,9 +103,9 @@ If both tasks require the same shared file:
 
 Do not solve this situation by letting both agents edit and resolving the conflict later.
 
-## Remaining Milestones and Primary Assignment
+## Original Milestones and Primary Assignment
 
-The remaining roadmap is split as follows.
+The original roadmap was split as follows. These assignments describe the implementation sequence and ownership model; use the current-status section above to determine what is already present in the repository.
 
 | Order | Milestone | Primary implementer | Reviewer | Default dependency |
 |---|---|---|---|---|
@@ -502,9 +521,9 @@ A branch may be merged only when:
 - the reviewer has reviewed shared architectural changes;
 - runtime-impacting changes have the required user permission.
 
-## Current Recommended Execution Order
+## Original Recommended Execution Order
 
-Use this as the default sequence unless the user/coordinator explicitly changes the assignments:
+This was the default implementation sequence. The repository-level milestones in this sequence are now implemented or prepared as described in the current-status section above:
 
 ```text
 1. Agent A: Executive aggregator/API
@@ -537,7 +556,7 @@ Use this as the default sequence unless the user/coordinator explicitly changes 
 7C. Joint sequential final review
 ```
 
-The only planned parallel pair above is **3A device correlation** and **4 Grafana provisioning**, and only if their actual write sets remain disjoint after inspection. Otherwise run them sequentially.
+The only planned parallel pair in the original sequence was **3A device correlation** and **4 Grafana provisioning**, and only when their actual write sets were disjoint after inspection. For new work, keep using the same conflict-prevention rule: parallel changes are allowed only when write sets are clearly disjoint.
 
 ## Stop Conditions
 

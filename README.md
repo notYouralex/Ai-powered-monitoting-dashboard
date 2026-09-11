@@ -2,7 +2,7 @@
 
 Centralized, read-only IT monitoring platform that brings security, infrastructure, asset, and service-management data into one internal application.
 
-The approved platform combines **Wazuh**, **Zabbix**, **Snipe-IT**, and **Freshservice** behind a modular **FastAPI** backend. **PostgreSQL** stores synchronized and shared application data, the existing host-installed **Grafana** provides the operational dashboards, and a fully local AI assistant is planned for cross-source explanations and investigation guidance.
+The approved platform combines **Wazuh**, **Zabbix**, **Snipe-IT**, and **Freshservice** behind a modular **FastAPI** backend. **PostgreSQL** stores synchronized and shared application data, the existing host-installed **Grafana** provides the operational dashboards, and a fully local AI assistant provides bounded cross-source summaries and investigation guidance.
 
 No monitoring, asset, ticket, or AI evidence data is intended to leave the company network. Source integrations are read-only by design: the platform observes and explains conditions but does not execute remediation or modify source systems.
 
@@ -26,7 +26,7 @@ The architecture separates responsibilities intentionally:
 - **PostgreSQL** stores application state and synchronized reporting data where appropriate.
 - **Grafana** owns presentation and dashboard layout; it must not redefine backend business rules.
 - **Executive aggregation** consumes normalized source summaries rather than raw source API responses.
-- **Local AI** will consume bounded normalized evidence and remain inside the company network.
+- **Local AI** consumes bounded normalized evidence and remains inside the company network.
 
 The platform is designed for degraded operation. A failed, stale, unavailable, or unconfigured source should not prevent unrelated integrations from continuing to return valid data.
 
@@ -54,14 +54,15 @@ The repository currently contains the shared platform foundation plus functional
 | Snipe-IT API integration and asset synchronization | Implemented, read-only |
 | Snipe-IT dashboard API | Implemented |
 | Snipe-IT normalized Executive source summary | Implemented internally |
-| Shared Executive aggregator/API | Pending |
+| Shared Executive aggregator/API | Implemented |
 | Host-installed Grafana integration | Implemented using a secured Infinity datasource |
 | Default source Grafana dashboards | Implemented for Wazuh, Freshservice, Zabbix, and Snipe-IT |
-| Executive Grafana dashboard | Pending |
-| Device correlation | Pending |
-| Cross-source integration health aggregation | Pending |
-| Local AI assistant | Pending |
-| Reverse proxy/final HTTPS deployment | Pending |
+| Executive Grafana dashboard | Implemented |
+| AI Monitoring Summary Grafana dashboard | Implemented |
+| Device correlation | Implemented internally for Wazuh, Zabbix, and Snipe-IT observations |
+| Cross-source integration health aggregation | Implemented |
+| Local AI assistant | Implemented as an optional local Ollama-backed feature |
+| Reverse proxy/final HTTPS deployment | Repository template/runbook prepared; live activation and runtime validation pending |
 
 The currently implemented application foundation includes:
 
@@ -72,7 +73,7 @@ The currently implemented application foundation includes:
 - Login throttling and authentication audit records
 - Administrator-only user creation and bootstrap-admin CLI
 - Docker Compose development services for PostgreSQL, FastAPI, and the background worker
-- Background synchronization for Freshservice and Snipe-IT plus normalized Zabbix cache refresh
+- Background synchronization for Freshservice and Snipe-IT, normalized Zabbix cache refresh, and automatic Wazuh/Zabbix/Snipe-IT device-correlation ingestion
 - Source-prefixed optional configuration for Wazuh, Zabbix, Snipe-IT, and Freshservice
 - Request IDs, controlled source errors, and bounded shared HTTP transport
 - Shared integration-health and Executive source-summary contracts
@@ -80,7 +81,7 @@ The currently implemented application foundation includes:
 
 ## Integration architecture
 
-Source-specific API formats stop inside their integration packages. Shared dashboards, future Executive aggregation, correlation, and AI orchestration should consume normalized contracts only.
+Source-specific API formats stop inside their integration packages. Shared dashboards, Executive aggregation, correlation, and AI orchestration consume normalized contracts rather than raw source responses.
 
 ```text
 Source API
@@ -96,7 +97,7 @@ Source service / normalization
    +----> ExecutiveSourceSummary
                  |
                  v
-       Future Executive aggregator
+          Executive aggregator
 ```
 
 This boundary allows each source integration to evolve independently while keeping shared consumers stable.
@@ -117,7 +118,7 @@ When the Wazuh manager API and Wazuh indexer settings are configured, the authen
 
 The endpoint defaults to a 24-hour alert range, accepts timezone-aware `from` and `to` parameters, and limits requests to a maximum 30-day range.
 
-Wazuh also provides a normalized `ExecutiveSourceSummary` internally. It currently exposes bounded Executive metrics such as total/active/disconnected agents and total/high/critical alerts. The shared Executive API that will combine Wazuh with the other sources has not been implemented yet.
+Wazuh also provides a normalized `ExecutiveSourceSummary` internally. It exposes bounded Executive metrics such as total/active/disconnected agents and total/high/critical alerts, and the shared Executive API combines that summary with the other source summaries.
 
 The integration does not execute Wazuh active response or modify manager/indexer state.
 
@@ -150,7 +151,7 @@ The Freshservice dashboard endpoint reads PostgreSQL rather than calling Freshse
 - recent ticket records;
 - integration health, freshness, and warnings.
 
-Freshservice also provides a normalized `ExecutiveSourceSummary` internally for later use by the shared Executive aggregator.
+Freshservice also provides a normalized `ExecutiveSourceSummary` consumed by the shared Executive aggregator.
 
 ## Zabbix integration
 
@@ -158,7 +159,7 @@ The Zabbix integration is functional and strictly read-only.
 
 When `ZABBIX_BASE_URL` and `ZABBIX_API_TOKEN` are configured, the background worker retrieves normalized infrastructure data through the Zabbix API and stores the latest validated dashboard snapshot in PostgreSQL. Dashboard requests read that cache so temporary source failures can preserve the last successful snapshot and expose degraded/stale health instead of discarding useful data.
 
-The normalized Zabbix dashboard currently includes host and interface availability, active problems and severity, resource-pressure coverage and trends, top affected hosts, network topology maps, freshness, and warnings. Zabbix also provides a bounded normalized `ExecutiveSourceSummary` internally for the future shared Executive aggregator.
+The normalized Zabbix dashboard currently includes host and interface availability, active problems and severity, resource-pressure coverage and trends, top affected hosts, network topology maps, freshness, and warnings. Zabbix also provides a bounded normalized `ExecutiveSourceSummary` consumed by the shared Executive aggregator.
 
 The integration performs read-only Zabbix API operations and does not change hosts, items, triggers, configuration, or monitoring state.
 
@@ -168,13 +169,13 @@ The Snipe-IT integration is functional and strictly read-only.
 
 When `SNIPE_IT_BASE_URL` and `SNIPE_IT_API_TOKEN` are configured, the background worker synchronizes normalized hardware asset records into PostgreSQL. The dashboard API reads the synchronized local asset store and exposes totals for assigned/unassigned assets, missing serials or asset tags, warranty state, status/category/location distributions, freshness, and warnings without exposing assignee names.
 
-Snipe-IT also provides a bounded normalized `ExecutiveSourceSummary` internally for the future shared Executive aggregator. The integration reads source data only and does not update Snipe-IT assets or assignments.
+Snipe-IT also provides a bounded normalized `ExecutiveSourceSummary` consumed by the shared Executive aggregator. The integration reads source data only and does not update Snipe-IT assets or assignments.
 
 ## Executive dashboard direction
 
 The Executive dashboard is a shared aggregation layer, not a raw-source parser.
 
-Each integration owner provides a bounded normalized `ExecutiveSourceSummary`. The future Executive service will combine those source summaries and must tolerate individual source failures or stale data without breaking unrelated results.
+Each integration owner provides a bounded normalized `ExecutiveSourceSummary`. The implemented Executive service combines those source summaries and tolerates individual source failures or stale data without breaking unrelated results.
 
 Current source-summary status:
 
@@ -182,18 +183,18 @@ Current source-summary status:
 - Freshservice: implemented
 - Zabbix: implemented
 - Snipe-IT: implemented
-- Shared Executive aggregation endpoint: pending
-- Executive Grafana dashboard: pending
+- Shared Executive aggregation endpoint: implemented at `GET /api/dashboard/executive`
+- Executive Grafana dashboard: implemented in `grafana/dashboards/executive.json`
 
 ## Grafana dashboard model
 
-The project reuses the existing host-installed Grafana instead of starting a second Grafana container in Compose. The repository contains source-controlled dashboard templates for Wazuh, Freshservice, Zabbix, and Snipe-IT under `grafana/dashboards/`.
+The project reuses the existing host-installed Grafana instead of starting a second Grafana container in Compose. The repository contains six source-controlled dashboard templates under `grafana/dashboards/`: Wazuh, Freshservice, Zabbix, Snipe-IT, Executive, and AI Monitoring Summary.
 
 The current deployment uses one manually configured Infinity datasource named `Monitoring API` that points to the loopback FastAPI service and stores `GRAFANA_API_TOKEN` in Grafana's secure datasource configuration. Dashboard JSON does not contain the bearer token. The authoritative setup and import workflow is documented in `grafana/README.md`.
 
 The generic datasource and dashboard provisioning files are intentionally inert for this host-installed deployment. Zabbix-specific provisioning templates also remain in the repository as reference assets, but the current operational workflow is manual datasource configuration and dashboard import through the existing Grafana instance.
 
-The project provides project-maintained default source dashboards while allowing authorized users to customize presentation. The shared Executive dashboard remains planned until its aggregator API is implemented.
+The project provides project-maintained default source, Executive, and AI summary dashboards while allowing authorized users to customize presentation. The Executive dashboard consumes only the implemented shared Executive API.
 
 The governing rule is:
 
@@ -284,7 +285,7 @@ docker compose build
 docker compose up -d postgresql fastapi-api background-worker
 ```
 
-The API is intentionally bound to `127.0.0.1:8000` by default rather than all host interfaces. The API container entrypoint runs `alembic upgrade head` before Uvicorn starts. The background worker does not run migrations; it periodically synchronizes Freshservice and Snipe-IT and refreshes the normalized Zabbix dashboard cache when those integrations are configured.
+The API is intentionally bound to `127.0.0.1:8000` by default rather than all host interfaces. The API container entrypoint runs `alembic upgrade head` before Uvicorn starts. The background worker does not run migrations; it periodically synchronizes Freshservice and Snipe-IT, refreshes the normalized Zabbix dashboard cache, correlates successful Snipe-IT/Zabbix observations, and polls configured Wazuh agents for correlation.
 
 The application source is copied into the Docker image during build rather than bind-mounted into the API container. After application-code changes, rebuild/recreate the relevant container before expecting the running API to use the new code.
 
@@ -309,20 +310,28 @@ Currently exposed application endpoints include:
 - `GET /api/dashboard/freshservice` — authenticated Freshservice dashboard data from synchronized PostgreSQL records
 - `GET /api/dashboard/zabbix` — authenticated Zabbix infrastructure dashboard data from the normalized cache
 - `GET /api/dashboard/snipe-it` — authenticated Snipe-IT asset dashboard data from synchronized PostgreSQL records
+- `GET /api/dashboard/snipe-it/recent-activity` — authenticated bounded recent Snipe-IT activity
+- `GET /api/dashboard/snipe-it/warranty-expiry` — authenticated Snipe-IT warranty-expiry data
+- `GET /api/dashboard/executive` — authenticated shared Executive aggregation across the four normalized source summaries
+- `GET /api/integrations/health` — authenticated cross-source integration health/freshness aggregation
+- `GET /api/ai/status` — local AI readiness/status for dashboard-access clients
+- `POST /api/ai/query` — authenticated local AI investigation
+- `GET /api/ai/insights/dashboard` — combined cached AI summary for the Grafana AI dashboard
+- source-specific AI summaries at `GET /api/ai/insights/executive`, `GET /api/ai/insights/wazuh`, `GET /api/ai/insights/zabbix`, `GET /api/ai/insights/snipe-it`, and `GET /api/ai/insights/freshservice`
 
-The approved architecture also includes future endpoints for Executive aggregation, device correlation, cross-source integration health, and AI workflows, but those should not be treated as implemented until their code and tests exist.
+Device correlation is currently an internal persistence/worker capability rather than a standalone public API. The browser UI currently exposes the local AI Investigation page at `/ai`; the proposed unified `/app/*` dashboard shell in `docs/development/web-app-implementation-plan.md` has not been implemented.
 
 ## Next major milestones
 
-The current repository state leaves the following major work:
+The repository-level implementation is substantially complete. The remaining work is deployment and runtime acceptance rather than the earlier shared-backend milestones:
 
-1. Implement the shared Executive aggregator/API using the four source-owned normalized summaries.
-2. Create the default Executive Grafana dashboard on top of that shared API.
-3. Add device correlation and shared integration-health behavior.
-4. Standardize the remaining Grafana provisioning/reference files around the existing host-installed deployment model.
-5. Add the fully local AI runtime and bounded AI orchestration.
-6. Activate and validate the prepared internal HTTPS/reverse-proxy deployment model.
-7. Complete end-to-end acceptance, backup/restore, operational documentation, and handover.
+1. Deploy the approved release to the target internal server and provide environment-specific source configuration through the protected secret process.
+2. Activate and validate the prepared internal HTTPS/reverse-proxy model, including the approved Grafana/Wazuh Dashboard listener changes.
+3. Run the backend and Grafana acceptance runbooks against the deployed release and record runtime evidence for each configured source.
+4. Complete the protected PostgreSQL backup validation and isolated restore rehearsal required for production acceptance.
+5. Complete final operational handover and document any accepted environment-specific limitations.
+6. Treat the unified `/app/*` web-dashboard migration as a separate planned workstream; it is not part of the completed backend/Grafana foundation and has not been implemented.
+
 
 ## Security boundary
 

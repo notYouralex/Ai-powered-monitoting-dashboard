@@ -8,7 +8,7 @@ The core rule is:
 
 > FastAPI defines what a metric means. Grafana defines how that metric is displayed.
 
-This keeps metric definitions consistent across source dashboards, the Executive dashboard, Grafana views, and future AI summaries while still allowing teams to adapt dashboard presentation to their needs.
+This keeps metric definitions consistent across source dashboards, the Executive dashboard, Grafana views, and AI summaries while still allowing teams to adapt dashboard presentation to their needs.
 
 ## Canonical Metric Ownership
 
@@ -79,7 +79,7 @@ The same canonical metric should produce the same business meaning across:
 - the Executive dashboard;
 - customized Grafana views;
 - API consumers;
-- future AI summaries and explanations.
+- AI summaries and explanations.
 
 Different dashboards may visualize or emphasize the metric differently, but they should not disagree because of different business-rule implementations.
 
