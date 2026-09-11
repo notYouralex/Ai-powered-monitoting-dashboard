@@ -53,6 +53,7 @@ GET /api/integrations/health
 Current AI endpoints relevant to the web application:
 
 ```text
+GET  /api/ai/status
 POST /api/ai/query
 GET  /api/ai/insights/dashboard
 GET  /api/ai/insights/executive

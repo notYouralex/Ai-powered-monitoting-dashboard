@@ -15,7 +15,7 @@
 | Authentication/deployment | Contributor | Contributor | Owner |
 | Cross-source AI orchestration | Contributor | Contributor | Owner until separately assigned |
 
-Intern A owns `app/integrations/wazuh/`, `app/integrations/freshservice/`, their tests, and their source dashboards. Intern B owns the corresponding Zabbix and Snipe-IT paths. Shared paths include `app/contracts/`, `app/core/`, `app/db/`, `app/dashboard/executive/`, `app/integrations/health/`, `app/normalization/`, `app/correlation/`, `migrations/`, Executive Grafana provisioning, `compose.yaml`, `Dockerfile`, `.env.example`, and `pyproject.toml`.
+Intern A owns `app/integrations/wazuh/`, `app/integrations/freshservice/`, their tests, and their source dashboards. Intern B owns the corresponding Zabbix and Snipe-IT paths. Shared paths include `app/contracts/`, `app/core/`, `app/db/`, `app/dashboard/executive/`, `app/integrations/health/`, `app/correlation/`, `app/ai/`, any future shared normalization package, `migrations/`, Executive/AI Grafana dashboards and provisioning, `compose.yaml`, `Dockerfile`, `.env.example`, and `pyproject.toml`.
 
 ## Integration Boundary
 
