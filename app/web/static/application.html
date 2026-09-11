@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AI-Powered Monitoring</title>
+  <link rel="stylesheet" href="/app/assets/application.css">
+</head>
+<body>
+  <div class="portal-shell">
+    <header class="topbar">
+      <a class="brand" href="/app" aria-label="AI-Powered Monitoring home">
+        <span class="brand-mark" aria-hidden="true">AM</span>
+        <span>
+          <span class="eyebrow">Internal Monitoring Platform</span>
+          <span class="brand-title">AI-Powered Monitoring</span>
+        </span>
+      </a>
+      <div id="session-controls" class="session-controls" hidden>
+        <span id="current-user" class="user-pill"></span>
+        <button id="logout-button" class="button button-secondary" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="login-view" class="login-view" aria-labelledby="login-title">
+        <div class="login-card">
+          <p class="eyebrow">Authenticated access</p>
+          <h1 id="login-title">Sign in to monitoring</h1>
+          <p class="muted">
+            Use your monitoring platform account. Source credentials and service tokens are never stored in the browser.
+          </p>
+          <form id="login-form" class="login-form">
+            <label>
+              <span>Username</span>
+              <input id="username" name="username" type="text" autocomplete="username" maxlength="64" required>
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required>
+            </label>
+            <p id="login-error" class="form-error" role="alert" hidden></p>
+            <button id="login-button" class="button button-primary" type="submit">Sign in</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="application-view" class="application-view" hidden>
+        <div class="application-layout">
+          <aside class="sidebar">
+            <nav class="primary-nav" aria-label="Monitoring views">
+              <a href="/app/executive">Executive</a>
+              <a href="/app/wazuh">Wazuh</a>
+              <a href="/app/zabbix">Zabbix</a>
+              <a href="/app/snipe-it">Snipe-IT</a>
+              <a href="/app/freshservice">Freshservice</a>
+              <a href="/app/ai">AI Investigation</a>
+            </nav>
+          </aside>
+
+          <div class="page-content">
+            <header class="page-heading">
+              <div>
+                <p id="page-eyebrow" class="eyebrow"></p>
+                <h1 id="page-title"></h1>
+                <p id="page-description" class="muted page-description"></p>
+              </div>
+              <span id="shell-status" class="status-pill" role="status">Application shell ready</span>
+            </header>
+
+            <section class="phase-card" aria-labelledby="phase-card-title">
+              <p class="eyebrow">Phase 1</p>
+              <h2 id="phase-card-title">Authenticated application shell</h2>
+              <p id="phase-message" class="muted"></p>
+              <a id="legacy-ai-link" class="button button-primary inline-action" href="/ai" hidden>
+                Open current AI Investigation
+              </a>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app/assets/application.js" defer></script>
+</body>
+</html>

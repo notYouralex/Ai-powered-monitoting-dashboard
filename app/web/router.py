@@ -55,3 +55,36 @@ def ai_chat_script() -> FileResponse:
         media_type="application/javascript",
         headers=_ASSET_HEADERS,
     )
+
+
+@router.get("/app", include_in_schema=False)
+@router.get("/app/executive", include_in_schema=False)
+@router.get("/app/wazuh", include_in_schema=False)
+@router.get("/app/zabbix", include_in_schema=False)
+@router.get("/app/snipe-it", include_in_schema=False)
+@router.get("/app/freshservice", include_in_schema=False)
+@router.get("/app/ai", include_in_schema=False)
+def application_page() -> FileResponse:
+    return FileResponse(
+        _ASSET_DIR / "application.html",
+        media_type="text/html",
+        headers=_HTML_HEADERS,
+    )
+
+
+@router.get("/app/assets/application.css", include_in_schema=False)
+def application_styles() -> FileResponse:
+    return FileResponse(
+        _ASSET_DIR / "application.css",
+        media_type="text/css",
+        headers=_ASSET_HEADERS,
+    )
+
+
+@router.get("/app/assets/application.js", include_in_schema=False)
+def application_script() -> FileResponse:
+    return FileResponse(
+        _ASSET_DIR / "application.js",
+        media_type="application/javascript",
+        headers=_ASSET_HEADERS,
+    )
