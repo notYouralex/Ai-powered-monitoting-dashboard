@@ -393,6 +393,36 @@ def test_ai_investigation_is_integrated_into_application_shell(auth_env) -> None
     assert "innerHTML" not in source
 
 
+def test_dashboard_refresh_controls_are_manual_and_preserve_last_valid_data(auth_env) -> None:
+    page = auth_env.client.get("/app/executive")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "executive-refresh-button",
+        "wazuh-refresh-button",
+        "zabbix-refresh-button",
+        "snipe-it-refresh-button",
+        "freshservice-refresh-button",
+    ):
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    assert "AbortController" in source
+    assert "signal: controller.signal" in source
+    assert "executiveRequestInFlight" in source
+    assert "zabbixRequestInFlight" in source
+    assert "snipeItPageRequestInFlight" in source
+    assert "freshserviceRequestInFlight" in source
+    assert "setInterval(" not in source
+    assert "executiveObservedAt.textContent = \"\"" not in source
+    assert "wazuhObservedAt.textContent = \"\"" not in source
+    assert "zabbixObservedAt.textContent = \"\"" not in source
+    assert "snipeItObservedAt.textContent = \"\"" not in source
+    assert "freshserviceObservedAt.textContent = \"\"" not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

@@ -86,6 +86,7 @@ const legacyAiLink = document.getElementById("legacy-ai-link");
 const executiveDashboardView = document.getElementById("executive-dashboard-view");
 const executiveStatus = document.getElementById("executive-status");
 const executiveObservedAt = document.getElementById("executive-observed-at");
+const executiveRefreshButton = document.getElementById("executive-refresh-button");
 const metricOverallHealth = document.getElementById("metric-overall-health");
 const metricSecurityAlerts = document.getElementById("metric-security-alerts");
 const metricOpenTickets = document.getElementById("metric-open-tickets");
@@ -99,6 +100,7 @@ const executiveAttentionBody = document.getElementById("executive-attention-body
 const wazuhDashboardView = document.getElementById("wazuh-dashboard-view");
 const wazuhStatus = document.getElementById("wazuh-status");
 const wazuhObservedAt = document.getElementById("wazuh-observed-at");
+const wazuhRefreshButton = document.getElementById("wazuh-refresh-button");
 const wazuhWarnings = document.getElementById("wazuh-warnings");
 const wazuhWarningList = document.getElementById("wazuh-warning-list");
 const wazuhMetricAlertsTotal = document.getElementById("wazuh-metric-alerts-total");
@@ -119,6 +121,7 @@ const wazuhRangeButtons = Array.from(document.querySelectorAll("[data-wazuh-rang
 const zabbixDashboardView = document.getElementById("zabbix-dashboard-view");
 const zabbixStatus = document.getElementById("zabbix-status");
 const zabbixObservedAt = document.getElementById("zabbix-observed-at");
+const zabbixRefreshButton = document.getElementById("zabbix-refresh-button");
 const zabbixWarnings = document.getElementById("zabbix-warnings");
 const zabbixWarningList = document.getElementById("zabbix-warning-list");
 const zabbixMetricHosts = document.getElementById("zabbix-metric-hosts");
@@ -139,6 +142,7 @@ const zabbixSystemInfoBody = document.getElementById("zabbix-system-info-body");
 const snipeItDashboardView = document.getElementById("snipe-it-dashboard-view");
 const snipeItStatus = document.getElementById("snipe-it-status");
 const snipeItObservedAt = document.getElementById("snipe-it-observed-at");
+const snipeItRefreshButton = document.getElementById("snipe-it-refresh-button");
 const snipeItWarnings = document.getElementById("snipe-it-warnings");
 const snipeItWarningList = document.getElementById("snipe-it-warning-list");
 const snipeItMetricTotal = document.getElementById("snipe-it-metric-total");
@@ -163,6 +167,7 @@ const snipeItWarrantyBody = document.getElementById("snipe-it-warranty-body");
 const freshserviceDashboardView = document.getElementById("freshservice-dashboard-view");
 const freshserviceStatus = document.getElementById("freshservice-status");
 const freshserviceObservedAt = document.getElementById("freshservice-observed-at");
+const freshserviceRefreshButton = document.getElementById("freshservice-refresh-button");
 const freshserviceWarnings = document.getElementById("freshservice-warnings");
 const freshserviceWarningList = document.getElementById("freshservice-warning-list");
 const freshserviceMetricTotal = document.getElementById("freshservice-metric-total");
@@ -209,6 +214,11 @@ const WAZUH_RANGE_HOURS = Object.freeze({
   "30d": 24 * 30,
 });
 let wazuhRange = "24h";
+let executiveRequestInFlight = false;
+let wazuhRequestController = null;
+let zabbixRequestInFlight = false;
+let snipeItPageRequestInFlight = false;
+let freshserviceRequestInFlight = false;
 
 const AI_RANGE_HOURS = Object.freeze({
   "24h": 24,
@@ -220,6 +230,23 @@ let aiRequestInFlight = false;
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
+}
+
+function setRefreshButtonBusy(button, busy) {
+  button.disabled = busy;
+  button.setAttribute("aria-busy", String(busy));
+}
+
+function dashboardLoadingMessage(observedAt, sourceName) {
+  return observedAt.textContent ? `Refreshing ${sourceName} data...` : `Loading ${sourceName} data...`;
+}
+
+function dashboardErrorMessage(observedAt, message) {
+  return observedAt.textContent ? `${message} Showing last valid data.` : message;
+}
+
+function dashboardShellErrorMessage(observedAt, sourceName) {
+  return observedAt.textContent ? `${sourceName} refresh failed` : `${sourceName} unavailable`;
 }
 
 async function requestJson(path, options = {}) {
@@ -419,8 +446,12 @@ function renderExecutiveDashboard(body) {
 }
 
 async function loadExecutiveDashboard() {
-  executiveStatus.textContent = "Loading Executive data...";
-  executiveObservedAt.textContent = "";
+  if (executiveRequestInFlight) {
+    return;
+  }
+  executiveRequestInFlight = true;
+  setRefreshButtonBusy(executiveRefreshButton, true);
+  executiveStatus.textContent = dashboardLoadingMessage(executiveObservedAt, "Executive");
   shellStatus.textContent = "Loading Executive";
 
   try {
@@ -429,14 +460,23 @@ async function loadExecutiveDashboard() {
       return;
     }
     if (!response.ok) {
-      executiveStatus.textContent = errorMessage(body, "Executive dashboard data is unavailable.");
-      shellStatus.textContent = "Executive unavailable";
+      executiveStatus.textContent = dashboardErrorMessage(
+        executiveObservedAt,
+        errorMessage(body, "Executive dashboard data is unavailable."),
+      );
+      shellStatus.textContent = dashboardShellErrorMessage(executiveObservedAt, "Executive");
       return;
     }
     renderExecutiveDashboard(body);
   } catch (_error) {
-    executiveStatus.textContent = "Executive dashboard data is unavailable.";
-    shellStatus.textContent = "Executive unavailable";
+    executiveStatus.textContent = dashboardErrorMessage(
+      executiveObservedAt,
+      "Executive dashboard data is unavailable.",
+    );
+    shellStatus.textContent = dashboardShellErrorMessage(executiveObservedAt, "Executive");
+  } finally {
+    executiveRequestInFlight = false;
+    setRefreshButtonBusy(executiveRefreshButton, false);
   }
 }
 
@@ -555,24 +595,49 @@ function wazuhRangeUrl() {
   return `${API.wazuh}?${params.toString()}`;
 }
 
-async function loadWazuhDashboard() {
-  wazuhStatus.textContent = "Loading Wazuh data...";
-  wazuhObservedAt.textContent = "";
+async function loadWazuhDashboard({ replaceInFlight = false } = {}) {
+  if (wazuhRequestController) {
+    if (!replaceInFlight) {
+      return;
+    }
+    wazuhRequestController.abort();
+  }
+  const controller = new AbortController();
+  wazuhRequestController = controller;
+  setRefreshButtonBusy(wazuhRefreshButton, true);
+  wazuhStatus.textContent = dashboardLoadingMessage(wazuhObservedAt, "Wazuh");
   shellStatus.textContent = "Loading Wazuh";
   try {
-    const { response, body } = await requestJson(wazuhRangeUrl());
+    const { response, body } = await requestJson(wazuhRangeUrl(), { signal: controller.signal });
+    if (controller !== wazuhRequestController) {
+      return;
+    }
     if (response.status === 401) {
       return;
     }
     if (!response.ok) {
-      wazuhStatus.textContent = errorMessage(body, "Wazuh dashboard data is unavailable.");
-      shellStatus.textContent = "Wazuh unavailable";
+      wazuhStatus.textContent = dashboardErrorMessage(
+        wazuhObservedAt,
+        errorMessage(body, "Wazuh dashboard data is unavailable."),
+      );
+      shellStatus.textContent = dashboardShellErrorMessage(wazuhObservedAt, "Wazuh");
       return;
     }
     renderWazuhDashboard(body);
-  } catch (_error) {
-    wazuhStatus.textContent = "Wazuh dashboard data is unavailable.";
-    shellStatus.textContent = "Wazuh unavailable";
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      return;
+    }
+    wazuhStatus.textContent = dashboardErrorMessage(
+      wazuhObservedAt,
+      "Wazuh dashboard data is unavailable.",
+    );
+    shellStatus.textContent = dashboardShellErrorMessage(wazuhObservedAt, "Wazuh");
+  } finally {
+    if (controller === wazuhRequestController) {
+      wazuhRequestController = null;
+      setRefreshButtonBusy(wazuhRefreshButton, false);
+    }
   }
 }
 
@@ -584,7 +649,7 @@ function selectWazuhRange(range) {
   for (const button of wazuhRangeButtons) {
     button.setAttribute("aria-pressed", String(button.dataset.wazuhRange === range));
   }
-  loadWazuhDashboard();
+  loadWazuhDashboard({ replaceInFlight: true });
 }
 
 function averageZabbixCpu(resourcePressure) {
@@ -866,8 +931,12 @@ function renderZabbixDashboard(body) {
 }
 
 async function loadZabbixDashboard() {
-  zabbixStatus.textContent = "Loading Zabbix data...";
-  zabbixObservedAt.textContent = "";
+  if (zabbixRequestInFlight) {
+    return;
+  }
+  zabbixRequestInFlight = true;
+  setRefreshButtonBusy(zabbixRefreshButton, true);
+  zabbixStatus.textContent = dashboardLoadingMessage(zabbixObservedAt, "Zabbix");
   shellStatus.textContent = "Loading Zabbix";
   try {
     const { response, body } = await requestJson(API.zabbix);
@@ -875,14 +944,23 @@ async function loadZabbixDashboard() {
       return;
     }
     if (!response.ok) {
-      zabbixStatus.textContent = errorMessage(body, "Zabbix dashboard data is unavailable.");
-      shellStatus.textContent = "Zabbix unavailable";
+      zabbixStatus.textContent = dashboardErrorMessage(
+        zabbixObservedAt,
+        errorMessage(body, "Zabbix dashboard data is unavailable."),
+      );
+      shellStatus.textContent = dashboardShellErrorMessage(zabbixObservedAt, "Zabbix");
       return;
     }
     renderZabbixDashboard(body);
   } catch (_error) {
-    zabbixStatus.textContent = "Zabbix dashboard data is unavailable.";
-    shellStatus.textContent = "Zabbix unavailable";
+    zabbixStatus.textContent = dashboardErrorMessage(
+      zabbixObservedAt,
+      "Zabbix dashboard data is unavailable.",
+    );
+    shellStatus.textContent = dashboardShellErrorMessage(zabbixObservedAt, "Zabbix");
+  } finally {
+    zabbixRequestInFlight = false;
+    setRefreshButtonBusy(zabbixRefreshButton, false);
   }
 }
 
@@ -980,8 +1058,7 @@ function renderSnipeItDashboard(body) {
 }
 
 async function loadSnipeItDashboard() {
-  snipeItStatus.textContent = "Loading Snipe-IT data...";
-  snipeItObservedAt.textContent = "";
+  snipeItStatus.textContent = dashboardLoadingMessage(snipeItObservedAt, "Snipe-IT");
   shellStatus.textContent = "Loading Snipe-IT";
   try {
     const { response, body } = await requestJson(API.snipeIt);
@@ -989,14 +1066,20 @@ async function loadSnipeItDashboard() {
       return;
     }
     if (!response.ok) {
-      snipeItStatus.textContent = errorMessage(body, "Snipe-IT dashboard data is unavailable.");
-      shellStatus.textContent = "Snipe-IT unavailable";
+      snipeItStatus.textContent = dashboardErrorMessage(
+        snipeItObservedAt,
+        errorMessage(body, "Snipe-IT dashboard data is unavailable."),
+      );
+      shellStatus.textContent = dashboardShellErrorMessage(snipeItObservedAt, "Snipe-IT");
       return;
     }
     renderSnipeItDashboard(body);
   } catch (_error) {
-    snipeItStatus.textContent = "Snipe-IT dashboard data is unavailable.";
-    shellStatus.textContent = "Snipe-IT unavailable";
+    snipeItStatus.textContent = dashboardErrorMessage(
+      snipeItObservedAt,
+      "Snipe-IT dashboard data is unavailable.",
+    );
+    shellStatus.textContent = dashboardShellErrorMessage(snipeItObservedAt, "Snipe-IT");
   }
 }
 
@@ -1034,10 +1117,22 @@ async function loadSnipeItWarranty() {
   }
 }
 
-function loadSnipeItPage() {
-  loadSnipeItDashboard();
-  loadSnipeItRecentActivity();
-  loadSnipeItWarranty();
+async function loadSnipeItPage() {
+  if (snipeItPageRequestInFlight) {
+    return;
+  }
+  snipeItPageRequestInFlight = true;
+  setRefreshButtonBusy(snipeItRefreshButton, true);
+  try {
+    await Promise.all([
+      loadSnipeItDashboard(),
+      loadSnipeItRecentActivity(),
+      loadSnipeItWarranty(),
+    ]);
+  } finally {
+    snipeItPageRequestInFlight = false;
+    setRefreshButtonBusy(snipeItRefreshButton, false);
+  }
 }
 
 function renderFreshserviceWarnings(body) {
@@ -1146,8 +1241,12 @@ function renderFreshserviceDashboard(body) {
 }
 
 async function loadFreshserviceDashboard() {
-  freshserviceStatus.textContent = "Loading Freshservice data...";
-  freshserviceObservedAt.textContent = "";
+  if (freshserviceRequestInFlight) {
+    return;
+  }
+  freshserviceRequestInFlight = true;
+  setRefreshButtonBusy(freshserviceRefreshButton, true);
+  freshserviceStatus.textContent = dashboardLoadingMessage(freshserviceObservedAt, "Freshservice");
   shellStatus.textContent = "Loading Freshservice";
   try {
     const { response, body } = await requestJson(API.freshservice);
@@ -1155,14 +1254,23 @@ async function loadFreshserviceDashboard() {
       return;
     }
     if (!response.ok) {
-      freshserviceStatus.textContent = errorMessage(body, "Freshservice dashboard data is unavailable.");
-      shellStatus.textContent = "Freshservice unavailable";
+      freshserviceStatus.textContent = dashboardErrorMessage(
+        freshserviceObservedAt,
+        errorMessage(body, "Freshservice dashboard data is unavailable."),
+      );
+      shellStatus.textContent = dashboardShellErrorMessage(freshserviceObservedAt, "Freshservice");
       return;
     }
     renderFreshserviceDashboard(body);
   } catch (_error) {
-    freshserviceStatus.textContent = "Freshservice dashboard data is unavailable.";
-    shellStatus.textContent = "Freshservice unavailable";
+    freshserviceStatus.textContent = dashboardErrorMessage(
+      freshserviceObservedAt,
+      "Freshservice dashboard data is unavailable.",
+    );
+    shellStatus.textContent = dashboardShellErrorMessage(freshserviceObservedAt, "Freshservice");
+  } finally {
+    freshserviceRequestInFlight = false;
+    setRefreshButtonBusy(freshserviceRefreshButton, false);
   }
 }
 
@@ -1497,6 +1605,11 @@ async function initialize() {
 
 loginForm.addEventListener("submit", handleLogin);
 logoutButton.addEventListener("click", handleLogout);
+executiveRefreshButton.addEventListener("click", loadExecutiveDashboard);
+wazuhRefreshButton.addEventListener("click", loadWazuhDashboard);
+zabbixRefreshButton.addEventListener("click", loadZabbixDashboard);
+snipeItRefreshButton.addEventListener("click", loadSnipeItPage);
+freshserviceRefreshButton.addEventListener("click", loadFreshserviceDashboard);
 for (const button of wazuhRangeButtons) {
   button.addEventListener("click", () => selectWazuhRange(button.dataset.wazuhRange));
 }

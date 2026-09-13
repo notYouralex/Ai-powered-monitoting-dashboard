@@ -735,9 +735,15 @@ tbody tr:last-child td {
 }
 
 .dashboard-status-actions {
-  display: grid;
-  justify-items: end;
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dashboard-status-actions .observed-at {
+  flex-basis: 100%;
 }
 
 .range-controls {
@@ -953,7 +959,7 @@ tbody tr:last-child td {
 
   .dashboard-status-actions {
     width: 100%;
-    justify-items: start;
+    justify-content: flex-start;
   }
 
   .warning-panel {
