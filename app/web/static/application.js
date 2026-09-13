@@ -6,6 +6,7 @@ const API = Object.freeze({
   logout: "/api/auth/logout",
   executive: "/api/dashboard/executive",
   wazuh: "/api/dashboard/wazuh",
+  zabbix: "/api/dashboard/zabbix",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -35,7 +36,7 @@ const PAGE_CONFIG = Object.freeze({
     eyebrow: "Infrastructure",
     title: "Zabbix",
     description: "Infrastructure health, resource pressure, problems, and topology.",
-    message: "The Zabbix web dashboard will be migrated in its dedicated phase.",
+    view: "zabbix",
   },
   "/app/snipe-it": {
     activeRoute: "/app/snipe-it",
@@ -111,6 +112,26 @@ const wazuhTopAgents = document.getElementById("wazuh-top-agents");
 const wazuhAgentStatus = document.getElementById("wazuh-agent-status");
 const wazuhRecentAlertsBody = document.getElementById("wazuh-recent-alerts-body");
 const wazuhRangeButtons = Array.from(document.querySelectorAll("[data-wazuh-range]"));
+const zabbixDashboardView = document.getElementById("zabbix-dashboard-view");
+const zabbixStatus = document.getElementById("zabbix-status");
+const zabbixObservedAt = document.getElementById("zabbix-observed-at");
+const zabbixWarnings = document.getElementById("zabbix-warnings");
+const zabbixWarningList = document.getElementById("zabbix-warning-list");
+const zabbixMetricHosts = document.getElementById("zabbix-metric-hosts");
+const zabbixMetricProblems = document.getElementById("zabbix-metric-problems");
+const zabbixMetricUnreachable = document.getElementById("zabbix-metric-unreachable");
+const zabbixMetricCpu = document.getElementById("zabbix-metric-cpu");
+const zabbixMetricCritical = document.getElementById("zabbix-metric-critical");
+const zabbixAvailability = document.getElementById("zabbix-availability");
+const zabbixProblemSeverity = document.getElementById("zabbix-problem-severity");
+const zabbixActiveProblemsBody = document.getElementById("zabbix-active-problems-body");
+const zabbixTopHostsBody = document.getElementById("zabbix-top-hosts-body");
+const zabbixCpuLive = document.getElementById("zabbix-cpu-live");
+const zabbixMemoryLive = document.getElementById("zabbix-memory-live");
+const zabbixNetworkLatency = document.getElementById("zabbix-network-latency");
+const zabbixNetworkBandwidth = document.getElementById("zabbix-network-bandwidth");
+const zabbixTopology = document.getElementById("zabbix-topology");
+const zabbixSystemInfoBody = document.getElementById("zabbix-system-info-body");
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
 
 const SOURCE_NAMES = Object.freeze({
@@ -472,22 +493,325 @@ function selectWazuhRange(range) {
   loadWazuhDashboard();
 }
 
+function averageZabbixCpu(resourcePressure) {
+  const values = (Array.isArray(resourcePressure) ? resourcePressure : [])
+    .map((row) => row.cpu_used_percent)
+    .filter((value) => typeof value === "number" && Number.isFinite(value));
+  if (values.length === 0) {
+    return null;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function renderZabbixWarnings(body) {
+  const warnings = [];
+  for (const value of [...(body.warnings || []), ...((body.health && body.health.warnings) || [])]) {
+    if (typeof value === "string" && value && !warnings.includes(value)) {
+      warnings.push(value);
+    }
+  }
+  clearNode(zabbixWarningList);
+  setHidden(zabbixWarnings, warnings.length === 0);
+  for (const warning of warnings) {
+    zabbixWarningList.appendChild(createTextElement("p", "warning-item", warning));
+  }
+}
+
+function renderZabbixActiveProblems(problems) {
+  clearNode(zabbixActiveProblemsBody);
+  if (!Array.isArray(problems) || problems.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No active Zabbix problems reported.");
+    cell.colSpan = 6;
+    row.appendChild(cell);
+    zabbixActiveProblemsBody.appendChild(row);
+    return;
+  }
+  for (const problem of problems) {
+    const row = document.createElement("tr");
+    const hostNames = Array.isArray(problem.hosts)
+      ? problem.hosts.map((host) => host.name || host.technical_name || host.host_id).join(", ")
+      : "";
+    row.appendChild(createTextElement("td", "", formatTimestamp(problem.started_at)));
+    row.appendChild(createTextElement("td", "", formatStatus(problem.severity)));
+    row.appendChild(createTextElement("td", "", String(problem.name || "Unnamed problem")));
+    row.appendChild(createTextElement("td", "", hostNames || "Unmapped"));
+    row.appendChild(createTextElement("td", "", problem.acknowledged ? "Yes" : "No"));
+    row.appendChild(createTextElement("td", "", problem.suppressed ? "Yes" : "No"));
+    zabbixActiveProblemsBody.appendChild(row);
+  }
+}
+
+function renderZabbixTopHosts(hosts) {
+  clearNode(zabbixTopHostsBody);
+  if (!Array.isArray(hosts) || hosts.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No affected hosts are currently ranked.");
+    cell.colSpan = 5;
+    row.appendChild(cell);
+    zabbixTopHostsBody.appendChild(row);
+    return;
+  }
+  for (const host of hosts) {
+    const row = document.createElement("tr");
+    let peak = "Not reported";
+    if (typeof host.peak_resource_percent === "number") {
+      const resource = formatStatus(host.peak_resource || "resource");
+      const filesystem = host.peak_filesystem ? ` ${host.peak_filesystem}` : "";
+      peak = `${resource}${filesystem} · ${formatPercent(host.peak_resource_percent)}`;
+    }
+    row.appendChild(createTextElement("td", "", String(host.name || host.technical_name || host.host_id || "Unknown")));
+    row.appendChild(createTextElement("td", "", formatStatus(host.highest_problem_severity)));
+    row.appendChild(createTextElement("td", "table-number", formatCount(host.active_problem_count)));
+    row.appendChild(createTextElement("td", "table-number", formatCount(host.unavailable_interface_count)));
+    row.appendChild(createTextElement("td", "", peak));
+    zabbixTopHostsBody.appendChild(row);
+  }
+}
+
+function renderZabbixResourceLive(container, liveRows, trendRows, metric) {
+  clearNode(container);
+  const series = (Array.isArray(liveRows) ? liveRows : []).filter((row) => row.metric === metric);
+  let rendered = 0;
+  for (const item of series) {
+    for (const point of (item.points || []).slice(-6)) {
+      const row = document.createElement("div");
+      row.className = "trend-row";
+      row.appendChild(createTextElement("span", "trend-time", `${item.host_id} · ${formatTimestamp(point.observed_at)}`));
+      row.appendChild(createTextElement("strong", "trend-count", formatPercent(point.used_percent)));
+      container.appendChild(row);
+      rendered += 1;
+    }
+  }
+  if (rendered === 0) {
+    const historical = (Array.isArray(trendRows) ? trendRows : []).filter((row) => row.metric === metric);
+    for (const item of historical) {
+      for (const point of (item.points || []).slice(-6)) {
+        const row = document.createElement("div");
+        row.className = "trend-row";
+        row.appendChild(createTextElement("span", "trend-time", `${item.host_id} · ${formatTimestamp(point.observed_at)}`));
+        row.appendChild(createTextElement("strong", "trend-count", formatPercent(point.average_used_percent)));
+        container.appendChild(row);
+        rendered += 1;
+      }
+    }
+  }
+  if (rendered === 0) {
+    container.appendChild(createTextElement("p", "muted empty-message", `No ${metric} samples available.`));
+  }
+}
+
+function formatBandwidth(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "Not available";
+  }
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })} Gbps`;
+  }
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })} Mbps`;
+  }
+  if (value >= 1_000) {
+    return `${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 2 })} Kbps`;
+  }
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} bps`;
+}
+
+function renderZabbixNetwork(container, rows, metricMode) {
+  clearNode(container);
+  const series = (Array.isArray(rows) ? rows : []).filter((row) =>
+    metricMode === "latency" ? row.metric === "latency" : row.metric !== "latency"
+  );
+  let rendered = 0;
+  for (const item of series) {
+    for (const point of (item.points || []).slice(-4)) {
+      const row = document.createElement("div");
+      row.className = "trend-row";
+      const interfaceLabel = item.interface ? ` · ${item.interface}` : "";
+      const direction = item.metric === "latency" ? "" : ` · ${formatStatus(item.metric)}`;
+      row.appendChild(createTextElement("span", "trend-time", `${item.host_id}${interfaceLabel}${direction} · ${formatTimestamp(point.observed_at)}`));
+      const value = item.metric === "latency"
+        ? `${Number(point.value).toLocaleString(undefined, { maximumFractionDigits: 2 })} ms`
+        : formatBandwidth(point.value);
+      row.appendChild(createTextElement("strong", "trend-count", value));
+      container.appendChild(row);
+      rendered += 1;
+    }
+  }
+  if (rendered === 0) {
+    container.appendChild(createTextElement("p", "muted empty-message", `No network ${metricMode} data available.`));
+  }
+}
+
+const SVG_NAMESPACE = "http:" + "//www.w3.org/2000/svg";
+
+function createSvgElement(tagName, attributes = {}, text = "") {
+  const element = document.createElementNS(SVG_NAMESPACE, tagName);
+  for (const [name, value] of Object.entries(attributes)) {
+    element.setAttribute(name, String(value));
+  }
+  if (text) {
+    element.textContent = text;
+  }
+  return element;
+}
+
+function renderZabbixSystemInfo(topologyMaps) {
+  clearNode(zabbixSystemInfoBody);
+  const topology = Array.isArray(topologyMaps) ? topologyMaps[0] : null;
+  const nodes = topology && Array.isArray(topology.nodes) ? topology.nodes : [];
+  if (nodes.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No topology node information available.");
+    cell.colSpan = 3;
+    row.appendChild(cell);
+    zabbixSystemInfoBody.appendChild(row);
+    return;
+  }
+  for (const node of nodes) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", String(node.title || node.host_id || "Unknown")));
+    row.appendChild(createTextElement("td", "", formatStatus(node.status)));
+    row.appendChild(createTextElement("td", "table-number", formatCount(node.active_problem_count)));
+    zabbixSystemInfoBody.appendChild(row);
+  }
+}
+
+function renderZabbixTopology(topologyMaps) {
+  clearNode(zabbixTopology);
+  const topology = Array.isArray(topologyMaps) ? topologyMaps[0] : null;
+  if (!topology || !Array.isArray(topology.nodes) || topology.nodes.length === 0) {
+    zabbixTopology.appendChild(createTextElement("p", "muted empty-message", "No topology map is currently available."));
+    return;
+  }
+
+  const width = Number(topology.width) || 1000;
+  const height = Number(topology.height) || 600;
+  const svg = createSvgElement("svg", {
+    class: "topology-canvas",
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+    "aria-label": `${topology.name || "Zabbix topology"}. ${topology.nodes.length} nodes and ${(topology.edges || []).length} connections.`,
+    preserveAspectRatio: "xMidYMid meet",
+  });
+  const nodesById = new Map(topology.nodes.map((node) => [String(node.node_id), node]));
+
+  for (const edge of topology.edges || []) {
+    const source = nodesById.get(String(edge.source));
+    const target = nodesById.get(String(edge.target));
+    if (!source || !target) {
+      continue;
+    }
+    const state = source.status === "unavailable" || target.status === "unavailable" ? "unavailable" : "available";
+    const line = createSvgElement("line", {
+      class: "topology-edge",
+      x1: source.x,
+      y1: source.y,
+      x2: target.x,
+      y2: target.y,
+      "data-status": state,
+    });
+    line.appendChild(createSvgElement("title", {}, `${edge.label || "Connection"}: ${source.title} to ${target.title}; endpoint state ${state}.`));
+    svg.appendChild(line);
+  }
+
+  for (const node of topology.nodes) {
+    const group = createSvgElement("g", { class: "topology-node", transform: `translate(${node.x} ${node.y})` });
+    group.appendChild(createSvgElement("title", {}, `${node.title}; ${formatStatus(node.status)}; ${formatCount(node.active_problem_count)} active problems.`));
+    const nodeState = node.status === "available" && node.active_problem_count > 0 ? "available_problem" : node.status;
+    group.appendChild(createSvgElement("circle", { r: 25, "data-status": nodeState }));
+    group.appendChild(createSvgElement("text", { class: "topology-node-label", x: 0, y: 43, "text-anchor": "middle" }, String(node.title || node.host_id)));
+    group.appendChild(createSvgElement("text", { class: "topology-node-state", x: 0, y: 60, "text-anchor": "middle" }, `${formatStatus(node.status)} · ${formatCount(node.active_problem_count)} problems`));
+    svg.appendChild(group);
+  }
+  zabbixTopology.appendChild(svg);
+}
+
+function renderZabbixDashboard(body) {
+  if (!body || !body.summary || !body.health) {
+    throw new Error("Zabbix response is incomplete");
+  }
+  const summary = body.summary;
+  zabbixMetricHosts.textContent = formatCount(summary.hosts_enabled);
+  zabbixMetricProblems.textContent = formatCount(summary.problems_total);
+  zabbixMetricUnreachable.textContent = formatCount(summary.interfaces_unavailable);
+  zabbixMetricCpu.textContent = formatPercent(averageZabbixCpu(body.resource_pressure));
+  zabbixMetricCritical.textContent = formatCount(summary.problems_disaster);
+
+  renderDistribution(zabbixAvailability, [
+    { name: "Hosts Enabled", count: summary.hosts_enabled },
+    { name: "Hosts Disabled", count: summary.hosts_disabled },
+    { name: "Hosts in Maintenance", count: summary.hosts_in_maintenance },
+    { name: "Interfaces Available", count: summary.interfaces_available },
+    { name: "Interfaces Unavailable", count: summary.interfaces_unavailable },
+    { name: "Interfaces Unknown", count: summary.interfaces_unknown },
+  ]);
+  renderDistribution(zabbixProblemSeverity, [
+    { name: "Not Classified", count: summary.problems_not_classified },
+    { name: "Information", count: summary.problems_information },
+    { name: "Warning", count: summary.problems_warning },
+    { name: "Average", count: summary.problems_average },
+    { name: "High", count: summary.problems_high },
+    { name: "Disaster", count: summary.problems_disaster },
+    { name: "Unknown", count: summary.problems_unknown },
+  ]);
+  renderZabbixActiveProblems(body.active_problems);
+  renderZabbixTopHosts(body.top_affected_hosts);
+  renderZabbixResourceLive(zabbixCpuLive, body.resource_live, body.resource_trends, "cpu");
+  renderZabbixResourceLive(zabbixMemoryLive, body.resource_live, body.resource_trends, "memory");
+  renderZabbixNetwork(zabbixNetworkLatency, body.network_live, "latency");
+  renderZabbixNetwork(zabbixNetworkBandwidth, body.network_live, "bandwidth");
+  renderZabbixTopology(body.topology_maps);
+  renderZabbixSystemInfo(body.topology_maps);
+  renderZabbixWarnings(body);
+
+  const freshness = body.is_stale ? "Stale" : "Fresh";
+  zabbixObservedAt.textContent = `Observed ${formatTimestamp(body.observed_at)}`;
+  zabbixStatus.textContent = `${formatStatus(body.health.status)} · ${freshness}`;
+  shellStatus.textContent = `Zabbix ${formatStatus(body.health.status)}`;
+}
+
+async function loadZabbixDashboard() {
+  zabbixStatus.textContent = "Loading Zabbix data...";
+  zabbixObservedAt.textContent = "";
+  shellStatus.textContent = "Loading Zabbix";
+  try {
+    const { response, body } = await requestJson(API.zabbix);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      zabbixStatus.textContent = errorMessage(body, "Zabbix dashboard data is unavailable.");
+      shellStatus.textContent = "Zabbix unavailable";
+      return;
+    }
+    renderZabbixDashboard(body);
+  } catch (_error) {
+    zabbixStatus.textContent = "Zabbix dashboard data is unavailable.";
+    shellStatus.textContent = "Zabbix unavailable";
+  }
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
   const isExecutive = config.view === "executive";
   const isWazuh = config.view === "wazuh";
+  const isZabbix = config.view === "zabbix";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
   phaseMessage.textContent = config.message || "";
   setHidden(executiveDashboardView, !isExecutive);
   setHidden(wazuhDashboardView, !isWazuh);
-  setHidden(phaseCard, isExecutive || isWazuh);
+  setHidden(zabbixDashboardView, !isZabbix);
+  setHidden(phaseCard, isExecutive || isWazuh || isZabbix);
   setHidden(legacyAiLink, !config.legacyAi);
   if (isExecutive) {
     shellStatus.textContent = "Loading Executive";
   } else if (isWazuh) {
     shellStatus.textContent = "Loading Wazuh";
+  } else if (isZabbix) {
+    shellStatus.textContent = "Loading Zabbix";
   } else {
     shellStatus.textContent = "Application shell ready";
   }
@@ -526,6 +850,8 @@ function showApplication(user) {
     loadExecutiveDashboard();
   } else if (config.view === "wazuh") {
     loadWazuhDashboard();
+  } else if (config.view === "zabbix") {
+    loadZabbixDashboard();
   }
 }
 

@@ -159,6 +159,63 @@ def test_wazuh_web_view_uses_canonical_wazuh_contract(auth_env) -> None:
     assert "innerHTML" not in source
 
 
+def test_zabbix_web_view_uses_canonical_zabbix_contract(auth_env) -> None:
+    page = auth_env.client.get("/app/zabbix")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "zabbix-dashboard-view",
+        "zabbix-status",
+        "zabbix-summary-grid",
+        "zabbix-availability",
+        "zabbix-problem-severity",
+        "zabbix-active-problems-body",
+        "zabbix-top-hosts-body",
+        "zabbix-cpu-live",
+        "zabbix-memory-live",
+        "zabbix-network-latency",
+        "zabbix-network-bandwidth",
+        "zabbix-topology",
+        "zabbix-system-info-body",
+        "zabbix-warnings",
+    ):
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    assert 'zabbix: "/api/dashboard/zabbix"' in source
+    for field in (
+        "hosts_enabled",
+        "hosts_disabled",
+        "hosts_in_maintenance",
+        "interfaces_available",
+        "interfaces_unavailable",
+        "interfaces_unknown",
+        "problems_total",
+        "problems_warning",
+        "problems_average",
+        "problems_high",
+        "problems_disaster",
+        "resource_pressure",
+        "top_affected_hosts",
+        "resource_live",
+        "resource_trends",
+        "network_live",
+        "topology_maps",
+        "active_problems",
+        "is_stale",
+        "warnings",
+    ):
+        assert field in source
+
+    assert "createElementNS" in source
+    assert "localStorage" not in source
+    assert "sessionStorage" not in source
+    assert "document.cookie" not in source
+    assert "innerHTML" not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

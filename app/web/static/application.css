@@ -600,6 +600,84 @@ tbody tr:last-child td {
   font-variant-numeric: tabular-nums;
 }
 
+.topology-view {
+  min-height: 420px;
+  overflow: auto;
+  border: 1px solid rgba(129, 157, 202, 0.14);
+  border-radius: 12px;
+  background: rgba(4, 10, 20, 0.72);
+}
+
+.topology-canvas {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  min-height: 420px;
+}
+
+.topology-edge {
+  stroke: #4f6789;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.topology-edge[data-status="unavailable"] {
+  stroke: #d95d6b;
+  stroke-dasharray: 16 10;
+}
+
+.topology-node circle {
+  fill: #263c5c;
+  stroke: #7d9ac5;
+  stroke-width: 6;
+}
+
+.topology-node circle[data-status="available"] {
+  fill: #173f32;
+  stroke: #5bc49b;
+}
+
+.topology-node circle[data-status="available_problem"] {
+  fill: #5a361c;
+  stroke: #f0a25b;
+}
+
+.topology-node circle[data-status="unavailable"] {
+  fill: #55252d;
+  stroke: #ed7180;
+}
+
+.topology-node circle[data-status="maintenance"] {
+  fill: #57491d;
+  stroke: #e4c54c;
+}
+
+.topology-node circle[data-status="disabled"] {
+  fill: #303640;
+  stroke: #838d9c;
+}
+
+.topology-node-label,
+.topology-node-state {
+  fill: #e6efff;
+  paint-order: stroke;
+  stroke: #07101d;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  font-family: inherit;
+}
+
+.topology-node-label {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.topology-node-state {
+  fill: #a9bbd5;
+  font-size: 15px;
+  font-weight: 650;
+}
+
 @media (max-width: 1020px) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

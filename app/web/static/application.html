@@ -323,6 +323,187 @@
               </div>
             </section>
 
+            <section id="zabbix-dashboard-view" class="dashboard-view" aria-label="Zabbix infrastructure dashboard" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Canonical Zabbix API</p>
+                  <p id="zabbix-status" class="muted dashboard-status" role="status">Loading Zabbix data...</p>
+                </div>
+                <p id="zabbix-observed-at" class="observed-at"></p>
+              </div>
+
+              <div id="zabbix-summary-grid" class="summary-grid" aria-label="Zabbix summary metrics">
+                <article class="metric-card">
+                  <span class="metric-label">Hosts</span>
+                  <strong id="zabbix-metric-hosts" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Problems</span>
+                  <strong id="zabbix-metric-problems" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Unreachable</span>
+                  <strong id="zabbix-metric-unreachable" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Avg CPU Usage</span>
+                  <strong id="zabbix-metric-cpu" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Critical Problems</span>
+                  <strong id="zabbix-metric-critical" class="metric-value">—</strong>
+                </article>
+              </div>
+
+              <section id="zabbix-warnings" class="warning-panel" aria-labelledby="zabbix-warnings-title" hidden>
+                <div>
+                  <p class="eyebrow">Source warnings</p>
+                  <h2 id="zabbix-warnings-title">Zabbix requires attention</h2>
+                </div>
+                <div id="zabbix-warning-list" class="warning-list"></div>
+              </section>
+
+              <div class="dashboard-grid">
+                <section class="dashboard-panel" aria-labelledby="zabbix-availability-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Host and interface state</p>
+                      <h2 id="zabbix-availability-title">Availability</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-availability" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="zabbix-problem-severity-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Active issue mix</p>
+                      <h2 id="zabbix-problem-severity-title">Problems by Severity</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-problem-severity" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="zabbix-topology-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Backend-provided relationships</p>
+                      <h2 id="zabbix-topology-title">Live Host Topology</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-topology" class="topology-view"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="zabbix-cpu-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current resource samples</p>
+                      <h2 id="zabbix-cpu-title">CPU Load</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-cpu-live" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="zabbix-memory-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current resource samples</p>
+                      <h2 id="zabbix-memory-title">Memory Usage</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-memory-live" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="zabbix-latency-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Network monitoring</p>
+                      <h2 id="zabbix-latency-title">Network Latency</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-network-latency" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="zabbix-bandwidth-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Network monitoring</p>
+                      <h2 id="zabbix-bandwidth-title">Network Bandwidth</h2>
+                    </div>
+                  </div>
+                  <div id="zabbix-network-bandwidth" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="zabbix-active-problems-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current infrastructure issues</p>
+                      <h2 id="zabbix-active-problems-title">Active Problems</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Started</th>
+                          <th scope="col">Severity</th>
+                          <th scope="col">Problem</th>
+                          <th scope="col">Hosts</th>
+                          <th scope="col">Acknowledged</th>
+                          <th scope="col">Suppressed</th>
+                        </tr>
+                      </thead>
+                      <tbody id="zabbix-active-problems-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="zabbix-top-hosts-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Ranked impact</p>
+                      <h2 id="zabbix-top-hosts-title">Top Affected Hosts</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Host</th>
+                          <th scope="col">Highest Severity</th>
+                          <th scope="col">Problems</th>
+                          <th scope="col">Unavailable Interfaces</th>
+                          <th scope="col">Peak Resource</th>
+                        </tr>
+                      </thead>
+                      <tbody id="zabbix-top-hosts-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="zabbix-system-info-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Topology node state</p>
+                      <h2 id="zabbix-system-info-title">System Information</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Node</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Active Problems</th>
+                        </tr>
+                      </thead>
+                      <tbody id="zabbix-system-info-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </section>
+
             <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">
               <p class="eyebrow">Migration status</p>
               <h2 id="phase-card-title">Dashboard migration in progress</h2>
