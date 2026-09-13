@@ -100,13 +100,63 @@ def test_executive_web_view_uses_canonical_executive_contract(auth_env) -> None:
     ):
         assert field in source
 
-    for source_route in (
-        "/api/dashboard/wazuh",
-        "/api/dashboard/zabbix",
-        "/api/dashboard/snipe-it",
-        "/api/dashboard/freshservice",
+    assert 'executive: "/api/dashboard/executive"' in source
+
+
+def test_wazuh_web_view_uses_canonical_wazuh_contract(auth_env) -> None:
+    page = auth_env.client.get("/app/wazuh")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "wazuh-dashboard-view",
+        "wazuh-status",
+        "wazuh-summary-grid",
+        "wazuh-alert-trend",
+        "wazuh-alert-severity",
+        "wazuh-mitre-tactics",
+        "wazuh-top-alerts-body",
+        "wazuh-vulnerability-severity",
+        "wazuh-top-agents",
+        "wazuh-agent-status",
+        "wazuh-recent-alerts-body",
+        "wazuh-warnings",
     ):
-        assert source_route not in source
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    assert 'wazuh: "/api/dashboard/wazuh"' in source
+    for field in (
+        "alerts_total",
+        "alerts_critical",
+        "alerts_high",
+        "alerts_medium",
+        "alerts_low",
+        "vulnerabilities_total",
+        "vulnerabilities_critical",
+        "vulnerabilities_high",
+        "agents_active",
+        "agents_disconnected",
+        "agents_pending",
+        "agents_never_connected",
+        "agents_unknown",
+        "alert_trend",
+        "top_alerts",
+        "top_agents",
+        "by_severity",
+        "tactics",
+        "recent_alerts",
+        "is_stale",
+        "warnings",
+    ):
+        assert field in source
+
+    assert "active response" not in source.lower()
+    assert "localStorage" not in source
+    assert "sessionStorage" not in source
+    assert "document.cookie" not in source
+    assert "innerHTML" not in source
 
 
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:

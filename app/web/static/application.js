@@ -5,6 +5,7 @@ const API = Object.freeze({
   login: "/api/auth/login",
   logout: "/api/auth/logout",
   executive: "/api/dashboard/executive",
+  wazuh: "/api/dashboard/wazuh",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -27,7 +28,7 @@ const PAGE_CONFIG = Object.freeze({
     eyebrow: "Security",
     title: "Wazuh",
     description: "Security monitoring, agents, alerts, vulnerabilities, and related evidence.",
-    message: "The Wazuh web dashboard will be migrated in its dedicated phase.",
+    view: "wazuh",
   },
   "/app/zabbix": {
     activeRoute: "/app/zabbix",
@@ -90,6 +91,26 @@ const executiveAlertDistribution = document.getElementById("executive-alert-dist
 const executiveTicketDistribution = document.getElementById("executive-ticket-distribution");
 const executiveSourceHealthBody = document.getElementById("executive-source-health-body");
 const executiveAttentionBody = document.getElementById("executive-attention-body");
+const wazuhDashboardView = document.getElementById("wazuh-dashboard-view");
+const wazuhStatus = document.getElementById("wazuh-status");
+const wazuhObservedAt = document.getElementById("wazuh-observed-at");
+const wazuhWarnings = document.getElementById("wazuh-warnings");
+const wazuhWarningList = document.getElementById("wazuh-warning-list");
+const wazuhMetricAlertsTotal = document.getElementById("wazuh-metric-alerts-total");
+const wazuhMetricAlertsCritical = document.getElementById("wazuh-metric-alerts-critical");
+const wazuhMetricAlertsHigh = document.getElementById("wazuh-metric-alerts-high");
+const wazuhMetricVulnerabilitiesTotal = document.getElementById("wazuh-metric-vulnerabilities-total");
+const wazuhMetricVulnerabilitiesCritical = document.getElementById("wazuh-metric-vulnerabilities-critical");
+const wazuhMetricVulnerabilitiesHigh = document.getElementById("wazuh-metric-vulnerabilities-high");
+const wazuhAlertTrend = document.getElementById("wazuh-alert-trend");
+const wazuhAlertSeverity = document.getElementById("wazuh-alert-severity");
+const wazuhMitreTactics = document.getElementById("wazuh-mitre-tactics");
+const wazuhTopAlertsBody = document.getElementById("wazuh-top-alerts-body");
+const wazuhVulnerabilitySeverity = document.getElementById("wazuh-vulnerability-severity");
+const wazuhTopAgents = document.getElementById("wazuh-top-agents");
+const wazuhAgentStatus = document.getElementById("wazuh-agent-status");
+const wazuhRecentAlertsBody = document.getElementById("wazuh-recent-alerts-body");
+const wazuhRangeButtons = Array.from(document.querySelectorAll("[data-wazuh-range]"));
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
 
 const SOURCE_NAMES = Object.freeze({
@@ -98,6 +119,13 @@ const SOURCE_NAMES = Object.freeze({
   snipe_it: "Snipe-IT",
   freshservice: "Freshservice",
 });
+
+const WAZUH_RANGE_HOURS = Object.freeze({
+  "24h": 24,
+  "7d": 24 * 7,
+  "30d": 24 * 30,
+});
+let wazuhRange = "24h";
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
@@ -297,17 +325,172 @@ async function loadExecutiveDashboard() {
   }
 }
 
+function renderNamedCountTable(tbody, rows, emptyMessage) {
+  clearNode(tbody);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", emptyMessage);
+    cell.colSpan = 2;
+    row.appendChild(cell);
+    tbody.appendChild(row);
+    return;
+  }
+  for (const item of rows) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", String(item.name || "Unknown")));
+    row.appendChild(createTextElement("td", "table-number", formatCount(item.count)));
+    tbody.appendChild(row);
+  }
+}
+
+function renderWazuhWarnings(body) {
+  const warnings = [];
+  for (const value of [...(body.warnings || []), ...((body.health && body.health.warnings) || [])]) {
+    if (typeof value === "string" && value && !warnings.includes(value)) {
+      warnings.push(value);
+    }
+  }
+  clearNode(wazuhWarningList);
+  setHidden(wazuhWarnings, warnings.length === 0);
+  for (const warning of warnings) {
+    wazuhWarningList.appendChild(createTextElement("p", "warning-item", warning));
+  }
+}
+
+function renderWazuhTrend(points) {
+  clearNode(wazuhAlertTrend);
+  if (!Array.isArray(points) || points.length === 0) {
+    wazuhAlertTrend.appendChild(createTextElement("p", "muted empty-message", "No alert trend data available."));
+    return;
+  }
+  for (const point of points.slice(-24)) {
+    const row = document.createElement("div");
+    row.className = "trend-row";
+    row.appendChild(createTextElement("span", "trend-time", formatTimestamp(point.timestamp)));
+    row.appendChild(createTextElement("strong", "trend-count", formatCount(point.count)));
+    wazuhAlertTrend.appendChild(row);
+  }
+}
+
+function renderWazuhRecentAlerts(alerts) {
+  clearNode(wazuhRecentAlertsBody);
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No recent alerts in the selected range.");
+    cell.colSpan = 5;
+    row.appendChild(cell);
+    wazuhRecentAlertsBody.appendChild(row);
+    return;
+  }
+  for (const alert of alerts) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", formatTimestamp(alert.timestamp)));
+    row.appendChild(createTextElement("td", "table-number", formatCount(alert.rule_level)));
+    row.appendChild(createTextElement("td", "", String(alert.description || "Unknown alert")));
+    row.appendChild(createTextElement("td", "", String(alert.agent_name || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(alert.rule_id || "Not reported")));
+    wazuhRecentAlertsBody.appendChild(row);
+  }
+}
+
+function renderWazuhDashboard(body) {
+  if (!body || !body.summary || !body.health) {
+    throw new Error("Wazuh response is incomplete");
+  }
+  const summary = body.summary;
+  wazuhMetricAlertsTotal.textContent = formatCount(summary.alerts_total);
+  wazuhMetricAlertsCritical.textContent = formatCount(summary.alerts_critical);
+  wazuhMetricAlertsHigh.textContent = formatCount(summary.alerts_high);
+  wazuhMetricVulnerabilitiesTotal.textContent = formatCount(summary.vulnerabilities_total);
+  wazuhMetricVulnerabilitiesCritical.textContent = formatCount(summary.vulnerabilities_critical);
+  wazuhMetricVulnerabilitiesHigh.textContent = formatCount(summary.vulnerabilities_high);
+
+  renderWazuhTrend(body.alert_trend);
+  renderDistribution(wazuhAlertSeverity, [
+    { name: "Low", count: summary.alerts_low },
+    { name: "Medium", count: summary.alerts_medium },
+    { name: "High", count: summary.alerts_high },
+    { name: "Critical", count: summary.alerts_critical },
+  ]);
+  renderDistribution(wazuhMitreTactics, body.mitre && body.mitre.tactics);
+  renderNamedCountTable(wazuhTopAlertsBody, body.top_alerts, "No top alerts available.");
+  renderDistribution(wazuhVulnerabilitySeverity, body.vulnerabilities && body.vulnerabilities.by_severity);
+  renderDistribution(wazuhTopAgents, body.top_agents);
+  renderDistribution(wazuhAgentStatus, [
+    { name: "Active", count: summary.agents_active },
+    { name: "Disconnected", count: summary.agents_disconnected },
+    { name: "Pending", count: summary.agents_pending },
+    { name: "Never Connected", count: summary.agents_never_connected },
+    { name: "Unknown", count: summary.agents_unknown },
+  ]);
+  renderWazuhRecentAlerts(body.recent_alerts);
+  renderWazuhWarnings(body);
+
+  const freshness = body.is_stale ? "Stale" : "Fresh";
+  wazuhObservedAt.textContent = `Observed ${formatTimestamp(body.observed_at)}`;
+  wazuhStatus.textContent = `${formatStatus(body.health.status)} · ${freshness} · ${formatTimestamp(body.range_start)} to ${formatTimestamp(body.range_end)}`;
+  shellStatus.textContent = `Wazuh ${formatStatus(body.health.status)}`;
+}
+
+function wazuhRangeUrl() {
+  const hours = WAZUH_RANGE_HOURS[wazuhRange] || WAZUH_RANGE_HOURS["24h"];
+  const end = new Date();
+  const start = new Date(end.getTime() - (hours * 60 * 60 * 1000));
+  const params = new URLSearchParams({ from: start.toISOString(), to: end.toISOString() });
+  return `${API.wazuh}?${params.toString()}`;
+}
+
+async function loadWazuhDashboard() {
+  wazuhStatus.textContent = "Loading Wazuh data...";
+  wazuhObservedAt.textContent = "";
+  shellStatus.textContent = "Loading Wazuh";
+  try {
+    const { response, body } = await requestJson(wazuhRangeUrl());
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      wazuhStatus.textContent = errorMessage(body, "Wazuh dashboard data is unavailable.");
+      shellStatus.textContent = "Wazuh unavailable";
+      return;
+    }
+    renderWazuhDashboard(body);
+  } catch (_error) {
+    wazuhStatus.textContent = "Wazuh dashboard data is unavailable.";
+    shellStatus.textContent = "Wazuh unavailable";
+  }
+}
+
+function selectWazuhRange(range) {
+  if (!Object.prototype.hasOwnProperty.call(WAZUH_RANGE_HOURS, range)) {
+    return;
+  }
+  wazuhRange = range;
+  for (const button of wazuhRangeButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.wazuhRange === range));
+  }
+  loadWazuhDashboard();
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
   const isExecutive = config.view === "executive";
+  const isWazuh = config.view === "wazuh";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
   phaseMessage.textContent = config.message || "";
   setHidden(executiveDashboardView, !isExecutive);
-  setHidden(phaseCard, isExecutive);
+  setHidden(wazuhDashboardView, !isWazuh);
+  setHidden(phaseCard, isExecutive || isWazuh);
   setHidden(legacyAiLink, !config.legacyAi);
-  shellStatus.textContent = isExecutive ? "Loading Executive" : "Application shell ready";
+  if (isExecutive) {
+    shellStatus.textContent = "Loading Executive";
+  } else if (isWazuh) {
+    shellStatus.textContent = "Loading Wazuh";
+  } else {
+    shellStatus.textContent = "Application shell ready";
+  }
   document.title = `${config.title} | AI-Powered Monitoring`;
 
   for (const link of navigationLinks) {
@@ -341,6 +524,8 @@ function showApplication(user) {
   const config = renderRoute();
   if (config.view === "executive") {
     loadExecutiveDashboard();
+  } else if (config.view === "wazuh") {
+    loadWazuhDashboard();
   }
 }
 
@@ -405,4 +590,7 @@ async function initialize() {
 
 loginForm.addEventListener("submit", handleLogin);
 logoutButton.addEventListener("click", handleLogout);
+for (const button of wazuhRangeButtons) {
+  button.addEventListener("click", () => selectWazuhRange(button.dataset.wazuhRange));
+}
 initialize();

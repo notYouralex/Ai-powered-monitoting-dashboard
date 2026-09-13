@@ -171,6 +171,158 @@
               </div>
             </section>
 
+            <section id="wazuh-dashboard-view" class="dashboard-view" aria-label="Wazuh security dashboard" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Canonical Wazuh API</p>
+                  <p id="wazuh-status" class="muted dashboard-status" role="status">Loading Wazuh data...</p>
+                </div>
+                <div class="dashboard-status-actions">
+                  <div id="wazuh-range-controls" class="range-controls" aria-label="Wazuh time range">
+                    <button type="button" class="range-button" data-wazuh-range="24h" aria-pressed="true">24h</button>
+                    <button type="button" class="range-button" data-wazuh-range="7d" aria-pressed="false">7d</button>
+                    <button type="button" class="range-button" data-wazuh-range="30d" aria-pressed="false">30d</button>
+                  </div>
+                  <p id="wazuh-observed-at" class="observed-at"></p>
+                </div>
+              </div>
+
+              <div id="wazuh-summary-grid" class="summary-grid" aria-label="Wazuh summary metrics">
+                <article class="metric-card">
+                  <span class="metric-label">Total Alerts</span>
+                  <strong id="wazuh-metric-alerts-total" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Critical Alerts</span>
+                  <strong id="wazuh-metric-alerts-critical" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">High Alerts</span>
+                  <strong id="wazuh-metric-alerts-high" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Total Vulnerabilities</span>
+                  <strong id="wazuh-metric-vulnerabilities-total" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Critical Vulnerabilities</span>
+                  <strong id="wazuh-metric-vulnerabilities-critical" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">High Vulnerabilities</span>
+                  <strong id="wazuh-metric-vulnerabilities-high" class="metric-value">—</strong>
+                </article>
+              </div>
+
+              <section id="wazuh-warnings" class="warning-panel" aria-labelledby="wazuh-warnings-title" hidden>
+                <div>
+                  <p class="eyebrow">Source warnings</p>
+                  <h2 id="wazuh-warnings-title">Wazuh requires attention</h2>
+                </div>
+                <div id="wazuh-warning-list" class="warning-list"></div>
+              </section>
+
+              <div class="dashboard-grid">
+                <section class="dashboard-panel" aria-labelledby="wazuh-alert-trend-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Selected range</p>
+                      <h2 id="wazuh-alert-trend-title">Alert Trend</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-alert-trend" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-alert-severity-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Detection severity</p>
+                      <h2 id="wazuh-alert-severity-title">Alerts by Severity</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-alert-severity" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-mitre-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">MITRE ATT&amp;CK</p>
+                      <h2 id="wazuh-mitre-title">MITRE Tactics</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-mitre-tactics" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-top-alerts-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Frequent detections</p>
+                      <h2 id="wazuh-top-alerts-title">Top Alerts</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th scope="col">Alert</th><th scope="col">Count</th></tr></thead>
+                      <tbody id="wazuh-top-alerts-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-vulnerability-severity-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current exposure</p>
+                      <h2 id="wazuh-vulnerability-severity-title">Vulnerabilities by Severity</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-vulnerability-severity" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-top-agents-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Alert concentration</p>
+                      <h2 id="wazuh-top-agents-title">Top Affected Agents</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-top-agents" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="wazuh-agent-status-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Manager connectivity</p>
+                      <h2 id="wazuh-agent-status-title">Agent Status</h2>
+                    </div>
+                  </div>
+                  <div id="wazuh-agent-status" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="wazuh-recent-alerts-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Latest security evidence</p>
+                      <h2 id="wazuh-recent-alerts-title">Recent Alerts</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Timestamp</th>
+                          <th scope="col">Level</th>
+                          <th scope="col">Description</th>
+                          <th scope="col">Agent</th>
+                          <th scope="col">Rule ID</th>
+                        </tr>
+                      </thead>
+                      <tbody id="wazuh-recent-alerts-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </section>
+
             <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">
               <p class="eyebrow">Migration status</p>
               <h2 id="phase-card-title">Dashboard migration in progress</h2>
