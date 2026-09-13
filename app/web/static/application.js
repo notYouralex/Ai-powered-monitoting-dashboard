@@ -7,6 +7,9 @@ const API = Object.freeze({
   executive: "/api/dashboard/executive",
   wazuh: "/api/dashboard/wazuh",
   zabbix: "/api/dashboard/zabbix",
+  snipeIt: "/api/dashboard/snipe-it",
+  snipeItActivity: "/api/dashboard/snipe-it/recent-activity",
+  snipeItWarranty: "/api/dashboard/snipe-it/warranty-expiry",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -43,7 +46,7 @@ const PAGE_CONFIG = Object.freeze({
     eyebrow: "Assets",
     title: "Snipe-IT",
     description: "Asset inventory, state, activity, and warranty information.",
-    message: "The Snipe-IT web dashboard will be migrated in its dedicated phase.",
+    view: "snipeIt",
   },
   "/app/freshservice": {
     activeRoute: "/app/freshservice",
@@ -132,6 +135,30 @@ const zabbixNetworkLatency = document.getElementById("zabbix-network-latency");
 const zabbixNetworkBandwidth = document.getElementById("zabbix-network-bandwidth");
 const zabbixTopology = document.getElementById("zabbix-topology");
 const zabbixSystemInfoBody = document.getElementById("zabbix-system-info-body");
+const snipeItDashboardView = document.getElementById("snipe-it-dashboard-view");
+const snipeItStatus = document.getElementById("snipe-it-status");
+const snipeItObservedAt = document.getElementById("snipe-it-observed-at");
+const snipeItWarnings = document.getElementById("snipe-it-warnings");
+const snipeItWarningList = document.getElementById("snipe-it-warning-list");
+const snipeItMetricTotal = document.getElementById("snipe-it-metric-total");
+const snipeItMetricAssigned = document.getElementById("snipe-it-metric-assigned");
+const snipeItMetricUnassigned = document.getElementById("snipe-it-metric-unassigned");
+const snipeItMetricDeployed = document.getElementById("snipe-it-metric-deployed");
+const snipeItMetricAvailable = document.getElementById("snipe-it-metric-available");
+const snipeItMetricMaintenance = document.getElementById("snipe-it-metric-maintenance");
+const snipeItMetricRetired = document.getElementById("snipe-it-metric-retired");
+const snipeItMetricMissingSerial = document.getElementById("snipe-it-metric-missing-serial");
+const snipeItMetricMissingTag = document.getElementById("snipe-it-metric-missing-tag");
+const snipeItMetricWarrantyExpired = document.getElementById("snipe-it-metric-warranty-expired");
+const snipeItMetricWarrantySoon = document.getElementById("snipe-it-metric-warranty-soon");
+const snipeItCategoryDistribution = document.getElementById("snipe-it-category-distribution");
+const snipeItStatusDistribution = document.getElementById("snipe-it-status-distribution");
+const snipeItCompanyDistribution = document.getElementById("snipe-it-company-distribution");
+const snipeItLocationDistribution = document.getElementById("snipe-it-location-distribution");
+const snipeItActivityStatus = document.getElementById("snipe-it-activity-status");
+const snipeItRecentActivityBody = document.getElementById("snipe-it-recent-activity-body");
+const snipeItWarrantyStatus = document.getElementById("snipe-it-warranty-status");
+const snipeItWarrantyBody = document.getElementById("snipe-it-warranty-body");
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
 
 const SOURCE_NAMES = Object.freeze({
@@ -792,11 +819,166 @@ async function loadZabbixDashboard() {
   }
 }
 
+function renderSnipeItWarnings(body) {
+  const warnings = [];
+  for (const value of [...(body.warnings || []), ...((body.health && body.health.warnings) || [])]) {
+    if (typeof value === "string" && value && !warnings.includes(value)) {
+      warnings.push(value);
+    }
+  }
+  clearNode(snipeItWarningList);
+  setHidden(snipeItWarnings, warnings.length === 0);
+  for (const warning of warnings) {
+    snipeItWarningList.appendChild(createTextElement("p", "warning-item", warning));
+  }
+}
+
+function renderSnipeItRecentActivity(activity) {
+  clearNode(snipeItRecentActivityBody);
+  if (!Array.isArray(activity) || activity.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No recent asset activity reported.");
+    cell.colSpan = 5;
+    row.appendChild(cell);
+    snipeItRecentActivityBody.appendChild(row);
+    snipeItActivityStatus.textContent = "No recent activity reported.";
+    return;
+  }
+
+  for (const item of activity) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", String(item.action || "Unknown")));
+    row.appendChild(createTextElement("td", "", String(item.asset || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.performed_by || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.target || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.occurred_at || "Not reported")));
+    snipeItRecentActivityBody.appendChild(row);
+  }
+  snipeItActivityStatus.textContent = `${formatCount(activity.length)} recent records.`;
+}
+
+function renderSnipeItWarranty(items) {
+  clearNode(snipeItWarrantyBody);
+  if (!Array.isArray(items) || items.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No warranties expire within the next 90 days.");
+    cell.colSpan = 5;
+    row.appendChild(cell);
+    snipeItWarrantyBody.appendChild(row);
+    snipeItWarrantyStatus.textContent = "No upcoming warranty expiries reported.";
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", String(item.asset_tag || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.serial || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.category || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.location || "Not reported")));
+    row.appendChild(createTextElement("td", "", String(item.warranty_expires || "Not reported")));
+    snipeItWarrantyBody.appendChild(row);
+  }
+  snipeItWarrantyStatus.textContent = `${formatCount(items.length)} assets expiring within 90 days.`;
+}
+
+function renderSnipeItDashboard(body) {
+  if (!body || !body.summary || !body.health) {
+    throw new Error("Snipe-IT response is incomplete");
+  }
+
+  const summary = body.summary;
+  snipeItMetricTotal.textContent = formatCount(summary.assets_total);
+  snipeItMetricAssigned.textContent = formatCount(summary.assets_assigned);
+  snipeItMetricUnassigned.textContent = formatCount(summary.assets_unassigned);
+  snipeItMetricDeployed.textContent = formatCount(summary.assets_deployed);
+  snipeItMetricAvailable.textContent = formatCount(summary.assets_available);
+  snipeItMetricMaintenance.textContent = formatCount(summary.assets_maintenance);
+  snipeItMetricRetired.textContent = formatCount(summary.assets_retired);
+  snipeItMetricMissingSerial.textContent = formatCount(summary.assets_missing_serial);
+  snipeItMetricMissingTag.textContent = formatCount(summary.assets_missing_asset_tag);
+  snipeItMetricWarrantyExpired.textContent = formatCount(summary.warranty_expired);
+  snipeItMetricWarrantySoon.textContent = formatCount(summary.warranty_expiring_soon);
+
+  renderDistribution(snipeItCategoryDistribution, body.category_distribution);
+  renderDistribution(snipeItStatusDistribution, body.status_distribution);
+  renderDistribution(snipeItCompanyDistribution, body.company_distribution);
+  renderDistribution(snipeItLocationDistribution, body.location_distribution);
+  renderSnipeItWarnings(body);
+
+  const freshness = body.is_stale ? "Stale" : "Fresh";
+  const lastSuccess = formatTimestamp(body.health.last_success_at);
+  snipeItObservedAt.textContent = `Observed ${formatTimestamp(body.observed_at)}`;
+  snipeItStatus.textContent = `${formatStatus(body.health.status)} · ${freshness} · Last successful sync ${lastSuccess}`;
+  shellStatus.textContent = `Snipe-IT ${formatStatus(body.health.status)}`;
+}
+
+async function loadSnipeItDashboard() {
+  snipeItStatus.textContent = "Loading Snipe-IT data...";
+  snipeItObservedAt.textContent = "";
+  shellStatus.textContent = "Loading Snipe-IT";
+  try {
+    const { response, body } = await requestJson(API.snipeIt);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      snipeItStatus.textContent = errorMessage(body, "Snipe-IT dashboard data is unavailable.");
+      shellStatus.textContent = "Snipe-IT unavailable";
+      return;
+    }
+    renderSnipeItDashboard(body);
+  } catch (_error) {
+    snipeItStatus.textContent = "Snipe-IT dashboard data is unavailable.";
+    shellStatus.textContent = "Snipe-IT unavailable";
+  }
+}
+
+async function loadSnipeItRecentActivity() {
+  snipeItActivityStatus.textContent = "Loading recent activity...";
+  try {
+    const { response, body } = await requestJson(API.snipeItActivity);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      snipeItActivityStatus.textContent = errorMessage(body, "Recent activity is unavailable.");
+      return;
+    }
+    renderSnipeItRecentActivity(body && body.activity);
+  } catch (_error) {
+    snipeItActivityStatus.textContent = "Recent activity is unavailable.";
+  }
+}
+
+async function loadSnipeItWarranty() {
+  snipeItWarrantyStatus.textContent = "Loading warranty data...";
+  try {
+    const { response, body } = await requestJson(API.snipeItWarranty);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      snipeItWarrantyStatus.textContent = errorMessage(body, "Warranty data is unavailable.");
+      return;
+    }
+    renderSnipeItWarranty(body && body.warranty_expiry);
+  } catch (_error) {
+    snipeItWarrantyStatus.textContent = "Warranty data is unavailable.";
+  }
+}
+
+function loadSnipeItPage() {
+  loadSnipeItDashboard();
+  loadSnipeItRecentActivity();
+  loadSnipeItWarranty();
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
   const isExecutive = config.view === "executive";
   const isWazuh = config.view === "wazuh";
   const isZabbix = config.view === "zabbix";
+  const isSnipeIt = config.view === "snipeIt";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
@@ -804,7 +986,8 @@ function renderRoute() {
   setHidden(executiveDashboardView, !isExecutive);
   setHidden(wazuhDashboardView, !isWazuh);
   setHidden(zabbixDashboardView, !isZabbix);
-  setHidden(phaseCard, isExecutive || isWazuh || isZabbix);
+  setHidden(snipeItDashboardView, !isSnipeIt);
+  setHidden(phaseCard, isExecutive || isWazuh || isZabbix || isSnipeIt);
   setHidden(legacyAiLink, !config.legacyAi);
   if (isExecutive) {
     shellStatus.textContent = "Loading Executive";
@@ -812,6 +995,8 @@ function renderRoute() {
     shellStatus.textContent = "Loading Wazuh";
   } else if (isZabbix) {
     shellStatus.textContent = "Loading Zabbix";
+  } else if (isSnipeIt) {
+    shellStatus.textContent = "Loading Snipe-IT";
   } else {
     shellStatus.textContent = "Application shell ready";
   }
@@ -852,6 +1037,8 @@ function showApplication(user) {
     loadWazuhDashboard();
   } else if (config.view === "zabbix") {
     loadZabbixDashboard();
+  } else if (config.view === "snipeIt") {
+    loadSnipeItPage();
   }
 }
 

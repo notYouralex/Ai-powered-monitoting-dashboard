@@ -504,6 +504,161 @@
               </div>
             </section>
 
+            <section id="snipe-it-dashboard-view" class="dashboard-view" aria-label="Snipe-IT asset dashboard" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Canonical Snipe-IT API</p>
+                  <p id="snipe-it-status" class="muted dashboard-status" role="status">Loading Snipe-IT data...</p>
+                </div>
+                <p id="snipe-it-observed-at" class="observed-at"></p>
+              </div>
+
+              <div id="snipe-it-summary-grid" class="summary-grid" aria-label="Snipe-IT summary metrics">
+                <article class="metric-card">
+                  <span class="metric-label">Total Assets</span>
+                  <strong id="snipe-it-metric-total" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Assigned</span>
+                  <strong id="snipe-it-metric-assigned" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Unassigned</span>
+                  <strong id="snipe-it-metric-unassigned" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Deployed</span>
+                  <strong id="snipe-it-metric-deployed" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Available</span>
+                  <strong id="snipe-it-metric-available" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Maintenance</span>
+                  <strong id="snipe-it-metric-maintenance" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Retired</span>
+                  <strong id="snipe-it-metric-retired" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Missing Serial</span>
+                  <strong id="snipe-it-metric-missing-serial" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Missing Asset Tag</span>
+                  <strong id="snipe-it-metric-missing-tag" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Warranty Expired</span>
+                  <strong id="snipe-it-metric-warranty-expired" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Warranty Expiring Soon</span>
+                  <strong id="snipe-it-metric-warranty-soon" class="metric-value">—</strong>
+                </article>
+              </div>
+
+              <section id="snipe-it-warnings" class="warning-panel" aria-labelledby="snipe-it-warnings-title" hidden>
+                <div>
+                  <p class="eyebrow">Source warnings</p>
+                  <h2 id="snipe-it-warnings-title">Snipe-IT requires attention</h2>
+                </div>
+                <div id="snipe-it-warning-list" class="warning-list"></div>
+              </section>
+
+              <div class="dashboard-grid">
+                <section class="dashboard-panel" aria-labelledby="snipe-it-category-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Inventory mix</p>
+                      <h2 id="snipe-it-category-title">Assets by Type / Category</h2>
+                    </div>
+                  </div>
+                  <div id="snipe-it-category-distribution" class="distribution-list distribution-scroll"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="snipe-it-status-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Lifecycle state</p>
+                      <h2 id="snipe-it-status-title">Assets by Status</h2>
+                    </div>
+                  </div>
+                  <div id="snipe-it-status-distribution" class="distribution-list distribution-scroll"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="snipe-it-company-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Organization</p>
+                      <h2 id="snipe-it-company-title">Assets by Company</h2>
+                    </div>
+                  </div>
+                  <div id="snipe-it-company-distribution" class="distribution-list distribution-scroll"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="snipe-it-location-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Site distribution</p>
+                      <h2 id="snipe-it-location-title">Assets by Location</h2>
+                    </div>
+                  </div>
+                  <div id="snipe-it-location-distribution" class="distribution-list distribution-scroll"></div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="snipe-it-activity-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Live source read</p>
+                      <h2 id="snipe-it-activity-title">Recent Activity</h2>
+                      <p id="snipe-it-activity-status" class="muted panel-status" role="status">Loading recent activity...</p>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Action</th>
+                          <th scope="col">Asset</th>
+                          <th scope="col">Performed By</th>
+                          <th scope="col">Assigned To</th>
+                          <th scope="col">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody id="snipe-it-recent-activity-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="snipe-it-warranty-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Next 90 days</p>
+                      <h2 id="snipe-it-warranty-title">Upcoming Warranty Expiry</h2>
+                      <p id="snipe-it-warranty-status" class="muted panel-status" role="status">Loading warranty data...</p>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Asset Tag</th>
+                          <th scope="col">Serial</th>
+                          <th scope="col">Category</th>
+                          <th scope="col">Location</th>
+                          <th scope="col">Warranty Expires</th>
+                        </tr>
+                      </thead>
+                      <tbody id="snipe-it-warranty-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </section>
+
             <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">
               <p class="eyebrow">Migration status</p>
               <h2 id="phase-card-title">Dashboard migration in progress</h2>

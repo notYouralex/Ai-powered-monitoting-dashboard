@@ -216,6 +216,68 @@ def test_zabbix_web_view_uses_canonical_zabbix_contract(auth_env) -> None:
     assert "innerHTML" not in source
 
 
+def test_snipe_it_web_view_uses_canonical_snipe_it_contract(auth_env) -> None:
+    page = auth_env.client.get("/app/snipe-it")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "snipe-it-dashboard-view",
+        "snipe-it-status",
+        "snipe-it-summary-grid",
+        "snipe-it-category-distribution",
+        "snipe-it-status-distribution",
+        "snipe-it-company-distribution",
+        "snipe-it-location-distribution",
+        "snipe-it-activity-status",
+        "snipe-it-recent-activity-body",
+        "snipe-it-warranty-status",
+        "snipe-it-warranty-body",
+        "snipe-it-warnings",
+    ):
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    for route in (
+        'snipeIt: "/api/dashboard/snipe-it"',
+        'snipeItActivity: "/api/dashboard/snipe-it/recent-activity"',
+        'snipeItWarranty: "/api/dashboard/snipe-it/warranty-expiry"',
+    ):
+        assert route in source
+
+    for field in (
+        "assets_total",
+        "assets_assigned",
+        "assets_unassigned",
+        "assets_deployed",
+        "assets_available",
+        "assets_maintenance",
+        "assets_retired",
+        "assets_missing_serial",
+        "assets_missing_asset_tag",
+        "warranty_expired",
+        "warranty_expiring_soon",
+        "category_distribution",
+        "status_distribution",
+        "company_distribution",
+        "location_distribution",
+        "activity",
+        "warranty_expiry",
+        "is_stale",
+        "warnings",
+    ):
+        assert field in source
+
+    assert "activity.location" not in source
+    assert "asset update" not in source.lower()
+    assert "assign asset" not in source.lower()
+    assert "localStorage" not in source
+    assert "sessionStorage" not in source
+    assert "document.cookie" not in source
+    assert "innerHTML" not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

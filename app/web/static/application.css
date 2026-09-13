@@ -400,6 +400,18 @@ input:focus {
   gap: 10px;
 }
 
+.distribution-scroll {
+  max-height: 390px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.panel-status {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .distribution-row {
   min-height: 46px;
   display: flex;
