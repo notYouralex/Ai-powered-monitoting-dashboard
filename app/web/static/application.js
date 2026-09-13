@@ -4,6 +4,7 @@ const API = Object.freeze({
   me: "/api/auth/me",
   login: "/api/auth/login",
   logout: "/api/auth/logout",
+  executive: "/api/dashboard/executive",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -11,15 +12,15 @@ const PAGE_CONFIG = Object.freeze({
     activeRoute: "/app/executive",
     eyebrow: "Overview",
     title: "Executive",
-    description: "Unified monitoring starts with the Executive view.",
-    message: "The application shell is ready. Executive dashboard data will be added in Phase 2.",
+    description: "Cross-source health, alerts, service management, and asset posture.",
+    view: "executive",
   },
   "/app/executive": {
     activeRoute: "/app/executive",
     eyebrow: "Overview",
     title: "Executive",
     description: "Cross-source health, alerts, service management, and asset posture.",
-    message: "Executive dashboard data will be added in Phase 2 using the existing canonical API.",
+    view: "executive",
   },
   "/app/wazuh": {
     activeRoute: "/app/wazuh",
@@ -72,9 +73,31 @@ const logoutButton = document.getElementById("logout-button");
 const pageEyebrow = document.getElementById("page-eyebrow");
 const pageTitle = document.getElementById("page-title");
 const pageDescription = document.getElementById("page-description");
+const shellStatus = document.getElementById("shell-status");
+const phaseCard = document.getElementById("phase-card");
 const phaseMessage = document.getElementById("phase-message");
 const legacyAiLink = document.getElementById("legacy-ai-link");
+const executiveDashboardView = document.getElementById("executive-dashboard-view");
+const executiveStatus = document.getElementById("executive-status");
+const executiveObservedAt = document.getElementById("executive-observed-at");
+const metricOverallHealth = document.getElementById("metric-overall-health");
+const metricSecurityAlerts = document.getElementById("metric-security-alerts");
+const metricOpenTickets = document.getElementById("metric-open-tickets");
+const metricOverdueTickets = document.getElementById("metric-overdue-tickets");
+const metricSlaCompliance = document.getElementById("metric-sla-compliance");
+const metricAssets = document.getElementById("metric-assets");
+const executiveAlertDistribution = document.getElementById("executive-alert-distribution");
+const executiveTicketDistribution = document.getElementById("executive-ticket-distribution");
+const executiveSourceHealthBody = document.getElementById("executive-source-health-body");
+const executiveAttentionBody = document.getElementById("executive-attention-body");
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
+
+const SOURCE_NAMES = Object.freeze({
+  wazuh: "Wazuh",
+  zabbix: "Zabbix",
+  snipe_it: "Snipe-IT",
+  freshservice: "Freshservice",
+});
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
@@ -117,13 +140,174 @@ function errorMessage(body, fallback) {
   return fallback;
 }
 
+function clearNode(element) {
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+}
+
+function createTextElement(tagName, className, text) {
+  const element = document.createElement(tagName);
+  if (className) {
+    element.className = className;
+  }
+  element.textContent = text;
+  return element;
+}
+
+function formatCount(value) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toLocaleString()
+    : "—";
+}
+
+function formatPercent(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "Not available";
+  }
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+}
+
+function formatTimestamp(value) {
+  if (!value) {
+    return "Not available";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
+  return date.toLocaleString();
+}
+
+function formatStatus(status) {
+  if (typeof status !== "string" || !status) {
+    return "Unknown";
+  }
+  return status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function renderDistribution(container, rows) {
+  clearNode(container);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    container.appendChild(createTextElement("p", "muted empty-message", "No data available."));
+    return;
+  }
+
+  for (const row of rows) {
+    const item = document.createElement("div");
+    item.className = "distribution-row";
+    item.appendChild(createTextElement("span", "distribution-name", String(row.name || "Unknown")));
+    item.appendChild(createTextElement("strong", "distribution-count", formatCount(row.count)));
+    container.appendChild(item);
+  }
+}
+
+function renderSourceHealth(sources) {
+  clearNode(executiveSourceHealthBody);
+  if (!Array.isArray(sources) || sources.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No source health data available.");
+    cell.colSpan = 4;
+    row.appendChild(cell);
+    executiveSourceHealthBody.appendChild(row);
+    return;
+  }
+
+  for (const source of sources) {
+    const health = source.health || {};
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", formatTimestamp(health.last_success_at)));
+    row.appendChild(createTextElement("td", "", SOURCE_NAMES[source.source] || String(source.source || "Unknown")));
+    row.appendChild(createTextElement("td", "", source.is_stale ? "Stale" : "Fresh"));
+
+    const statusCell = document.createElement("td");
+    const status = createTextElement("span", "health-badge", formatStatus(health.status));
+    status.dataset.status = typeof health.status === "string" ? health.status : "unknown";
+    statusCell.appendChild(status);
+    row.appendChild(statusCell);
+    executiveSourceHealthBody.appendChild(row);
+  }
+}
+
+function renderAttention(items) {
+  clearNode(executiveAttentionBody);
+  if (!Array.isArray(items) || items.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No attention items reported.");
+    cell.colSpan = 3;
+    row.appendChild(cell);
+    executiveAttentionBody.appendChild(row);
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", String(item.source || "Unknown")));
+    row.appendChild(createTextElement("td", "", String(item.issue || "Unspecified issue")));
+    row.appendChild(createTextElement("td", "table-number", formatCount(item.count)));
+    executiveAttentionBody.appendChild(row);
+  }
+}
+
+function renderExecutiveDashboard(body) {
+  if (!body || !body.summary) {
+    throw new Error("Executive response is incomplete");
+  }
+
+  const summary = body.summary;
+  metricOverallHealth.textContent = formatPercent(summary.overall_health_percent);
+  metricSecurityAlerts.textContent = formatCount(summary.security_alerts);
+  metricOpenTickets.textContent = formatCount(summary.tickets_open);
+  metricOverdueTickets.textContent = formatCount(summary.overdue_open);
+  metricSlaCompliance.textContent = formatPercent(summary.resolution_sla_compliance_percent);
+  metricAssets.textContent = formatCount(summary.assets_total);
+
+  renderDistribution(executiveAlertDistribution, body.alert_category_distribution);
+  renderDistribution(executiveTicketDistribution, body.ticket_status_distribution);
+  renderSourceHealth(body.sources);
+  renderAttention(body.attention_required);
+
+  executiveObservedAt.textContent = `Observed ${formatTimestamp(body.observed_at)}`;
+  executiveStatus.textContent = `Showing the canonical Executive view for ${formatTimestamp(body.range_start)} to ${formatTimestamp(body.range_end)}.`;
+  shellStatus.textContent = "Executive data loaded";
+}
+
+async function loadExecutiveDashboard() {
+  executiveStatus.textContent = "Loading Executive data...";
+  executiveObservedAt.textContent = "";
+  shellStatus.textContent = "Loading Executive";
+
+  try {
+    const { response, body } = await requestJson(API.executive);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      executiveStatus.textContent = errorMessage(body, "Executive dashboard data is unavailable.");
+      shellStatus.textContent = "Executive unavailable";
+      return;
+    }
+    renderExecutiveDashboard(body);
+  } catch (_error) {
+    executiveStatus.textContent = "Executive dashboard data is unavailable.";
+    shellStatus.textContent = "Executive unavailable";
+  }
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
+  const isExecutive = config.view === "executive";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
-  phaseMessage.textContent = config.message;
+  phaseMessage.textContent = config.message || "";
+  setHidden(executiveDashboardView, !isExecutive);
+  setHidden(phaseCard, isExecutive);
   setHidden(legacyAiLink, !config.legacyAi);
+  shellStatus.textContent = isExecutive ? "Loading Executive" : "Application shell ready";
   document.title = `${config.title} | AI-Powered Monitoring`;
 
   for (const link of navigationLinks) {
@@ -133,6 +317,8 @@ function renderRoute() {
       link.removeAttribute("aria-current");
     }
   }
+
+  return config;
 }
 
 function showLogin(message = "") {
@@ -152,7 +338,10 @@ function showApplication(user) {
   currentUser.textContent = user.username;
   loginError.textContent = "";
   setHidden(loginError, true);
-  renderRoute();
+  const config = renderRoute();
+  if (config.view === "executive") {
+    loadExecutiveDashboard();
+  }
 }
 
 async function handleLogin(event) {

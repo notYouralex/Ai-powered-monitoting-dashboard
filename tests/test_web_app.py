@@ -66,6 +66,49 @@ def test_app_assets_use_existing_auth_contract_and_safe_browser_patterns(auth_en
     assert "http://" not in source
 
 
+def test_executive_web_view_uses_canonical_executive_contract(auth_env) -> None:
+    page = auth_env.client.get("/app/executive")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "executive-dashboard-view",
+        "executive-status",
+        "executive-summary-grid",
+        "executive-alert-distribution",
+        "executive-ticket-distribution",
+        "executive-source-health-body",
+        "executive-attention-body",
+    ):
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    assert "/api/dashboard/executive" in source
+    for field in (
+        "overall_health_percent",
+        "security_alerts",
+        "tickets_open",
+        "overdue_open",
+        "resolution_sla_compliance_percent",
+        "assets_total",
+        "alert_category_distribution",
+        "ticket_status_distribution",
+        "attention_required",
+        "last_success_at",
+        "is_stale",
+    ):
+        assert field in source
+
+    for source_route in (
+        "/api/dashboard/wazuh",
+        "/api/dashboard/zabbix",
+        "/api/dashboard/snipe-it",
+        "/api/dashboard/freshservice",
+    ):
+        assert source_route not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

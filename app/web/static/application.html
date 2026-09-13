@@ -69,9 +69,111 @@
               <span id="shell-status" class="status-pill" role="status">Application shell ready</span>
             </header>
 
-            <section class="phase-card" aria-labelledby="phase-card-title">
-              <p class="eyebrow">Phase 1</p>
-              <h2 id="phase-card-title">Authenticated application shell</h2>
+            <section id="executive-dashboard-view" class="dashboard-view" aria-label="Executive monitoring dashboard" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Canonical Executive API</p>
+                  <p id="executive-status" class="muted dashboard-status" role="status">Loading Executive data...</p>
+                </div>
+                <p id="executive-observed-at" class="observed-at"></p>
+              </div>
+
+              <div id="executive-summary-grid" class="summary-grid" aria-label="Executive summary metrics">
+                <article class="metric-card">
+                  <span class="metric-label">Overall Health</span>
+                  <strong id="metric-overall-health" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Security Alerts</span>
+                  <strong id="metric-security-alerts" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Open Tickets</span>
+                  <strong id="metric-open-tickets" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Overdue Tickets</span>
+                  <strong id="metric-overdue-tickets" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">SLA Compliance</span>
+                  <strong id="metric-sla-compliance" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Assets</span>
+                  <strong id="metric-assets" class="metric-value">—</strong>
+                </article>
+              </div>
+
+              <div class="dashboard-grid">
+                <section class="dashboard-panel" aria-labelledby="alert-distribution-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Priority overview</p>
+                      <h2 id="alert-distribution-title">High-Severity Issues by Domain</h2>
+                    </div>
+                  </div>
+                  <div id="executive-alert-distribution" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="ticket-distribution-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Service management</p>
+                      <h2 id="ticket-distribution-title">Tickets by Status</h2>
+                    </div>
+                  </div>
+                  <div id="executive-ticket-distribution" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="source-health-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Integration state</p>
+                      <h2 id="source-health-title">Source Health &amp; Freshness</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Last Success</th>
+                          <th scope="col">Source</th>
+                          <th scope="col">Freshness</th>
+                          <th scope="col">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="executive-source-health-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="attention-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Actionable overview</p>
+                      <h2 id="attention-title">Attention Required</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Source</th>
+                          <th scope="col">Issue</th>
+                          <th scope="col">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody id="executive-attention-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">
+              <p class="eyebrow">Migration status</p>
+              <h2 id="phase-card-title">Dashboard migration in progress</h2>
               <p id="phase-message" class="muted"></p>
               <a id="legacy-ai-link" class="button button-primary inline-action" href="/ai" hidden>
                 Open current AI Investigation
