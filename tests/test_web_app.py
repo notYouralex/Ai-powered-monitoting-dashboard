@@ -278,6 +278,66 @@ def test_snipe_it_web_view_uses_canonical_snipe_it_contract(auth_env) -> None:
     assert "innerHTML" not in source
 
 
+def test_freshservice_web_view_uses_canonical_freshservice_contract(auth_env) -> None:
+    page = auth_env.client.get("/app/freshservice")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "freshservice-dashboard-view",
+        "freshservice-status",
+        "freshservice-summary-grid",
+        "freshservice-unresolved-priority",
+        "freshservice-unresolved-status",
+        "freshservice-status-distribution",
+        "freshservice-category-distribution",
+        "freshservice-resolution-trend",
+        "freshservice-sla-trend-body",
+        "freshservice-recent-tickets-body",
+        "freshservice-warnings",
+    ):
+        assert f'id="{element_id}"' in body
+
+    source = script.text
+    assert 'freshservice: "/api/dashboard/freshservice"' in source
+    for field in (
+        "tickets_total",
+        "tickets_open",
+        "tickets_pending",
+        "tickets_resolved",
+        "tickets_closed",
+        "high_priority_open",
+        "due_today",
+        "overdue_open",
+        "escalated_open",
+        "resolution_sla_eligible",
+        "resolution_sla_met",
+        "resolution_sla_compliance_percent",
+        "status_distribution",
+        "unresolved_status_distribution",
+        "unresolved_priority_distribution",
+        "category_distribution",
+        "resolution_trend",
+        "resolution_sla_trend",
+        "recent_tickets",
+        "is_stale",
+        "warnings",
+    ):
+        assert field in source
+
+    assert "compliance_percent" in source
+    assert "requester_id" not in source
+    assert "requested_for_id" not in source
+    assert "responder_id" not in source
+    assert "ticket update" not in source.lower()
+    assert "close ticket" not in source.lower()
+    assert "localStorage" not in source
+    assert "sessionStorage" not in source
+    assert "document.cookie" not in source
+    assert "innerHTML" not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

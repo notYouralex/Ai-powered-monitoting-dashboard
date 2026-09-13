@@ -10,6 +10,7 @@ const API = Object.freeze({
   snipeIt: "/api/dashboard/snipe-it",
   snipeItActivity: "/api/dashboard/snipe-it/recent-activity",
   snipeItWarranty: "/api/dashboard/snipe-it/warranty-expiry",
+  freshservice: "/api/dashboard/freshservice",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -53,7 +54,7 @@ const PAGE_CONFIG = Object.freeze({
     eyebrow: "Service Management",
     title: "Freshservice",
     description: "Ticket operations, priorities, overdue work, trends, and SLA reporting.",
-    message: "The Freshservice web dashboard will be migrated in its dedicated phase.",
+    view: "freshservice",
   },
   "/app/ai": {
     activeRoute: "/app/ai",
@@ -159,6 +160,30 @@ const snipeItActivityStatus = document.getElementById("snipe-it-activity-status"
 const snipeItRecentActivityBody = document.getElementById("snipe-it-recent-activity-body");
 const snipeItWarrantyStatus = document.getElementById("snipe-it-warranty-status");
 const snipeItWarrantyBody = document.getElementById("snipe-it-warranty-body");
+const freshserviceDashboardView = document.getElementById("freshservice-dashboard-view");
+const freshserviceStatus = document.getElementById("freshservice-status");
+const freshserviceObservedAt = document.getElementById("freshservice-observed-at");
+const freshserviceWarnings = document.getElementById("freshservice-warnings");
+const freshserviceWarningList = document.getElementById("freshservice-warning-list");
+const freshserviceMetricTotal = document.getElementById("freshservice-metric-total");
+const freshserviceMetricOpen = document.getElementById("freshservice-metric-open");
+const freshserviceMetricPending = document.getElementById("freshservice-metric-pending");
+const freshserviceMetricResolved = document.getElementById("freshservice-metric-resolved");
+const freshserviceMetricClosed = document.getElementById("freshservice-metric-closed");
+const freshserviceMetricDueToday = document.getElementById("freshservice-metric-due-today");
+const freshserviceMetricOverdue = document.getElementById("freshservice-metric-overdue");
+const freshserviceMetricHighPriority = document.getElementById("freshservice-metric-high-priority");
+const freshserviceMetricEscalated = document.getElementById("freshservice-metric-escalated");
+const freshserviceMetricSla = document.getElementById("freshservice-metric-sla");
+const freshserviceMetricSlaEligible = document.getElementById("freshservice-metric-sla-eligible");
+const freshserviceMetricSlaMet = document.getElementById("freshservice-metric-sla-met");
+const freshserviceUnresolvedPriority = document.getElementById("freshservice-unresolved-priority");
+const freshserviceUnresolvedStatus = document.getElementById("freshservice-unresolved-status");
+const freshserviceStatusDistribution = document.getElementById("freshservice-status-distribution");
+const freshserviceCategoryDistribution = document.getElementById("freshservice-category-distribution");
+const freshserviceResolutionTrend = document.getElementById("freshservice-resolution-trend");
+const freshserviceSlaTrendBody = document.getElementById("freshservice-sla-trend-body");
+const freshserviceRecentTicketsBody = document.getElementById("freshservice-recent-tickets-body");
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
 
 const SOURCE_NAMES = Object.freeze({
@@ -253,6 +278,30 @@ function formatTimestamp(value) {
     return "Not available";
   }
   return date.toLocaleString();
+}
+
+function parseCalendarDate(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatCalendarDate(value) {
+  const date = parseCalendarDate(value);
+  return date ? date.toLocaleDateString() : "Not available";
+}
+
+function formatCalendarMonth(value) {
+  const date = parseCalendarDate(value);
+  return date
+    ? date.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : "Not available";
 }
 
 function formatStatus(status) {
@@ -973,12 +1022,139 @@ function loadSnipeItPage() {
   loadSnipeItWarranty();
 }
 
+function renderFreshserviceWarnings(body) {
+  const warnings = [];
+  for (const value of [...(body.warnings || []), ...((body.health && body.health.warnings) || [])]) {
+    if (typeof value === "string" && value && !warnings.includes(value)) {
+      warnings.push(value);
+    }
+  }
+  clearNode(freshserviceWarningList);
+  setHidden(freshserviceWarnings, warnings.length === 0);
+  for (const warning of warnings) {
+    freshserviceWarningList.appendChild(createTextElement("p", "warning-item", warning));
+  }
+}
+
+function renderFreshserviceResolutionTrend(points) {
+  clearNode(freshserviceResolutionTrend);
+  if (!Array.isArray(points) || points.length === 0) {
+    freshserviceResolutionTrend.appendChild(
+      createTextElement("p", "muted empty-message", "No resolution history is available.")
+    );
+    return;
+  }
+  for (const point of points) {
+    const row = document.createElement("div");
+    row.className = "trend-row";
+    row.appendChild(createTextElement("span", "trend-time", formatCalendarDate(point.date)));
+    row.appendChild(createTextElement("strong", "trend-count", formatCount(point.count)));
+    freshserviceResolutionTrend.appendChild(row);
+  }
+}
+
+function renderFreshserviceSlaTrend(points) {
+  clearNode(freshserviceSlaTrendBody);
+  if (!Array.isArray(points) || points.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No historical SLA data is available.");
+    cell.colSpan = 2;
+    row.appendChild(cell);
+    freshserviceSlaTrendBody.appendChild(row);
+    return;
+  }
+  for (const point of points.slice().reverse()) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "", formatCalendarMonth(point.month)));
+    row.appendChild(createTextElement("td", "table-number", formatPercent(point.compliance_percent)));
+    freshserviceSlaTrendBody.appendChild(row);
+  }
+}
+
+function renderFreshserviceRecentTickets(tickets) {
+  clearNode(freshserviceRecentTicketsBody);
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    const row = document.createElement("tr");
+    const cell = createTextElement("td", "muted table-empty", "No synchronized tickets are available.");
+    cell.colSpan = 5;
+    row.appendChild(cell);
+    freshserviceRecentTicketsBody.appendChild(row);
+    return;
+  }
+  for (const ticket of tickets) {
+    const row = document.createElement("tr");
+    row.appendChild(createTextElement("td", "table-number", String(ticket.ticket_id || "—")));
+    row.appendChild(createTextElement("td", "", String(ticket.subject || "No subject")));
+    row.appendChild(createTextElement("td", "", formatStatus(ticket.status)));
+    row.appendChild(createTextElement("td", "", formatStatus(ticket.priority)));
+    row.appendChild(createTextElement("td", "", formatTimestamp(ticket.updated_at)));
+    freshserviceRecentTicketsBody.appendChild(row);
+  }
+}
+
+function renderFreshserviceDashboard(body) {
+  if (!body || !body.summary || !body.health) {
+    throw new Error("Freshservice response is incomplete");
+  }
+
+  const summary = body.summary;
+  freshserviceMetricTotal.textContent = formatCount(summary.tickets_total);
+  freshserviceMetricOpen.textContent = formatCount(summary.tickets_open);
+  freshserviceMetricPending.textContent = formatCount(summary.tickets_pending);
+  freshserviceMetricResolved.textContent = formatCount(summary.tickets_resolved);
+  freshserviceMetricClosed.textContent = formatCount(summary.tickets_closed);
+  freshserviceMetricDueToday.textContent = formatCount(summary.due_today);
+  freshserviceMetricOverdue.textContent = formatCount(summary.overdue_open);
+  freshserviceMetricHighPriority.textContent = formatCount(summary.high_priority_open);
+  freshserviceMetricEscalated.textContent = formatCount(summary.escalated_open);
+  freshserviceMetricSla.textContent = formatPercent(summary.resolution_sla_compliance_percent);
+  freshserviceMetricSlaEligible.textContent = formatCount(summary.resolution_sla_eligible);
+  freshserviceMetricSlaMet.textContent = formatCount(summary.resolution_sla_met);
+
+  renderDistribution(freshserviceUnresolvedPriority, body.unresolved_priority_distribution);
+  renderDistribution(freshserviceUnresolvedStatus, body.unresolved_status_distribution);
+  renderDistribution(freshserviceStatusDistribution, body.status_distribution);
+  renderDistribution(freshserviceCategoryDistribution, body.category_distribution);
+  renderFreshserviceResolutionTrend(body.resolution_trend);
+  renderFreshserviceSlaTrend(body.resolution_sla_trend);
+  renderFreshserviceRecentTickets(body.recent_tickets);
+  renderFreshserviceWarnings(body);
+
+  const freshness = body.is_stale ? "Stale" : "Fresh";
+  const lastSuccess = formatTimestamp(body.health.last_success_at);
+  freshserviceObservedAt.textContent = `Observed ${formatTimestamp(body.observed_at)}`;
+  freshserviceStatus.textContent = `${formatStatus(body.health.status)} · ${freshness} · Last successful sync ${lastSuccess}`;
+  shellStatus.textContent = `Freshservice ${formatStatus(body.health.status)}`;
+}
+
+async function loadFreshserviceDashboard() {
+  freshserviceStatus.textContent = "Loading Freshservice data...";
+  freshserviceObservedAt.textContent = "";
+  shellStatus.textContent = "Loading Freshservice";
+  try {
+    const { response, body } = await requestJson(API.freshservice);
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      freshserviceStatus.textContent = errorMessage(body, "Freshservice dashboard data is unavailable.");
+      shellStatus.textContent = "Freshservice unavailable";
+      return;
+    }
+    renderFreshserviceDashboard(body);
+  } catch (_error) {
+    freshserviceStatus.textContent = "Freshservice dashboard data is unavailable.";
+    shellStatus.textContent = "Freshservice unavailable";
+  }
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
   const isExecutive = config.view === "executive";
   const isWazuh = config.view === "wazuh";
   const isZabbix = config.view === "zabbix";
   const isSnipeIt = config.view === "snipeIt";
+  const isFreshservice = config.view === "freshservice";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
@@ -987,7 +1163,8 @@ function renderRoute() {
   setHidden(wazuhDashboardView, !isWazuh);
   setHidden(zabbixDashboardView, !isZabbix);
   setHidden(snipeItDashboardView, !isSnipeIt);
-  setHidden(phaseCard, isExecutive || isWazuh || isZabbix || isSnipeIt);
+  setHidden(freshserviceDashboardView, !isFreshservice);
+  setHidden(phaseCard, isExecutive || isWazuh || isZabbix || isSnipeIt || isFreshservice);
   setHidden(legacyAiLink, !config.legacyAi);
   if (isExecutive) {
     shellStatus.textContent = "Loading Executive";
@@ -997,6 +1174,8 @@ function renderRoute() {
     shellStatus.textContent = "Loading Zabbix";
   } else if (isSnipeIt) {
     shellStatus.textContent = "Loading Snipe-IT";
+  } else if (isFreshservice) {
+    shellStatus.textContent = "Loading Freshservice";
   } else {
     shellStatus.textContent = "Application shell ready";
   }
@@ -1039,6 +1218,8 @@ function showApplication(user) {
     loadZabbixDashboard();
   } else if (config.view === "snipeIt") {
     loadSnipeItPage();
+  } else if (config.view === "freshservice") {
+    loadFreshserviceDashboard();
   }
 }
 

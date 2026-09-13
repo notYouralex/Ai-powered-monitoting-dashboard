@@ -659,6 +659,170 @@
               </div>
             </section>
 
+            <section id="freshservice-dashboard-view" class="dashboard-view" aria-label="Freshservice service management dashboard" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Canonical Freshservice API</p>
+                  <p id="freshservice-status" class="muted dashboard-status" role="status">Loading Freshservice data...</p>
+                </div>
+                <p id="freshservice-observed-at" class="observed-at"></p>
+              </div>
+
+              <div id="freshservice-summary-grid" class="summary-grid" aria-label="Freshservice summary metrics">
+                <article class="metric-card">
+                  <span class="metric-label">Total Tickets</span>
+                  <strong id="freshservice-metric-total" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Open Tickets</span>
+                  <strong id="freshservice-metric-open" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Pending Tickets</span>
+                  <strong id="freshservice-metric-pending" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Resolved Tickets</span>
+                  <strong id="freshservice-metric-resolved" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Closed Tickets</span>
+                  <strong id="freshservice-metric-closed" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Due Today</span>
+                  <strong id="freshservice-metric-due-today" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Overdue</span>
+                  <strong id="freshservice-metric-overdue" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">High Priority Active</span>
+                  <strong id="freshservice-metric-high-priority" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Escalated Active</span>
+                  <strong id="freshservice-metric-escalated" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Resolution SLA Compliance</span>
+                  <strong id="freshservice-metric-sla" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">SLA Eligible</span>
+                  <strong id="freshservice-metric-sla-eligible" class="metric-value">—</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">SLA Met</span>
+                  <strong id="freshservice-metric-sla-met" class="metric-value">—</strong>
+                </article>
+              </div>
+
+              <section id="freshservice-warnings" class="warning-panel" aria-labelledby="freshservice-warnings-title" hidden>
+                <div>
+                  <p class="eyebrow">Source warnings</p>
+                  <h2 id="freshservice-warnings-title">Freshservice requires attention</h2>
+                </div>
+                <div id="freshservice-warning-list" class="warning-list"></div>
+              </section>
+
+              <div class="dashboard-grid">
+                <section class="dashboard-panel" aria-labelledby="freshservice-unresolved-priority-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current unresolved workload</p>
+                      <h2 id="freshservice-unresolved-priority-title">Unresolved Tickets by Priority</h2>
+                    </div>
+                  </div>
+                  <div id="freshservice-unresolved-priority" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="freshservice-unresolved-status-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Current unresolved workload</p>
+                      <h2 id="freshservice-unresolved-status-title">Unresolved Tickets by Status</h2>
+                    </div>
+                  </div>
+                  <div id="freshservice-unresolved-status" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="freshservice-status-distribution-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Six-month reporting scope</p>
+                      <h2 id="freshservice-status-distribution-title">All Tickets by Status</h2>
+                    </div>
+                  </div>
+                  <div id="freshservice-status-distribution" class="distribution-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="freshservice-category-distribution-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Six-month reporting scope</p>
+                      <h2 id="freshservice-category-distribution-title">Tickets by Category</h2>
+                    </div>
+                  </div>
+                  <div id="freshservice-category-distribution" class="distribution-list distribution-scroll"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="freshservice-resolution-trend-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Canonical daily history</p>
+                      <h2 id="freshservice-resolution-trend-title">Resolution Trend</h2>
+                    </div>
+                  </div>
+                  <div id="freshservice-resolution-trend" class="trend-list"></div>
+                </section>
+
+                <section class="dashboard-panel" aria-labelledby="freshservice-sla-trend-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Rolling six calendar months</p>
+                      <h2 id="freshservice-sla-trend-title">Historical Resolution SLA Compliance</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Month</th>
+                          <th scope="col">SLA Compliance</th>
+                        </tr>
+                      </thead>
+                      <tbody id="freshservice-sla-trend-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="dashboard-panel dashboard-panel-wide" aria-labelledby="freshservice-recent-tickets-title">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Most recently updated synchronized records</p>
+                      <h2 id="freshservice-recent-tickets-title">Recent Tickets</h2>
+                    </div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Ticket</th>
+                          <th scope="col">Subject</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Priority</th>
+                          <th scope="col">Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody id="freshservice-recent-tickets-body"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </section>
+
             <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">
               <p class="eyebrow">Migration status</p>
               <h2 id="phase-card-title">Dashboard migration in progress</h2>
