@@ -196,6 +196,10 @@ def test_api_receives_grafana_api_token_without_exposing_value() -> None:
 def test_nginx_template_fronts_all_user_facing_services_over_internal_https() -> None:
     nginx = read("deploy/nginx/ai-monitoring.conf.example")
 
+    assert "listen <INTERNAL_BIND_IP>:80 default_server;" in nginx
+    assert "listen <INTERNAL_BIND_IP>:443 ssl default_server;" in nginx
+    assert "server_name _;" in nginx
+    assert nginx.count("return 444;") == 2
     assert "listen <INTERNAL_BIND_IP>:443 ssl;" in nginx
     assert "server_name <GRAFANA_HOSTNAME>;" in nginx
     assert "server_name <APP_HOSTNAME>;" in nginx
@@ -206,12 +210,14 @@ def test_nginx_template_fronts_all_user_facing_services_over_internal_https() ->
     assert "proxy_pass https://127.0.0.1:3000;" in nginx
     assert "proxy_ssl_trusted_certificate <GRAFANA_UPSTREAM_CA_PATH>;" in nginx
     assert "proxy_ssl_name localhost;" in nginx
+    assert "proxy_ssl_server_name on;" in nginx
     assert "proxy_pass http://127.0.0.1:<APP_PORT>;" in nginx
     assert "proxy_pass https://127.0.0.1:5601;" in nginx
     assert "proxy_ssl_verify on;" in nginx
     assert "proxy_ssl_trusted_certificate <WAZUH_DASHBOARD_CA_PATH>;" in nginx
     assert "proxy_ssl_name 127.0.0.1;" in nginx
     assert "proxy_set_header X-Forwarded-Proto https;" in nginx
+    assert nginx.count('add_header Strict-Transport-Security "max-age=31536000" always;') == 4
     assert "listen 0.0.0.0" not in nginx
     assert "listen [::]" not in nginx
 
@@ -230,6 +236,11 @@ def test_internal_https_runbook_requires_loopback_services_and_secure_cookies() 
 
     assert "APP_ENV=production" in runbook
     assert "COOKIE_SECURE=true" in runbook
+    assert "https://<APP_HOSTNAME>/app" in runbook
+    assert "Strict-Transport-Security" in runbook
+    assert "unknown host" in runbook.lower()
+    assert "return 444" in runbook
+    assert "runtime acceptance" in runbook.lower()
     assert "protocol = https" in runbook
     assert "http_addr = 127.0.0.1" in runbook
     assert "<GRAFANA_UPSTREAM_CA_PATH>" in runbook

@@ -8,13 +8,15 @@ Use one approved internal IP with three internal DNS names:
 
 ```text
 https://<GRAFANA_HOSTNAME>         -> Nginx -> https://127.0.0.1:3000 (Grafana)
-https://<APP_HOSTNAME>             -> Nginx -> http://127.0.0.1:8000 (FastAPI / AI)
+https://<APP_HOSTNAME>             -> Nginx -> http://127.0.0.1:8000 (unified /app, legacy /ai, API)
 https://<WAZUH_DASHBOARD_HOSTNAME> -> Nginx -> https://127.0.0.1:5601 (Wazuh Dashboard)
 
 PostgreSQL remains local only at 127.0.0.1:55432.
 ```
 
 Separate hostnames are intentional. Grafana, FastAPI, and Wazuh Dashboard each have their own routes and authentication behavior. A single hostname with path routing would create unnecessary route and cookie conflicts.
+
+The unified web application at `https://<APP_HOSTNAME>/app` is the intended normal user interface only after the Phase 9 runtime acceptance record has been completed and explicitly accepted. Until then, this Phase 10 deployment model exposes the web application safely while retaining Grafana and Wazuh Dashboard as separately authenticated internal interfaces. Phase 10 does not decide Grafana's final role; that decision remains Phase 11 work.
 
 The repository template is `deploy/nginx/ai-monitoring.conf.example`. It contains no certificate, private key, password, token, or production hostname.
 
@@ -59,7 +61,7 @@ FastAPI must continue listening only on `127.0.0.1:8000` (or the configured loop
 
 ## Grafana server settings
 
-Grafana remains the main monitoring dashboard UI. Before HTTPS acceptance, its direct listener must be restricted from all interfaces to loopback and its external URL must match the HTTPS hostname.
+Grafana remains available during this phase as the accepted reference/operational dashboard system while the unified web application's runtime acceptance is completed. Before HTTPS acceptance, its direct listener must be restricted from all interfaces to loopback and its external URL must match the HTTPS hostname.
 
 The current host already serves Grafana over HTTPS on port 3000 with a self-signed `CN=localhost` certificate. Preserve that local TLS. Apply these values to the existing `[server]` section of `/etc/grafana/grafana.ini` only after making a backup, while keeping the existing `cert_file` and `cert_key` paths unchanged:
 
@@ -139,7 +141,7 @@ grep -n '<[A-Z_]*>' /tmp/ai-monitoring.conf
 
 The command should return no output.
 
-The template deliberately redirects HTTP to each fixed configured hostname instead of reflecting the incoming `Host` header. HTTPS uses only TLS 1.2 and TLS 1.3. The FastAPI upstream read/send timeout is 180 seconds so the reverse proxy does not cut off the default 120-second local AI request timeout. Grafana Live WebSocket traffic is proxied through `/api/live/`. Wazuh Dashboard remains encrypted on loopback and Nginx verifies its certificate using `<WAZUH_DASHBOARD_CA_PATH>`.
+The template deliberately redirects HTTP only for the three fixed configured hostnames instead of reflecting the incoming `Host` header. Separate default servers reject an unknown host with `return 444` rather than routing it to one of the monitoring interfaces. HTTPS uses only TLS 1.2 and TLS 1.3 and sends `Strict-Transport-Security: max-age=31536000` without `includeSubDomains`, so the policy applies only to the individual configured hostname. Do not activate the template until the approved certificate is trusted for all configured hostnames. The FastAPI upstream read/send timeout is 180 seconds so the reverse proxy does not cut off the default 120-second local AI request timeout. Grafana Live WebSocket traffic is proxied through `/api/live/`. Nginx verifies the Grafana loopback certificate using `localhost` and SNI. Wazuh Dashboard remains encrypted on loopback and Nginx verifies its certificate using `<WAZUH_DASHBOARD_CA_PATH>`.
 
 ## Safe activation order
 
@@ -195,6 +197,11 @@ curl --fail --show-error \
   --cacert <COMPANY_CA_CERT_PATH> \
   https://<APP_HOSTNAME>/health
 
+curl --fail --show-error --output /dev/null \
+  --resolve <APP_HOSTNAME>:443:<INTERNAL_BIND_IP> \
+  --cacert <COMPANY_CA_CERT_PATH> \
+  https://<APP_HOSTNAME>/app
+
 curl --fail --show-error --head \
   --resolve <GRAFANA_HOSTNAME>:443:<INTERNAL_BIND_IP> \
   --cacert <COMPANY_CA_CERT_PATH> \
@@ -209,14 +216,19 @@ curl --fail --show-error --head \
 Expected results:
 
 - FastAPI `/health` returns HTTP 200 through HTTPS.
+- `https://<APP_HOSTNAME>/app` returns the unified application shell through HTTPS.
+- HTTPS responses include `Strict-Transport-Security: max-age=31536000`.
 - Grafana login is reachable through HTTPS.
 - Wazuh Dashboard redirects or loads its normal login route through HTTPS.
 - HTTP requests redirect to the corresponding configured HTTPS hostname.
+- Requests with an unknown host are rejected by the default Nginx server rather than being routed to Grafana, the unified application, or Wazuh Dashboard.
 - Browser login to FastAPI uses a `Secure` session cookie.
 - Grafana dashboards continue loading through the HTTPS hostname.
 - Grafana Live does not report WebSocket proxy errors.
 - Nginx can verify both the Grafana and Wazuh Dashboard loopback TLS certificates without disabling verification.
 - Direct access from another machine is not available on ports 8000, 3000, 5601, or 55432.
+
+After the HTTPS transport checks pass, complete the runtime browser and live-value checks in `docs/development/web-app-acceptance.md`. HTTPS deployment by itself does not change Phase 9 `NOT RUN` checks to PASS.
 
 ## Rollback
 
