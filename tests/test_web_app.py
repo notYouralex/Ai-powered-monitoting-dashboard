@@ -338,6 +338,61 @@ def test_freshservice_web_view_uses_canonical_freshservice_contract(auth_env) ->
     assert "innerHTML" not in source
 
 
+def test_ai_investigation_is_integrated_into_application_shell(auth_env) -> None:
+    page = auth_env.client.get("/app/ai")
+    script = auth_env.client.get("/app/assets/application.js")
+
+    assert page.status_code == 200
+    body = page.text
+    for element_id in (
+        "ai-investigation-view",
+        "ai-investigation-status",
+        "ai-conversation",
+        "ai-chat-form",
+        "ai-question",
+        "ai-send-button",
+        "ai-request-status",
+        "ai-character-count",
+        "ai-range-controls",
+    ):
+        assert f'id="{element_id}"' in body
+
+    assert 'maxlength="1000"' in body
+    assert 'data-ai-range="24h"' in body
+    assert 'data-ai-range="7d"' in body
+    assert 'data-ai-range="30d"' in body
+    assert 'href="/app/ai?question=' in body
+
+    source = script.text
+    assert 'aiQuery: "/api/ai/query"' in source
+    assert 'view: "ai"' in source
+    assert "AI_RANGE_HOURS" in source
+    assert '"24h": 24' in source
+    assert '"7d": 24 * 7' in source
+    assert '"30d": 24 * 30' in source
+    assert "URLSearchParams" in source
+    assert 'params.set("from", start.toISOString())' in source
+    assert 'params.set("to", end.toISOString())' in source
+    assert "analysis.likely_explanation" in source
+    assert "analysis.operational_impact" in source
+    assert "analysis.contributing_factors" in source
+    assert "analysis.evidence" in source
+    assert "analysis.recommended_investigation" in source
+    assert "analysis.warnings" in source
+    assert "result.source_warnings" in source
+    assert "analysis.confidence" in source
+    assert "searchParams.get(\"question\")" in source
+    prefill_source = source.split("function prefillAiQuestionFromUrl", 1)[-1].split(
+        "function", 1
+    )[0]
+    assert "requestSubmit()" not in prefill_source
+
+    assert "localStorage" not in source
+    assert "sessionStorage" not in source
+    assert "document.cookie" not in source
+    assert "innerHTML" not in source
+
+
 def test_app_assets_are_not_exposed_through_open_directory_routes(auth_env) -> None:
     assert auth_env.client.get("/app/assets").status_code == 404
     assert auth_env.client.get("/app/assets/").status_code == 404

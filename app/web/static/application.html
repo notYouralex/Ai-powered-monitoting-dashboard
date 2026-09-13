@@ -75,7 +75,10 @@
                   <p class="eyebrow">Canonical Executive API</p>
                   <p id="executive-status" class="muted dashboard-status" role="status">Loading Executive data...</p>
                 </div>
-                <p id="executive-observed-at" class="observed-at"></p>
+                <div class="dashboard-status-actions">
+                  <a class="button button-secondary compact-action" href="/app/ai?question=What%20needs%20attention%20in%20the%20environment%20right%20now%3F">Investigate with AI</a>
+                  <p id="executive-observed-at" class="observed-at"></p>
+                </div>
               </div>
 
               <div id="executive-summary-grid" class="summary-grid" aria-label="Executive summary metrics">
@@ -183,6 +186,7 @@
                     <button type="button" class="range-button" data-wazuh-range="7d" aria-pressed="false">7d</button>
                     <button type="button" class="range-button" data-wazuh-range="30d" aria-pressed="false">30d</button>
                   </div>
+                  <a class="button button-secondary compact-action" href="/app/ai?question=What%20Wazuh%20issues%20need%20attention%3F">Investigate with AI</a>
                   <p id="wazuh-observed-at" class="observed-at"></p>
                 </div>
               </div>
@@ -329,7 +333,10 @@
                   <p class="eyebrow">Canonical Zabbix API</p>
                   <p id="zabbix-status" class="muted dashboard-status" role="status">Loading Zabbix data...</p>
                 </div>
-                <p id="zabbix-observed-at" class="observed-at"></p>
+                <div class="dashboard-status-actions">
+                  <a class="button button-secondary compact-action" href="/app/ai?question=What%20Zabbix%20infrastructure%20issues%20need%20attention%3F">Investigate with AI</a>
+                  <p id="zabbix-observed-at" class="observed-at"></p>
+                </div>
               </div>
 
               <div id="zabbix-summary-grid" class="summary-grid" aria-label="Zabbix summary metrics">
@@ -510,7 +517,10 @@
                   <p class="eyebrow">Canonical Snipe-IT API</p>
                   <p id="snipe-it-status" class="muted dashboard-status" role="status">Loading Snipe-IT data...</p>
                 </div>
-                <p id="snipe-it-observed-at" class="observed-at"></p>
+                <div class="dashboard-status-actions">
+                  <a class="button button-secondary compact-action" href="/app/ai?question=What%20Snipe-IT%20issues%20need%20attention%3F">Investigate with AI</a>
+                  <p id="snipe-it-observed-at" class="observed-at"></p>
+                </div>
               </div>
 
               <div id="snipe-it-summary-grid" class="summary-grid" aria-label="Snipe-IT summary metrics">
@@ -665,7 +675,10 @@
                   <p class="eyebrow">Canonical Freshservice API</p>
                   <p id="freshservice-status" class="muted dashboard-status" role="status">Loading Freshservice data...</p>
                 </div>
-                <p id="freshservice-observed-at" class="observed-at"></p>
+                <div class="dashboard-status-actions">
+                  <a class="button button-secondary compact-action" href="/app/ai?question=What%20is%20driving%20the%20current%20overdue%20Freshservice%20tickets%3F">Investigate with AI</a>
+                  <p id="freshservice-observed-at" class="observed-at"></p>
+                </div>
               </div>
 
               <div id="freshservice-summary-grid" class="summary-grid" aria-label="Freshservice summary metrics">
@@ -821,6 +834,55 @@
                   </div>
                 </section>
               </div>
+            </section>
+
+            <section id="ai-investigation-view" class="dashboard-view ai-investigation-view" aria-label="AI Investigation" hidden>
+              <div class="dashboard-status-row">
+                <div>
+                  <p class="eyebrow">Local read-only AI</p>
+                  <p id="ai-investigation-status" class="muted dashboard-status" role="status">Ready for investigation.</p>
+                </div>
+                <div class="dashboard-status-actions">
+                  <div id="ai-range-controls" class="range-controls" aria-label="AI investigation time range">
+                    <button type="button" class="range-button" data-ai-range="24h" aria-pressed="true">24h</button>
+                    <button type="button" class="range-button" data-ai-range="7d" aria-pressed="false">7d</button>
+                    <button type="button" class="range-button" data-ai-range="30d" aria-pressed="false">30d</button>
+                  </div>
+                  <a class="button button-secondary compact-action" href="/ai">Open legacy AI page</a>
+                </div>
+              </div>
+
+              <div id="ai-conversation" class="ai-conversation" aria-live="polite" aria-label="Investigation conversation">
+                <article class="ai-message ai-assistant-message ai-welcome-message">
+                  <div class="ai-message-label">Monitoring AI</div>
+                  <p>Ask about the overall environment, a monitoring source, or a correlated device. The assistant is read-only and does not execute remediation.</p>
+                  <div class="ai-suggestions" aria-label="Suggested questions">
+                    <button class="ai-suggestion" type="button" data-ai-question="What needs attention in the environment right now?">Environment attention</button>
+                    <button class="ai-suggestion" type="button" data-ai-question="What Wazuh issues need review?">Wazuh issues</button>
+                    <button class="ai-suggestion" type="button" data-ai-question="Which Freshservice tickets need attention?">Freshservice tickets</button>
+                    <button class="ai-suggestion" type="button" data-ai-question="What Snipe-IT issues need attention?">Snipe-IT issues</button>
+                  </div>
+                </article>
+              </div>
+
+              <form id="ai-chat-form" class="ai-composer">
+                <label class="ai-composer-label" for="ai-question">Investigation question</label>
+                <div class="ai-composer-row">
+                  <textarea
+                    id="ai-question"
+                    name="question"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="Ask what needs attention, investigate a source, or name a device..."
+                    required
+                  ></textarea>
+                  <button id="ai-send-button" class="button button-primary ai-send-button" type="submit">Ask AI</button>
+                </div>
+                <div class="ai-composer-meta">
+                  <span id="ai-request-status" role="status">Ready</span>
+                  <span><span id="ai-character-count">0</span>/1000</span>
+                </div>
+              </form>
             </section>
 
             <section id="phase-card" class="phase-card" aria-labelledby="phase-card-title">

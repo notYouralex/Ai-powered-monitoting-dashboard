@@ -11,6 +11,7 @@ const API = Object.freeze({
   snipeItActivity: "/api/dashboard/snipe-it/recent-activity",
   snipeItWarranty: "/api/dashboard/snipe-it/warranty-expiry",
   freshservice: "/api/dashboard/freshservice",
+  aiQuery: "/api/ai/query",
 });
 
 const PAGE_CONFIG = Object.freeze({
@@ -61,8 +62,7 @@ const PAGE_CONFIG = Object.freeze({
     eyebrow: "Read-only Assistant",
     title: "AI Investigation",
     description: "Local, bounded investigation guidance using normalized monitoring evidence.",
-    message: "The existing AI Investigation remains available at /ai until it is migrated into this shell in Phase 7.",
-    legacyAi: true,
+    view: "ai",
   },
 });
 
@@ -184,6 +184,16 @@ const freshserviceCategoryDistribution = document.getElementById("freshservice-c
 const freshserviceResolutionTrend = document.getElementById("freshservice-resolution-trend");
 const freshserviceSlaTrendBody = document.getElementById("freshservice-sla-trend-body");
 const freshserviceRecentTicketsBody = document.getElementById("freshservice-recent-tickets-body");
+const aiInvestigationView = document.getElementById("ai-investigation-view");
+const aiInvestigationStatus = document.getElementById("ai-investigation-status");
+const aiConversation = document.getElementById("ai-conversation");
+const aiChatForm = document.getElementById("ai-chat-form");
+const aiQuestionInput = document.getElementById("ai-question");
+const aiSendButton = document.getElementById("ai-send-button");
+const aiRequestStatus = document.getElementById("ai-request-status");
+const aiCharacterCount = document.getElementById("ai-character-count");
+const aiRangeButtons = Array.from(document.querySelectorAll("[data-ai-range]"));
+const aiSuggestionButtons = Array.from(document.querySelectorAll("[data-ai-question]"));
 const navigationLinks = Array.from(document.querySelectorAll(".primary-nav a"));
 
 const SOURCE_NAMES = Object.freeze({
@@ -199,6 +209,14 @@ const WAZUH_RANGE_HOURS = Object.freeze({
   "30d": 24 * 30,
 });
 let wazuhRange = "24h";
+
+const AI_RANGE_HOURS = Object.freeze({
+  "24h": 24,
+  "7d": 24 * 7,
+  "30d": 24 * 30,
+});
+let aiRange = "24h";
+let aiRequestInFlight = false;
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
@@ -1148,6 +1166,195 @@ async function loadFreshserviceDashboard() {
   }
 }
 
+function appendAiMessage(role, text, extraClass = "") {
+  const roleClass = role === "You" ? "ai-user-message" : "ai-assistant-message";
+  const article = document.createElement("article");
+  article.className = `ai-message ${roleClass} ${extraClass}`.trim();
+  article.appendChild(createTextElement("div", "ai-message-label", role));
+  article.appendChild(createTextElement("p", "", text));
+  aiConversation.appendChild(article);
+  article.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  return article;
+}
+
+function appendAiListSection(parent, title, items, className = "") {
+  if (!Array.isArray(items) || items.length === 0) {
+    return;
+  }
+  const section = document.createElement("section");
+  section.className = `ai-response-section ${className}`.trim();
+  section.appendChild(createTextElement("h3", "", title));
+  const list = document.createElement("ul");
+  for (const item of items) {
+    list.appendChild(createTextElement("li", "", String(item)));
+  }
+  section.appendChild(list);
+  parent.appendChild(section);
+}
+
+function appendAiTextSection(parent, title, text) {
+  if (!text) {
+    return;
+  }
+  const section = document.createElement("section");
+  section.className = "ai-response-section";
+  section.appendChild(createTextElement("h3", "", title));
+  section.appendChild(createTextElement("p", "", String(text)));
+  parent.appendChild(section);
+}
+
+function appendAiMeta(parent, label, className = "") {
+  if (!label) {
+    return;
+  }
+  parent.appendChild(createTextElement("span", `ai-meta-pill ${className}`.trim(), label));
+}
+
+function renderAiInvestigation(result) {
+  const analysis = result.analysis || {};
+  const classification = result.classification || {};
+  const article = document.createElement("article");
+  article.className = "ai-message ai-assistant-message";
+  article.appendChild(createTextElement("div", "ai-message-label", "Monitoring AI"));
+
+  const meta = document.createElement("div");
+  meta.className = "ai-response-meta";
+  appendAiMeta(meta, classification.scope ? `Scope: ${classification.scope}` : null);
+  appendAiMeta(meta, classification.source ? (SOURCE_NAMES[classification.source] || classification.source) : null);
+  if (result.device && result.device.canonical_name) {
+    appendAiMeta(meta, `Device: ${result.device.canonical_name}`);
+  }
+  if (analysis.confidence) {
+    appendAiMeta(
+      meta,
+      `Confidence: ${analysis.confidence}`,
+      `ai-confidence-${analysis.confidence}`,
+    );
+  }
+  appendAiMeta(meta, `${formatTimestamp(result.range_start)} – ${formatTimestamp(result.range_end)}`);
+  article.appendChild(meta);
+
+  article.appendChild(createTextElement("p", "", analysis.summary || "No summary was returned."));
+  appendAiTextSection(article, "Most likely explanation", analysis.likely_explanation);
+  appendAiTextSection(article, "Operational impact", analysis.operational_impact);
+  appendAiListSection(article, "Contributing factors", analysis.contributing_factors);
+  appendAiListSection(article, "Supporting evidence", analysis.evidence);
+  appendAiListSection(article, "Recommended investigation", analysis.recommended_investigation);
+
+  const warnings = [];
+  for (const value of [...(analysis.warnings || []), ...(result.source_warnings || [])]) {
+    if (typeof value === "string" && value && !warnings.includes(value)) {
+      warnings.push(value);
+    }
+  }
+  appendAiListSection(article, "Data limitations and warnings", warnings, "ai-warning-section");
+
+  aiConversation.appendChild(article);
+  article.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function setAiRequestBusy(busy) {
+  aiRequestInFlight = busy;
+  aiSendButton.disabled = busy;
+  aiQuestionInput.disabled = busy;
+  aiRequestStatus.textContent = busy ? "Analyzing monitoring evidence..." : "Ready";
+}
+
+function aiRangeUrl() {
+  const hours = AI_RANGE_HOURS[aiRange] || AI_RANGE_HOURS["24h"];
+  const end = new Date();
+  const start = new Date(end.getTime() - (hours * 60 * 60 * 1000));
+  const params = new URLSearchParams();
+  params.set("from", start.toISOString());
+  params.set("to", end.toISOString());
+  return `${API.aiQuery}?${params.toString()}`;
+}
+
+function selectAiRange(range) {
+  if (!Object.prototype.hasOwnProperty.call(AI_RANGE_HOURS, range) || aiRequestInFlight) {
+    return;
+  }
+  aiRange = range;
+  for (const button of aiRangeButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.aiRange === aiRange));
+  }
+  aiInvestigationStatus.textContent = `Ready for a ${aiRange} investigation.`;
+}
+
+function prefillAiQuestionFromUrl() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const question = searchParams.get("question");
+  if (typeof question !== "string" || !question.trim() || aiQuestionInput.value) {
+    return;
+  }
+  aiQuestionInput.value = question.trim().slice(0, 1000);
+  aiCharacterCount.textContent = String(aiQuestionInput.value.length);
+}
+
+function initializeAiInvestigationView() {
+  aiInvestigationStatus.textContent = `Ready for a ${aiRange} investigation.`;
+  prefillAiQuestionFromUrl();
+  aiQuestionInput.focus();
+}
+
+async function handleAiQuestion(event) {
+  event.preventDefault();
+  if (aiRequestInFlight) {
+    return;
+  }
+  const question = aiQuestionInput.value.trim().slice(0, 1000);
+  if (!question) {
+    return;
+  }
+
+  appendAiMessage("You", question);
+  aiQuestionInput.value = "";
+  aiCharacterCount.textContent = "0";
+  setAiRequestBusy(true);
+  aiInvestigationStatus.textContent = `Investigating the selected ${aiRange} period.`;
+
+  const loading = appendAiMessage("Monitoring AI", "Reviewing bounded evidence", "ai-loading-message");
+  const loadingText = loading.querySelector("p");
+  if (loadingText) {
+    loadingText.classList.add("ai-loading-dots");
+  }
+
+  try {
+    const { response, body } = await requestJson(aiRangeUrl(), {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    });
+    loading.remove();
+    if (response.status === 401) {
+      return;
+    }
+    if (!response.ok) {
+      aiInvestigationStatus.textContent = "AI investigation unavailable.";
+      appendAiMessage(
+        "Monitoring AI",
+        errorMessage(body, "The investigation could not be completed."),
+        "ai-error-message",
+      );
+      return;
+    }
+    renderAiInvestigation(body);
+    aiInvestigationStatus.textContent = `Completed ${aiRange} investigation.`;
+  } catch (_error) {
+    loading.remove();
+    aiInvestigationStatus.textContent = "AI investigation unavailable.";
+    appendAiMessage(
+      "Monitoring AI",
+      "The monitoring API could not be reached. No investigation result was produced.",
+      "ai-error-message",
+    );
+  } finally {
+    setAiRequestBusy(false);
+    if (!aiInvestigationView.hidden) {
+      aiQuestionInput.focus();
+    }
+  }
+}
+
 function renderRoute() {
   const config = PAGE_CONFIG[window.location.pathname] || PAGE_CONFIG["/app"];
   const isExecutive = config.view === "executive";
@@ -1155,6 +1362,7 @@ function renderRoute() {
   const isZabbix = config.view === "zabbix";
   const isSnipeIt = config.view === "snipeIt";
   const isFreshservice = config.view === "freshservice";
+  const isAi = config.view === "ai";
   pageEyebrow.textContent = config.eyebrow;
   pageTitle.textContent = config.title;
   pageDescription.textContent = config.description;
@@ -1164,7 +1372,8 @@ function renderRoute() {
   setHidden(zabbixDashboardView, !isZabbix);
   setHidden(snipeItDashboardView, !isSnipeIt);
   setHidden(freshserviceDashboardView, !isFreshservice);
-  setHidden(phaseCard, isExecutive || isWazuh || isZabbix || isSnipeIt || isFreshservice);
+  setHidden(aiInvestigationView, !isAi);
+  setHidden(phaseCard, isExecutive || isWazuh || isZabbix || isSnipeIt || isFreshservice || isAi);
   setHidden(legacyAiLink, !config.legacyAi);
   if (isExecutive) {
     shellStatus.textContent = "Loading Executive";
@@ -1176,6 +1385,8 @@ function renderRoute() {
     shellStatus.textContent = "Loading Snipe-IT";
   } else if (isFreshservice) {
     shellStatus.textContent = "Loading Freshservice";
+  } else if (isAi) {
+    shellStatus.textContent = "AI Investigation ready";
   } else {
     shellStatus.textContent = "Application shell ready";
   }
@@ -1220,6 +1431,8 @@ function showApplication(user) {
     loadSnipeItPage();
   } else if (config.view === "freshservice") {
     loadFreshserviceDashboard();
+  } else if (config.view === "ai") {
+    initializeAiInvestigationView();
   }
 }
 
@@ -1287,4 +1500,24 @@ logoutButton.addEventListener("click", handleLogout);
 for (const button of wazuhRangeButtons) {
   button.addEventListener("click", () => selectWazuhRange(button.dataset.wazuhRange));
 }
+for (const button of aiRangeButtons) {
+  button.addEventListener("click", () => selectAiRange(button.dataset.aiRange));
+}
+for (const button of aiSuggestionButtons) {
+  button.addEventListener("click", () => {
+    aiQuestionInput.value = String(button.dataset.aiQuestion || "").slice(0, 1000);
+    aiCharacterCount.textContent = String(aiQuestionInput.value.length);
+    aiQuestionInput.focus();
+  });
+}
+aiChatForm.addEventListener("submit", handleAiQuestion);
+aiQuestionInput.addEventListener("input", () => {
+  aiCharacterCount.textContent = String(aiQuestionInput.value.length);
+});
+aiQuestionInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    aiChatForm.requestSubmit();
+  }
+});
 initialize();

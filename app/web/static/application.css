@@ -308,6 +308,12 @@ input:focus {
   margin-top: 8px;
 }
 
+.compact-action {
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 0.78rem;
+}
+
 .dashboard-view {
   margin-top: 24px;
 }
@@ -410,6 +416,212 @@ input:focus {
   margin: 6px 0 0;
   font-size: 0.8rem;
   line-height: 1.4;
+}
+
+.ai-investigation-view {
+  max-width: 1040px;
+}
+
+.ai-conversation {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid rgba(129, 157, 202, 0.18);
+  border-radius: 18px;
+  background: rgba(8, 19, 34, 0.72);
+}
+
+.ai-message {
+  width: min(880px, 92%);
+  padding: 18px 20px;
+  border-radius: 16px;
+  line-height: 1.55;
+}
+
+.ai-message p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-assistant-message {
+  align-self: flex-start;
+  border: 1px solid rgba(92, 132, 194, 0.24);
+  background: #101f35;
+}
+
+.ai-user-message {
+  align-self: flex-end;
+  background: #1f4fab;
+}
+
+.ai-error-message {
+  align-self: flex-start;
+  border: 1px solid rgba(255, 106, 121, 0.34);
+  background: rgba(106, 30, 44, 0.32);
+}
+
+.ai-message-label {
+  margin-bottom: 8px;
+  color: #83a9fb;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-user-message .ai-message-label {
+  color: #dbe7ff;
+}
+
+.ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ai-suggestion {
+  padding: 8px 11px;
+  border: 1px solid #30496e;
+  border-radius: 999px;
+  color: #bcd0f2;
+  background: #122742;
+  font-size: 0.82rem;
+}
+
+.ai-suggestion:hover {
+  border-color: #5480c8;
+  background: #173156;
+}
+
+.ai-response-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 14px;
+}
+
+.ai-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid #314867;
+  border-radius: 999px;
+  color: #b7c9e4;
+  background: #0c1a2d;
+  font-size: 0.75rem;
+}
+
+.ai-confidence-high {
+  border-color: rgba(68, 196, 148, 0.5);
+  color: #8ce0be;
+}
+
+.ai-confidence-medium {
+  border-color: rgba(255, 188, 74, 0.5);
+  color: #ffd18a;
+}
+
+.ai-confidence-low {
+  border-color: rgba(255, 111, 126, 0.5);
+  color: #ffb1ba;
+}
+
+.ai-response-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(141, 169, 213, 0.13);
+}
+
+.ai-response-section h3 {
+  margin: 0 0 8px;
+  color: #d9e5fb;
+  font-size: 0.95rem;
+}
+
+.ai-response-section ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  color: #c8d6ea;
+}
+
+.ai-response-section li + li {
+  margin-top: 6px;
+}
+
+.ai-warning-section {
+  color: #f0c48b;
+}
+
+.ai-composer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(116, 151, 205, 0.22);
+  border-radius: 16px;
+  background: rgba(9, 20, 35, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.ai-composer-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #b8c8e2;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ai-composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.ai-composer textarea {
+  width: 100%;
+  min-height: 62px;
+  max-height: 180px;
+  padding: 12px 14px;
+  resize: vertical;
+  border: 1px solid #2b4062;
+  border-radius: 11px;
+  outline: none;
+  color: #f3f7ff;
+  background: #0a1729;
+  font: inherit;
+  line-height: 1.45;
+  transition: border 120ms ease, box-shadow 120ms ease;
+}
+
+.ai-composer textarea:focus {
+  border-color: #5d8dff;
+  box-shadow: 0 0 0 3px rgba(72, 124, 255, 0.15);
+}
+
+.ai-send-button {
+  min-width: 100px;
+  min-height: 62px;
+}
+
+.ai-composer-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: #7890b1;
+  font-size: 0.75rem;
+}
+
+.ai-loading-message {
+  color: #9ab2d7;
+}
+
+.ai-loading-dots::after {
+  content: "...";
+  letter-spacing: 0.18em;
 }
 
 .distribution-row {
@@ -755,5 +967,21 @@ tbody tr:last-child td {
 
   .dashboard-panel-wide {
     grid-column: auto;
+  }
+
+  .ai-conversation {
+    padding: 12px;
+  }
+
+  .ai-message {
+    width: 100%;
+  }
+
+  .ai-composer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-send-button {
+    min-height: 44px;
   }
 }
