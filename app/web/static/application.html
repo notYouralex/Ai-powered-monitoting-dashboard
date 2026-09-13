@@ -76,6 +76,11 @@
                   <p id="executive-status" class="muted dashboard-status" role="status">Loading Executive data...</p>
                 </div>
                 <div class="dashboard-status-actions">
+                  <div id="executive-range-controls" class="range-controls" aria-label="Executive time range">
+                    <button type="button" class="range-button" data-executive-range="24h" aria-pressed="true">24h</button>
+                    <button type="button" class="range-button" data-executive-range="7d" aria-pressed="false">7d</button>
+                    <button type="button" class="range-button" data-executive-range="30d" aria-pressed="false">30d</button>
+                  </div>
                   <button id="executive-refresh-button" class="button button-secondary compact-action" type="button">Refresh</button>
                   <a class="button button-secondary compact-action" href="/app/ai?question=What%20needs%20attention%20in%20the%20environment%20right%20now%3F">Investigate with AI</a>
                   <p id="executive-observed-at" class="observed-at"></p>

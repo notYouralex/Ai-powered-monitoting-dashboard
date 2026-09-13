@@ -87,6 +87,7 @@ const executiveDashboardView = document.getElementById("executive-dashboard-view
 const executiveStatus = document.getElementById("executive-status");
 const executiveObservedAt = document.getElementById("executive-observed-at");
 const executiveRefreshButton = document.getElementById("executive-refresh-button");
+const executiveRangeButtons = Array.from(document.querySelectorAll("[data-executive-range]"));
 const metricOverallHealth = document.getElementById("metric-overall-health");
 const metricSecurityAlerts = document.getElementById("metric-security-alerts");
 const metricOpenTickets = document.getElementById("metric-open-tickets");
@@ -208,13 +209,21 @@ const SOURCE_NAMES = Object.freeze({
   freshservice: "Freshservice",
 });
 
+const EXECUTIVE_RANGE_HOURS = Object.freeze({
+  "24h": 24,
+  "7d": 24 * 7,
+  "30d": 24 * 30,
+});
+let executiveRange = "24h";
+let executiveRequestInFlight = false;
+let executiveRequestController = null;
+
 const WAZUH_RANGE_HOURS = Object.freeze({
   "24h": 24,
   "7d": 24 * 7,
   "30d": 24 * 30,
 });
 let wazuhRange = "24h";
-let executiveRequestInFlight = false;
 let wazuhRequestController = null;
 let zabbixRequestInFlight = false;
 let snipeItPageRequestInFlight = false;
@@ -445,17 +454,37 @@ function renderExecutiveDashboard(body) {
   shellStatus.textContent = "Executive data loaded";
 }
 
-async function loadExecutiveDashboard() {
+function executiveRangeUrl() {
+  const hours = EXECUTIVE_RANGE_HOURS[executiveRange] || EXECUTIVE_RANGE_HOURS["24h"];
+  const end = new Date();
+  const start = new Date(end.getTime() - (hours * 60 * 60 * 1000));
+  const params = new URLSearchParams();
+  params.set("from", start.toISOString());
+  params.set("to", end.toISOString());
+  return `${API.executive}?${params.toString()}`;
+}
+
+async function loadExecutiveDashboard({ replaceInFlight = false } = {}) {
   if (executiveRequestInFlight) {
-    return;
+    if (!replaceInFlight) {
+      return;
+    }
+    if (executiveRequestController) {
+      executiveRequestController.abort();
+    }
   }
+  const controller = new AbortController();
+  executiveRequestController = controller;
   executiveRequestInFlight = true;
   setRefreshButtonBusy(executiveRefreshButton, true);
   executiveStatus.textContent = dashboardLoadingMessage(executiveObservedAt, "Executive");
   shellStatus.textContent = "Loading Executive";
 
   try {
-    const { response, body } = await requestJson(API.executive);
+    const { response, body } = await requestJson(executiveRangeUrl(), { signal: controller.signal });
+    if (controller !== executiveRequestController) {
+      return;
+    }
     if (response.status === 401) {
       return;
     }
@@ -468,16 +497,33 @@ async function loadExecutiveDashboard() {
       return;
     }
     renderExecutiveDashboard(body);
-  } catch (_error) {
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      return;
+    }
     executiveStatus.textContent = dashboardErrorMessage(
       executiveObservedAt,
       "Executive dashboard data is unavailable.",
     );
     shellStatus.textContent = dashboardShellErrorMessage(executiveObservedAt, "Executive");
   } finally {
-    executiveRequestInFlight = false;
-    setRefreshButtonBusy(executiveRefreshButton, false);
+    if (controller === executiveRequestController) {
+      executiveRequestController = null;
+      executiveRequestInFlight = false;
+      setRefreshButtonBusy(executiveRefreshButton, false);
+    }
   }
+}
+
+function selectExecutiveRange(range) {
+  if (!Object.prototype.hasOwnProperty.call(EXECUTIVE_RANGE_HOURS, range)) {
+    return;
+  }
+  executiveRange = range;
+  for (const button of executiveRangeButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.executiveRange === range));
+  }
+  loadExecutiveDashboard({ replaceInFlight: true });
 }
 
 function renderNamedCountTable(tbody, rows, emptyMessage) {
@@ -1610,6 +1656,9 @@ wazuhRefreshButton.addEventListener("click", loadWazuhDashboard);
 zabbixRefreshButton.addEventListener("click", loadZabbixDashboard);
 snipeItRefreshButton.addEventListener("click", loadSnipeItPage);
 freshserviceRefreshButton.addEventListener("click", loadFreshserviceDashboard);
+for (const button of executiveRangeButtons) {
+  button.addEventListener("click", () => selectExecutiveRange(button.dataset.executiveRange));
+}
 for (const button of wazuhRangeButtons) {
   button.addEventListener("click", () => selectWazuhRange(button.dataset.wazuhRange));
 }

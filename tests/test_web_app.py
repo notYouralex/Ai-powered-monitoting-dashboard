@@ -75,6 +75,7 @@ def test_executive_web_view_uses_canonical_executive_contract(auth_env) -> None:
     for element_id in (
         "executive-dashboard-view",
         "executive-status",
+        "executive-range-controls",
         "executive-summary-grid",
         "executive-alert-distribution",
         "executive-ticket-distribution",
@@ -85,6 +86,17 @@ def test_executive_web_view_uses_canonical_executive_contract(auth_env) -> None:
 
     source = script.text
     assert "/api/dashboard/executive" in source
+    assert "EXECUTIVE_RANGE_HOURS" in source
+    assert "executiveRangeUrl()" in source
+    assert '"24h": 24' in source
+    assert '"7d": 24 * 7' in source
+    assert '"30d": 24 * 30' in source
+    executive_range_source = source.split("function executiveRangeUrl", 1)[-1].split(
+        "async function", 1
+    )[0]
+    assert 'params.set("from", start.toISOString())' in executive_range_source
+    assert 'params.set("to", end.toISOString())' in executive_range_source
+    assert "`${API.executive}?${params.toString()}`" in executive_range_source
     for field in (
         "overall_health_percent",
         "security_alerts",
